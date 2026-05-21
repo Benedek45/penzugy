@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}[PROJECT_NAME]{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Navbar ────────────────────────────────────────────────────────── -->
+<nav id="navbar">
+  <a href="/" class="nav-title">💰 [PROJECT_NAME]</a>
+  <div class="nav-balance">
+    <span id="nav-balance">{% if state %}{{ "{:,}".format(state.balance).replace(",", " ") }} Ft{% endif %}</span>
+    <span id="nav-debt" class="debt"
+      {% if not state or state.debt == 0 %}style="display:none"{% endif %}>
+      {% if state and state.debt > 0 %}Adósság: {{ "{:,}".format(state.debt).replace(",", " ") }} Ft{% endif %}
+    </span>
+  </div>
+  <div class="nav-actions">
+    <button class="btn btn-dark" onclick="GameAPI.save()">💾 Mentés</button>
+    <a href="/logout" class="btn btn-dark">Kilépés</a>
+  </div>
+</nav>
+
+<!-- ── Page content ──────────────────────────────────────────────────── -->
+<div id="page-content">
+  {% block content %}{% endblock %}
+</div>
+
+<!-- ── Toast container ───────────────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ── Scripts ───────────────────────────────────────────────────────── -->
+<script src="/static/js/game.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

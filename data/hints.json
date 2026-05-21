@@ -1,0 +1,46 @@
+{
+  "global": [
+    { "term": "Kamat", "explanation": "Az adósság éves díja. A miénk 847%. Teljesen normális." },
+    { "term": "Infláció", "explanation": "Minden évben kicsit kevesebbet ér a pénzed. Pont mint most." },
+    { "term": "Diverzifikáció", "explanation": "Ne tegyél minden tojást egy kosárba. Inkább veszítsd el szétszórva." },
+    { "term": "Likviditás", "explanation": "Mennyi pénzed van azonnal. Neked valószínűleg nulla." },
+    { "term": "Adósság", "explanation": "A jövőbeli énedtől kölcsönzött pénz. Ő nem lesz boldog." }
+  ],
+  "horse_race": [
+    { "term": "Kockázat", "explanation": "Annak valószínűsége, hogy elveszíted a pénzed. Ebben a játékban: magas." },
+    { "term": "Várható érték", "explanation": "Az átlagos nyereményed hosszú távon. Negatív. Sajnálom." },
+    { "term": "Korrupció", "explanation": "Gazdasági fogalom. Egyben játékmechanika. Használd bölcsen." },
+    { "term": "Valószínűség", "explanation": "Matematikai szám 0 és 1 között. A lovaid mindig 0 közelében végeznek." },
+    { "term": "Fedezet", "explanation": "Amit a hitelezőnek adsz, ha nem tudod visszafizetni. Pl. a cipőd." }
+  ],
+  "casino": [
+    { "term": "Házelőny", "explanation": "A kaszinó mindig nyer hosszú távon. Te nem vagy a kaszinó." },
+    { "term": "Várható érték", "explanation": "Negatív. Mindig negatív. Mégis játszol." },
+    { "term": "Szórás", "explanation": "Mennyit ingadozik a nyereményed. A választ nem fogja megvigasztalni." },
+    { "term": "Veszteségüldözés", "explanation": "Amikor egyre többet játszol, hogy visszanyerd a veszteségedet. Pszichológiai csapda." }
+  ],
+  "stock_market": [
+    { "term": "Befektetés", "explanation": "Pénzt adni valaminek, azzal a reménnyel, hogy többet kapsz vissza. Remény." },
+    { "term": "Volatilitás", "explanation": "Mennyit mozog az árfolyam. A mi részvényeinknél: nagyon sokat." },
+    { "term": "Bennfentes kereskedés", "explanation": "Tilos. Hacsak nem fizetsz érte. Ekkor csak drága." },
+    { "term": "Tőzsde", "explanation": "Hely, ahol emberek számokat vesznek és adnak el. Komolyan." },
+    { "term": "Portfólió", "explanation": "Az összes befektetésed. Hamarosan az összes veszteséged." }
+  ],
+  "slots": [
+    { "term": "Játékgép-adó", "explanation": "A nyerőgépek bevételének állami része. Te finanszírozod." },
+    { "term": "Veszteségüldözés", "explanation": "Még egy kör. Csak még egy kör. Aztán abbahagyom." },
+    { "term": "Független valószínűség", "explanation": "Az előző kör nem befolyásolja a következőt. A gép nem emlékszik rád." },
+    { "term": "Süllyedt költség", "explanation": "Amit már elveszítettél, az elveszett. De azért nyomod a gombot." }
+  ],
+  "chess": [
+    { "term": "Süllyedt költség téveszme", "explanation": "Azért folytatod, mert már annyit veszítettél. Ez logikailag hibás. De érthető." },
+    { "term": "Információs aszimmetria", "explanation": "Az egyik fél többet tud. A Stockfish 3000+ ELO-val többet tud." },
+    { "term": "Megvesztegetés", "explanation": "Illegális gazdasági cselekmény. Egyben a legjobb mozdulatod a táblán." },
+    { "term": "Kockázatkezelés", "explanation": "Mikor kell abbahagyni. Általában korábban, mint gondolnád." }
+  ],
+  "cashier": [
+    { "term": "Minimálbér", "explanation": "A törvényes legkisebb fizetés. Pontosan ennyit keresel most." },
+    { "term": "Munkabér", "explanation": "Pénz munkáért cserébe. Kevesebb, mint gondolnád." },
+    { "term": "Adó", "explanation": "A fizetésedből levont rész. Nem kérdeznek." }
+  ]
+}

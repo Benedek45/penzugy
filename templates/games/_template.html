@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Játék neve{% endblock %}
+
+{% block head %}
+<style>
+  #game-container {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  #game-header { text-align: center; }
+  #game-header h1 { font-size: 2rem; }
+  #balance-display {
+    text-align: center;
+    font-size: 1.8rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--gold-light);
+  }
+  #game-area {
+    background: var(--dark-mid);
+    border: 1px solid var(--dark-light);
+    border-radius: 12px;
+    padding: 2rem;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    text-align: center;
+  }
+  #controls {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="game-container">
+
+  <!-- Header -->
+  <div id="game-header">
+    <h1>🎮 Játék neve</h1>
+    <p style="color:var(--cream-dark);font-style:italic;">Rövid leírás</p>
+  </div>
+
+  <!-- NPC hint — auto-populated by game.js -->
+  <div class="npc-hint" id="npc-hint">Betöltés...</div>
+
+  <!-- Current balance -->
+  <div id="balance-display">Egyenleg: <span id="bal-value">...</span></div>
+
+  <!-- Game area — put your game logic here -->
+  <div id="game-area">
+    <p style="color:var(--cream-dark);">A játék területe — cseréld le ezt.</p>
+
+    <div id="controls">
+      <button class="btn btn-gold" onclick="playRound()">Játék</button>
+      <button class="btn btn-dark" onclick="leaveGame()">Kilépés a hubra</button>
+    </div>
+  </div>
+
+  <!-- Result message -->
+  <div id="result" style="text-align:center;font-size:1.1rem;min-height:1.4rem;"></div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/**
+ * Mini-game: _template
+ *
+ * Replace the logic in playRound() with your game mechanics.
+ * Call leaveGame() when the player wants to return to the hub.
+ * Use state.balance as the player's money.
+ */
+
+let state;
+
+async function init() {
+  state = await GameAPI.getState();
+  document.getElementById('bal-value').textContent = fmt(state.balance);
+}
+
+function playRound() {
+  // ── Your game logic here ──────────────────────────────────────────
+  const bet = 100;
+  const won = Math.random() > 0.5;
+  const delta = won ? bet : -bet;
+  state.balance += delta;
+  // ─────────────────────────────────────────────────────────────────
+
+  // Update display
+  document.getElementById('bal-value').textContent = fmt(state.balance);
+  document.getElementById('result').textContent = won
+    ? `✅ Nyertél ${fmt(delta)}!`
+    : `❌ Veszítettél ${fmt(Math.abs(delta))}...`;
+
+  // Sync to server (fire-and-forget mid-game)
+  GameAPI.patch({ balance: state.balance });
+
+  // Emit event for other components on this page
+  EventBus.emit('balance:update', { balance: state.balance, delta });
+}
+
+async function leaveGame() {
+  // Always call GameAPI.exit() to return to hub and finalize balance
+  await GameAPI.exit(state.balance);
+}
+
+init();
+</script>
+{% endblock %}

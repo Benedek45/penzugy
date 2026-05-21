@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>[PROJECT_NAME] — Bejelentkezés</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <style>
+    body { background: radial-gradient(ellipse at center, #1e1e3a 0%, #0d0d1a 100%); }
+
+    .login-wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .login-title {
+      font-family: var(--font-display);
+      font-size: 3.2rem;
+      font-weight: 900;
+      color: var(--gold);
+      text-align: center;
+      letter-spacing: 0.04em;
+      animation: glow 2.5s ease-in-out infinite;
+      margin-bottom: 0.3rem;
+    }
+
+    .login-subtitle {
+      font-style: italic;
+      color: var(--cream-dark);
+      text-align: center;
+      font-size: 1.05rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .login-card {
+      background: rgba(42,42,78,0.9);
+      border: 1px solid var(--gold-dim);
+      border-radius: 12px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 40px var(--shadow-gold);
+    }
+
+    .login-card h2 {
+      font-size: 1.3rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.4rem;
+      color: var(--cream-dark);
+      font-size: 0.9rem;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 0.8rem;
+      font-size: 1.1rem;
+      justify-content: center;
+    }
+
+    .divider {
+      text-align: center;
+      color: var(--dark-light);
+      margin: 1.5rem 0;
+      position: relative;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1px;
+      background: var(--dark-light);
+    }
+    .divider::before { left: 0; }
+    .divider::after  { right: 0; }
+
+    .saves-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .save-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--dark);
+      border: 1px solid var(--dark-light);
+      border-radius: var(--radius);
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      transition: border-color var(--transition);
+    }
+    .save-item:hover { border-color: var(--gold-dim); }
+    .save-item .save-name { font-weight: 600; color: var(--cream); }
+    .save-item .save-bal  { color: var(--gold); font-size: 0.9rem; }
+
+    .error-msg {
+      color: #ff9999;
+      font-size: 0.9rem;
+      text-align: center;
+      margin-top: 0.75rem;
+      min-height: 1.2rem;
+    }
+
+    .coins {
+      position: fixed;
+      pointer-events: none;
+      font-size: 1.8rem;
+      opacity: 0.12;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Decorative background coins -->
+<div class="coins" style="top:8%; left:5%;  animation: float 4s ease-in-out infinite;">💰</div>
+<div class="coins" style="top:15%; right:8%; animation: float 5s ease-in-out infinite 1s;">💵</div>
+<div class="coins" style="bottom:20%; left:10%; animation: float 3.5s ease-in-out infinite 0.5s;">🎲</div>
+<div class="coins" style="bottom:10%; right:5%; animation: float 4.5s ease-in-out infinite 2s;">💎</div>
+
+<div class="login-wrapper">
+  <div class="login-title">💰 [PROJECT_NAME]</div>
+  <p class="login-subtitle">"Ahol a pénz nem alszik — csak te fogsz."</p>
+
+  <div class="login-card">
+    <h2>🎩 Üdvözöl a Plaza</h2>
+
+    <div class="form-group">
+      <label for="name-input">A neved, uram / hölgyem:</label>
+      <input type="text" id="name-input" placeholder="Kovács Péter..."
+             maxlength="30" autocomplete="off"/>
+    </div>
+
+    <button class="btn btn-gold btn-login" onclick="startGame()">
+      ▶ Új játék / Folytatás
+    </button>
+
+    <p class="error-msg" id="error-msg"></p>
+
+    <div class="divider">vagy töltsd be</div>
+
+    <div class="saves-list" id="saves-list">
+      <p style="color:var(--cream-dark); text-align:center; font-style:italic; font-size:0.9rem;">
+        Betöltés...
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="/static/js/game.js"></script>
+<script>
+  const nameInput = document.getElementById('name-input');
+  const errorMsg  = document.getElementById('error-msg');
+
+  nameInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') startGame();
+  });
+
+  async function startGame() {
+    const name = nameInput.value.trim();
+    if (!name) {
+      errorMsg.textContent = 'Adj meg egy nevet!';
+      return;
+    }
+    errorMsg.textContent = '';
+    try {
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        window.location.href = data.redirect;
+      } else {
+        errorMsg.textContent = data.error || 'Hiba történt.';
+      }
+    } catch (e) {
+      errorMsg.textContent = 'Szerver nem elérhető.';
+    }
+  }
+
+  async function loadSaves() {
+    const list = document.getElementById('saves-list');
+    try {
+      const saves = await GameAPI.listSaves();
+      if (!saves.length) {
+        list.innerHTML = '<p style="color:var(--cream-dark);text-align:center;font-style:italic;font-size:0.9rem;">Nincs mentett játék.</p>';
+        return;
+      }
+      list.innerHTML = '';
+      saves.forEach(s => {
+        const el = document.createElement('div');
+        el.className = 'save-item';
+        el.innerHTML = `
+          <span class="save-name">🎭 ${s.name}</span>
+          <span class="save-bal">${fmt(s.balance)}${s.debt > 0 ? ` · Adósság: ${fmt(s.debt)}` : ''}</span>
+        `;
+        el.onclick = () => {
+          nameInput.value = s.name;
+          startGame();
+        };
+        list.appendChild(el);
+      });
+    } catch (e) {
+      list.innerHTML = '<p style="color:var(--cream-dark);text-align:center;font-size:0.9rem;">Nem sikerült betölteni.</p>';
+    }
+  }
+
+  loadSaves();
+</script>
+</body>
+</html>
