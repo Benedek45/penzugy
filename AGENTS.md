@@ -17,7 +17,7 @@ Stack: Python (Flask) backend + plain HTML/CSS/JS frontend. No framework.
 ## Project Structure
 
 ```
-├── agent.md               ← you are here
+├── AGENTS.md              ← you are here
 ├── app.py                 ← Flask server, all routes
 ├── requirements.txt       ← Python dependencies
 ├── images.jpg             ← decorative image
