@@ -17,7 +17,11 @@
     { "term": "Házelőny", "explanation": "A kaszinó mindig nyer hosszú távon. Te nem vagy a kaszinó." },
     { "term": "Várható érték", "explanation": "Negatív. Mindig negatív. Mégis játszol." },
     { "term": "Szórás", "explanation": "Mennyit ingadozik a nyereményed. A választ nem fogja megvigasztalni." },
-    { "term": "Veszteségüldözés", "explanation": "Amikor egyre többet játszol, hogy visszanyerd a veszteségedet. Pszichológiai csapda." }
+    { "term": "Veszteségüldözés", "explanation": "Amikor egyre többet játszol, hogy visszanyerd a veszteségedet. Pszichológiai csapda." },
+    { "term": "Független próbák", "explanation": "Az előző kör eredménye nem befolyásolja a következőt. A gép nem mond 'sajnálom'." },
+    { "term": "Gambler's Fallacy", "explanation": "Ha öt körben vesztettél, a hatodik sem 'esedékes'. A valószínűség nem ad kölcsönt." },
+    { "term": "Korrupció", "explanation": "Jogi és közgazdasági fogalom. Ebben a kaszinóban egyben mechánika. 200 Ft-ért kipróbálható." },
+    { "term": "Döntetlen", "explanation": "Blackjacknél döntetlen esetén a ház viszi a tétet. Kedves gesztus." }
   ],
   "stock_market": [
     { "term": "Befektetés", "explanation": "Pénzt adni valaminek, azzal a reménnyel, hogy többet kapsz vissza. Remény." },

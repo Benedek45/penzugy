@@ -1,38 +1,1261 @@
 {% extends "base.html" %}
-{% block title %}casino — Hamarosan{% endblock %}
+{% block title %}Kaszinó — Pénz Plaza{% endblock %}
+
 {% block head %}
 <style>
-  .casino-placeholder {
-    max-width: 680px;
-    margin: 4rem auto;
-    text-align: center;
-    padding: 0 1rem;
-  }
-  .casino-sign-large {
-    width: min(100%, 560px);
-    max-height: 230px;
-    object-fit: contain;
-    margin-bottom: 1rem;
-    filter: drop-shadow(0 0 18px var(--shadow-gold));
-  }
-  .casino-copy {
-    color: var(--cream-dark);
-    font-style: italic;
-    margin: 0.5rem 0 2rem;
-  }
-  .casino-actions { margin-top: 2rem; }
+/* ═══════════════════════════════════════════════════
+   CASINO — shared wrapper
+═══════════════════════════════════════════════════ */
+#casino-app {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 3rem;
+}
+
+/* Screen toggle */
+.casino-screen          { display: none; }
+.casino-screen.is-active{ display: block; }
+
+/* ═══════════════════════════════════════════════════
+   LOBBY
+═══════════════════════════════════════════════════ */
+#screen-lobby {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 20px 64px var(--shadow), 0 0 40px var(--shadow-gold);
+}
+.lobby-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+}
+/* vignette over scene */
+#screen-lobby::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Hotspots */
+.lobby-hs {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.5rem;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  color: var(--cream);
+  cursor: pointer;
+  text-decoration: none;
+}
+.lobby-hs::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+}
+.lobby-hs:hover::before,
+.lobby-hs:focus-visible::before {
+  background: radial-gradient(ellipse at center, rgba(201,168,76,0.2), transparent 70%);
+  border-color: var(--gold-dim);
+  box-shadow: inset 0 0 28px rgba(201,168,76,0.12);
+}
+.lobby-hs:focus-visible { outline: none; }
+.lobby-hs-label {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-size: clamp(0.75rem, 1.15vw, 1rem);
+  font-weight: 700;
+  color: var(--gold-light);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.8);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  transition: transform var(--transition), color var(--transition);
+}
+.lobby-hs:hover .lobby-hs-label,
+.lobby-hs:focus-visible .lobby-hs-label { transform: translateY(-2px); color: var(--cream); }
+
+/* Hotspot positions — calibrated to casino_lobby.png */
+.hs-slots     { left: 2%;  top: 14%; width: 29%; height: 56%; }
+.hs-blackjack { left: 29%; top: 28%; width: 38%; height: 57%; }
+.hs-dice      { left: 65%; top: 28%; width: 31%; height: 50%; }
+
+/* Banker NPC */
+#lobby-banker {
+  position: absolute;
+  bottom: 0;
+  right: 1.5%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+#lobby-banker-img {
+  width: clamp(70px, 13vw, 170px);
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.8));
+}
+#lobby-speech {
+  background: rgba(20,18,40,0.93);
+  border: 1px solid var(--gold-dim);
+  border-radius: 10px 10px 4px 10px;
+  padding: 0.4rem 0.75rem;
+  font-size: clamp(0.65rem, 0.95vw, 0.82rem);
+  font-style: italic;
+  color: var(--cream);
+  max-width: min(220px, 28vw);
+  text-align: right;
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+}
+
+/* Exit button */
+#lobby-exit-btn {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 4;
+}
+
+/* ═══════════════════════════════════════════════════
+   GAME SCREENS — shared skeleton
+═══════════════════════════════════════════════════ */
+.game-screen {
+  position: relative;
+  min-height: 72vh;
+  border-radius: 18px;
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 20px 64px var(--shadow), 0 0 40px var(--shadow-gold);
+  overflow: hidden;
+}
+.game-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  opacity: 0.38;
+}
+/* dark scrim over bg */
+.game-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center top, rgba(20,18,40,0.55) 0%, rgba(10,8,24,0.82) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+.game-ui {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 5rem;
+  min-height: 72vh;
+}
+
+/* Banker corner portrait */
+.game-banker {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: 3;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.game-banker img {
+  width: clamp(60px, 11vw, 140px);
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.8));
+}
+.gb-speech {
+  background: rgba(20,18,40,0.93);
+  border: 1px solid var(--gold-dim);
+  border-radius: 10px 10px 4px 10px;
+  padding: 0.3rem 0.6rem;
+  font-size: clamp(0.6rem, 0.88vw, 0.78rem);
+  font-style: italic;
+  color: var(--cream);
+  max-width: min(190px, 26vw);
+  text-align: right;
+  margin-bottom: 0.2rem;
+  min-height: 2.5rem;
+  line-height: 1.35;
+}
+
+/* ── Shared UI atoms ── */
+.balance-strip {
+  background: rgba(10,8,24,0.75);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius);
+  padding: 0.35rem 1rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--gold-light);
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.bet-row {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0.3rem 0;
+}
+.cbet {
+  padding: 0.35rem 0.8rem;
+  background: rgba(42,42,78,0.85);
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px;
+  color: var(--cream);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.cbet.active,
+.cbet:hover {
+  background: var(--gold);
+  border-color: var(--gold-light);
+  color: var(--dark);
+  font-weight: 700;
+}
+
+.result-banner {
+  padding: 0.55rem 1.2rem;
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0.5rem 0;
+  min-height: 2.4rem;
+  transition: opacity 0.25s;
+}
+.result-banner.win  { background: rgba(46,125,50,0.88); color: #a5d6a7; border: 1px solid #388e3c; }
+.result-banner.lose { background: rgba(139,26,26,0.88); color: #ffcdd2; border: 1px solid #c62828; }
+.result-banner.info { background: rgba(42,42,78,0.88); color: var(--gold-light); border: 1px solid var(--gold-dim); }
+
+.back-row {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 3;
+}
+
+/* ═══════════════════════════════════════════════════
+   SLOTS
+═══════════════════════════════════════════════════ */
+.slots-layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+#slots-machine-art {
+  width: clamp(100px, 18vw, 220px);
+  filter: drop-shadow(0 0 28px var(--shadow-gold));
+  animation: float 4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.slots-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+.reels-wrap {
+  display: flex;
+  gap: 0.6rem;
+  background: rgba(10,8,24,0.85);
+  border: 2px solid var(--gold-dim);
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem;
+  box-shadow: inset 0 2px 12px rgba(0,0,0,0.6), 0 0 20px var(--shadow-gold);
+}
+.reel {
+  width: 76px;
+  height: 76px;
+  background: linear-gradient(160deg, #0f0e1e, #1a1830);
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.8rem;
+  overflow: hidden;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+  position: relative;
+}
+.reel-sym { line-height: 1; display: block; }
+.reel.spinning .reel-sym {
+  animation: reel-blur 0.1s linear infinite;
+}
+@keyframes reel-blur {
+  0%   { transform: translateY(0); opacity: 1; }
+  40%  { transform: translateY(-12px); opacity: 0.3; }
+  60%  { transform: translateY(12px); opacity: 0.3; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.reel-win { animation: reel-pulse 0.5s ease 3; }
+@keyframes reel-pulse {
+  0%,100% { box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); }
+  50%     { box-shadow: 0 0 20px var(--gold), inset 0 0 8px var(--shadow-gold); }
+}
+.payout-table {
+  font-size: 0.75rem;
+  color: var(--cream-dark);
+  text-align: center;
+  line-height: 1.6;
+  background: rgba(10,8,24,0.6);
+  border: 1px solid var(--dark-light);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.8rem;
+}
+.payout-table b { color: var(--gold); }
+
+/* ═══════════════════════════════════════════════════
+   BLACKJACK
+═══════════════════════════════════════════════════ */
+.bj-table {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.bj-zone-label {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  color: var(--cream-dark);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+.card-hand {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  min-height: 84px;
+  align-items: flex-start;
+}
+/* playing cards — pcard to avoid style.css .card conflict */
+.pcard {
+  width: 54px;
+  height: 76px;
+  background: #f7f2e6;
+  border-radius: 7px;
+  border: 1px solid #c8b97e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.55);
+  animation: card-deal 0.28s ease;
+  flex-shrink: 0;
+}
+.pcard.red  { color: #b01010; }
+.pcard.black{ color: #111; }
+.pcard.face-down {
+  background: repeating-linear-gradient(
+    45deg, #6a0a0a 0px, #6a0a0a 7px, #8b1a1a 7px, #8b1a1a 14px
+  );
+  border-color: var(--gold-dim);
+}
+.pcard .cv { font-size: 1rem; font-weight: 800; line-height: 1; }
+.pcard .cs { font-size: 1.1rem; line-height: 1; }
+@keyframes card-deal {
+  from { transform: translateY(-16px) scale(0.85); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+.bj-separator {
+  border: none;
+  border-top: 1px solid rgba(201,168,76,0.25);
+  margin: 0.25rem 0;
+}
+.bj-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Tooltip for "házelőny" */
+.tip {
+  position: relative;
+  display: inline;
+  cursor: help;
+  border-bottom: 1px dotted var(--gold-dim);
+}
+.tip-text {
+  display: none;
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--dark-mid);
+  border: 1px solid var(--gold-dim);
+  color: var(--cream);
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  max-width: 260px;
+  white-space: normal;
+  text-align: center;
+  z-index: 50;
+  box-shadow: 0 4px 12px var(--shadow);
+  pointer-events: none;
+}
+.tip:hover .tip-text { display: block; }
+
+/* ═══════════════════════════════════════════════════
+   CORRUPT DICE
+═══════════════════════════════════════════════════ */
+.dice-art {
+  width: clamp(80px, 15vw, 180px);
+  filter: drop-shadow(0 6px 20px rgba(0,0,0,0.7));
+  animation: float 3.5s ease-in-out infinite;
+}
+.dice-result-row {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+/* CSS dice styled to match casino_dice.png: black marble, gold dots */
+.cdie {
+  width: 72px;
+  height: 72px;
+  background: radial-gradient(circle at 35% 28%, #2e2e2e, #0a0a0a);
+  border-radius: 13px;
+  border: 2px solid var(--gold-dim);
+  display: grid;
+  grid-template: repeat(3,1fr) / repeat(3,1fr);
+  padding: 8px;
+  gap: 4px;
+  box-shadow: 0 6px 22px rgba(0,0,0,0.85), 0 0 10px rgba(201,168,76,0.15),
+              inset 0 1px 2px rgba(255,255,255,0.06);
+  transition: transform 0.2s;
+}
+.cdie.rolling {
+  animation: die-roll 0.35s ease infinite;
+}
+@keyframes die-roll {
+  0%   { transform: rotate(0deg)   scale(1); }
+  25%  { transform: rotate(-14deg) scale(1.08); }
+  75%  { transform: rotate(14deg)  scale(1.08); }
+  100% { transform: rotate(0deg)   scale(1); }
+}
+.cdot {
+  background: radial-gradient(circle at 38% 30%, var(--gold-light), var(--gold));
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+.cdot.h { visibility: hidden; }
+
+.dice-sum {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--gold-light);
+  text-shadow: 0 0 16px var(--shadow-gold);
+  min-width: 3rem;
+  text-align: center;
+}
+
+/* Bribe panel */
+.bribe-panel {
+  background: rgba(40,10,10,0.82);
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+  padding: 0.65rem 1rem;
+  max-width: 440px;
+  width: 100%;
+  margin: 0.4rem 0;
+  position: relative;
+}
+.bribe-panel::before {
+  content: '🤫';
+  position: absolute;
+  top: -0.6rem;
+  left: 0.8rem;
+  font-size: 1.2rem;
+}
+.bribe-title {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  color: #ff9999;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.3rem;
+}
+.bribe-sub {
+  font-size: 0.75rem;
+  color: var(--cream-dark);
+  font-style: italic;
+  margin-bottom: 0.5rem;
+}
+.bribe-controls {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.bribe-controls label { color: var(--cream); font-size: 0.85rem; cursor: pointer; }
+.bribe-controls select {
+  background: rgba(20,18,40,0.9);
+  border: 1px solid var(--gold-dim);
+  color: var(--cream);
+  border-radius: 4px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.85rem;
+}
+#bribe-subcontrols {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.3rem;
+}
 </style>
 {% endblock %}
+
 {% block content %}
-<div class="casino-placeholder">
-  <img src="{{ url_for('static', filename='assets/kasino_sign.png') }}" alt="Kaszinó neon tábla" class="casino-sign-large">
-  <h1>casino</h1>
-  <p class="casino-copy">
-    Ez a mini-játék még fejlesztés alatt áll. Hamarosan!
-  </p>
-  <div class="npc-hint" id="npc-hint">Betöltés...</div>
-  <div class="casino-actions">
-    <a href="/" class="btn btn-gold">← Vissza a Plazára</a>
-  </div>
-</div>
+<div id="casino-app">
+
+  <!-- ══════════════════════ LOBBY ══════════════════════ -->
+  <section id="screen-lobby" class="casino-screen is-active">
+    <img src="{{ url_for('static', filename='assets/casino_lobby.png') }}"
+         alt="Kaszinó belseje" class="lobby-scene" draggable="false">
+
+    <!-- Game hotspots -->
+    <button class="lobby-hs hs-slots"     onclick="CAS.enter('slots')"     aria-label="Nyerőgép">
+      <span class="lobby-hs-label">🎰 Nyerőgép</span>
+    </button>
+    <button class="lobby-hs hs-blackjack" onclick="CAS.enter('blackjack')" aria-label="Blackjack">
+      <span class="lobby-hs-label">🃏 Blackjack</span>
+    </button>
+    <button class="lobby-hs hs-dice"      onclick="CAS.enter('dice')"      aria-label="Korrupt Kocka">
+      <span class="lobby-hs-label">🎲 Korrupt Kocka</span>
+    </button>
+
+    <!-- Banker NPC -->
+    <div id="lobby-banker">
+      <div id="lobby-speech">Üdvözöllek. Beváltjuk a pénzedet… veszteségbe.</div>
+      <img id="lobby-banker-img"
+           src="{{ url_for('static', filename='assets/banker_loss.png') }}"
+           alt="Bankár">
+    </div>
+
+    <div id="lobby-exit-btn">
+      <button class="btn btn-dark" onclick="CAS.exitCasino()">← Vissza a Plazára</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ SLOTS ══════════════════════ -->
+  <section id="screen-slots" class="casino-screen game-screen">
+    <img src="{{ url_for('static', filename='assets/casino_slot-machine.png') }}"
+         alt="" class="game-bg" aria-hidden="true">
+
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🎰 Nyerőgép</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="sl-balance">—</span> Ft</div>
+
+      <div class="slots-layout">
+        <img src="{{ url_for('static', filename='assets/slot_machine.png') }}"
+             alt="Nyerőgép" id="slots-machine-art">
+
+        <div class="slots-controls">
+          <div class="reels-wrap">
+            <div class="reel" id="r0"><span class="reel-sym" id="rs0">🍒</span></div>
+            <div class="reel" id="r1"><span class="reel-sym" id="rs1">💎</span></div>
+            <div class="reel" id="r2"><span class="reel-sym" id="rs2">🎩</span></div>
+          </div>
+
+          <div class="bet-row" id="sl-bets">
+            <button class="cbet active" data-amt="100" onclick="CAS.sl.setBet(100,this)">100 Ft</button>
+            <button class="cbet"        data-amt="500" onclick="CAS.sl.setBet(500,this)">500 Ft</button>
+            <button class="cbet"        data-amt="1000"onclick="CAS.sl.setBet(1000,this)">1 000 Ft</button>
+          </div>
+
+          <div class="payout-table">
+            <b>3 egyező</b> = 10× tét &nbsp;|&nbsp;
+            <b>2 egyező</b> = 2× tét &nbsp;|&nbsp;
+            <b>💀💀💀</b> = −3× tét &nbsp;|&nbsp;
+            más = −tét
+          </div>
+
+          <button class="btn btn-gold" id="sl-spin-btn" onclick="CAS.sl.spin()"
+                  style="font-size:1.05rem;padding:0.65rem 2.2rem;margin-top:0.4rem;">
+            PÖRGETÉS
+          </button>
+
+          <div class="result-banner info" id="sl-result" style="opacity:0;min-width:280px;"> </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-banker">
+      <div class="gb-speech" id="sl-speech">Húzz… kérlek húzz még egyet.</div>
+      <img id="sl-banker" src="{{ url_for('static', filename='assets/banker_loss.png') }}" alt="Bankár">
+    </div>
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="CAS.showLobby()">← Vissza a lobbiba</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ BLACKJACK ══════════════════════ -->
+  <section id="screen-blackjack" class="casino-screen game-screen">
+    <img src="{{ url_for('static', filename='assets/casino_black-jack.png') }}"
+         alt="" class="game-bg" aria-hidden="true">
+
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🃏 Blackjack</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="bj-balance">—</span> Ft</div>
+
+      <div class="bj-table">
+
+        <!-- BET PHASE -->
+        <div id="bj-bet-phase">
+          <p style="color:var(--cream-dark);font-style:italic;margin-bottom:0.4rem;">Válassz tétet:</p>
+          <div class="bet-row" id="bj-bets">
+            <button class="cbet active" onclick="CAS.bj.setBet(100,this)">100 Ft</button>
+            <button class="cbet"        onclick="CAS.bj.setBet(500,this)">500 Ft</button>
+            <button class="cbet"        onclick="CAS.bj.setBet(1000,this)">1 000 Ft</button>
+          </div>
+          <button class="btn btn-gold" onclick="CAS.bj.deal()" style="margin-top:0.75rem;">
+            Osztás!
+          </button>
+        </div>
+
+        <!-- PLAY PHASE -->
+        <div id="bj-play-phase" hidden>
+          <p class="bj-zone-label">Osztó keze &nbsp;<span id="bj-dtotal" style="color:var(--cream);">?</span></p>
+          <div class="card-hand" id="bj-dhand"></div>
+          <hr class="bj-separator">
+          <p class="bj-zone-label">A te kezed &nbsp;<span id="bj-ptotal" style="color:var(--cream);">0</span></p>
+          <div class="card-hand" id="bj-phand"></div>
+
+          <div class="bj-actions" id="bj-actions" style="margin-top:0.9rem;">
+            <button class="btn btn-gold"  onclick="CAS.bj.hit()">Húzás</button>
+            <button class="btn btn-dark"  onclick="CAS.bj.stand()">Megáll</button>
+            <button class="btn btn-dark"  id="bj-dbl" onclick="CAS.bj.dbl()">Duplázás (×2 tét)</button>
+          </div>
+          <p style="font-size:0.8rem;color:var(--gold-dim);margin-top:0.4rem;">
+            Tét: <span id="bj-cur-bet">—</span> Ft
+          </p>
+        </div>
+
+        <div class="result-banner info" id="bj-result" style="opacity:0;"> </div>
+
+        <div id="bj-new-round" hidden style="margin-top:0.4rem;">
+          <button class="btn btn-gold" onclick="CAS.bj.reset()">Új kör</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-banker">
+      <div class="gb-speech" id="bj-speech">A házelőny mindig érvényesül. Még döntetlennél is.</div>
+      <img id="bj-banker" src="{{ url_for('static', filename='assets/banker_loss.png') }}" alt="Bankár">
+    </div>
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="CAS.showLobby()">← Vissza a lobbiba</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ CORRUPT DICE ══════════════════════ -->
+  <section id="screen-dice" class="casino-screen game-screen">
+    <img src="{{ url_for('static', filename='assets/casino_dice-table.png') }}"
+         alt="" class="game-bg" aria-hidden="true">
+
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🎲 Korrupt Kocka</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="dc-balance">—</span> Ft</div>
+
+      <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;justify-content:center;">
+        <img src="{{ url_for('static', filename='assets/casino_dice.png') }}"
+             alt="Kockák" class="dice-art">
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;">
+          <div class="dice-result-row">
+            <div class="cdie" id="die0"></div>
+            <div class="dice-sum" id="dc-sum"> </div>
+            <div class="cdie" id="die1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bet type -->
+      <p style="font-size:0.78rem;color:var(--cream-dark);margin:0.3rem 0 0.1rem;font-style:italic;">
+        Fogadj az eredményre:
+      </p>
+      <div class="bet-row" id="dc-types">
+        <button class="cbet active" data-dt="low"    onclick="CAS.dc.setType('low',this)"   >ALACSONY 2–6 &nbsp;×2</button>
+        <button class="cbet"        data-dt="high"   onclick="CAS.dc.setType('high',this)"  >MAGAS 8–12 &nbsp;×2</button>
+        <button class="cbet"        data-dt="seven"  onclick="CAS.dc.setType('seven',this)" >HETES &nbsp;×5</button>
+        <button class="cbet"        data-dt="double" onclick="CAS.dc.setType('double',this)">DUPLA &nbsp;×5</button>
+      </div>
+
+      <!-- Bet amount -->
+      <div class="bet-row" id="dc-amounts">
+        <button class="cbet active" onclick="CAS.dc.setAmt(100,this)">100 Ft</button>
+        <button class="cbet"        onclick="CAS.dc.setAmt(500,this)">500 Ft</button>
+        <button class="cbet"        onclick="CAS.dc.setAmt(1000,this)">1 000 Ft</button>
+      </div>
+
+      <!-- Bribe panel -->
+      <div class="bribe-panel">
+        <p class="bribe-title">Megvesztegetés — −200 Ft</p>
+        <p class="bribe-sub">Töltsd meg az egyik kockát. Nem garantált, de… szokott segíteni.</p>
+        <div class="bribe-controls">
+          <label>
+            <input type="checkbox" id="bribe-chk" onchange="CAS.dc.toggleBribe()">
+            Megvesztegetem az osztót
+          </label>
+        </div>
+        <div id="bribe-subcontrols" hidden>
+          <span style="font-size:0.78rem;color:var(--cream-dark);">Kocka:</span>
+          <button class="cbet active" id="bdie-0" onclick="CAS.dc.setBribeDie(0)">Bal</button>
+          <button class="cbet"        id="bdie-1" onclick="CAS.dc.setBribeDie(1)">Jobb</button>
+          <span style="font-size:0.78rem;color:var(--cream-dark);margin-left:0.3rem;">Szám:</span>
+          <select id="bribe-num">
+            <option>1</option><option>2</option><option>3</option>
+            <option>4</option><option>5</option><option selected>6</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-gold" id="dc-roll-btn" onclick="CAS.dc.roll()"
+              style="font-size:1.05rem;padding:0.65rem 2.2rem;margin-top:0.4rem;">
+        DOBÁS
+      </button>
+
+      <div class="result-banner info" id="dc-result" style="opacity:0;max-width:440px;"> </div>
+    </div>
+
+    <div class="game-banker">
+      <div class="gb-speech" id="dc-speech">A kocka el van vetve. Sajnos általában jól.</div>
+      <img id="dc-banker" src="{{ url_for('static', filename='assets/banker_loss.png') }}" alt="Bankár">
+    </div>
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="CAS.showLobby()">← Vissza a lobbiba</button>
+    </div>
+  </section>
+
+  <!-- Preload banker images -->
+  <img id="img-idle"  src="{{ url_for('static', filename='assets/banker_loss.png') }}"  hidden aria-hidden="true">
+  <img id="img-happy" src="{{ url_for('static', filename='assets/banker_win.png') }}"   hidden aria-hidden="true">
+  <img id="img-angry" src="{{ url_for('static', filename='assets/banker_angry.png') }}" hidden aria-hidden="true">
+
+</div><!-- /casino-app -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+
+  // ── Shared state ─────────────────────────────────────────────────────────
+  let S = null; // current game state (refreshed from server after each result)
+
+  async function init() {
+    S = await GameAPI.getState();
+    refreshBalances();
+    setBanker('lobby', 'idle',
+      'Üdvözöllek. Minden nap valaki nyeri vissza a veszteségét. Ma nem te leszel az.');
+  }
+  init();
+
+  function refreshBalances() {
+    const b = S.balance;
+    ['sl-balance','bj-balance','dc-balance'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = b.toLocaleString('hu-HU');
+    });
+  }
+
+  // ── Screen management ────────────────────────────────────────────────────
+  const SCREENS = ['lobby','slots','blackjack','dice'];
+
+  function showScreen(name) {
+    SCREENS.forEach(s => {
+      const el = document.getElementById('screen-' + s);
+      if (!el) return;
+      if (s === name) { el.classList.add('is-active'); el.removeAttribute('hidden'); }
+      else            { el.classList.remove('is-active'); el.setAttribute('hidden',''); }
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  // lobby is already active in HTML; remove hidden from others
+  ['slots','blackjack','dice'].forEach(s =>
+    document.getElementById('screen-' + s).setAttribute('hidden','')
+  );
+
+  // ── Banker reactions ─────────────────────────────────────────────────────
+  const IDLE_QUOTES = [
+    'Üdvözöllek. Beváltjuk a pénzedet… veszteségbe.',
+    'A szerencse véletlenszerű. A veszteség nem.',
+    'Minden pörgetés egy esély. Ellenem.',
+    'Látom a statisztikáidat. Folytasd.',
+  ];
+  const HAPPY_QUOTES = [ // player LOST → banker happy
+    'Pontosan így terveztem.',
+    'Köszönöm a befektetést.',
+    'Ez meg fogja finanszírozni a nyaralásomat.',
+    'Remek döntés volt idejönni!',
+    'Folytasd, nagyon jól megy neked.',
+  ];
+  const ANGRY_QUOTES = [ // player WON → banker angry
+    'Ez nem lett volna szabad.',
+    'Biztosan valami hiba van a rendszerben.',
+    'Ne számíts erre a jövőben.',
+    'Balszerencse. Jöjj vissza holnap.',
+    'A statisztika az én oldamon van. Hosszú távon.',
+  ];
+
+  function setBanker(screen, mood, msg) {
+    const imgSrc = {
+      idle:  document.getElementById('img-idle').src,
+      happy: document.getElementById('img-happy').src,
+      angry: document.getElementById('img-angry').src,
+    }[mood] || document.getElementById('img-idle').src;
+
+    const pool = mood === 'happy' ? HAPPY_QUOTES : mood === 'angry' ? ANGRY_QUOTES : IDLE_QUOTES;
+    const text = msg || pool[Math.floor(Math.random() * pool.length)];
+
+    if (screen === 'lobby') {
+      document.getElementById('lobby-banker-img').src = imgSrc;
+      document.getElementById('lobby-speech').textContent = text;
+    } else {
+      const prefixes = { slots:'sl', blackjack:'bj', dice:'dc' };
+      const p = prefixes[screen];
+      if (!p) return;
+      document.getElementById(p + '-banker').src = imgSrc;
+      document.getElementById(p + '-speech').textContent = text;
+    }
+  }
+
+  // ── Shared utils ─────────────────────────────────────────────────────────
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function showResult(id, html, type) {
+    const el = document.getElementById(id);
+    el.innerHTML = html;
+    el.className = 'result-banner ' + type;
+    el.style.opacity = '1';
+  }
+
+  async function applyDelta(delta) {
+    S = await GameAPI.patch({ balance: S.balance + delta });
+    refreshBalances();
+  }
+
+  function cbet_activate(container, btn) {
+    container.querySelectorAll('.cbet').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  //  SLOT MACHINE
+  // ════════════════════════════════════════════════════════════════
+  const SL = (() => {
+    const SYMS = ['🍒','💰','🎩','💎','🃏','💀'];
+    let bet = 100, spinning = false;
+
+    function init() {
+      setBanker('slots', 'idle');
+      document.getElementById('sl-result').style.opacity = '0';
+      document.getElementById('sl-spin-btn').disabled = false;
+      ['rs0','rs1','rs2'].forEach((id,i) => {
+        document.getElementById(id).textContent = SYMS[i];
+      });
+    }
+
+    function setBet(amt, btn) {
+      bet = amt;
+      cbet_activate(document.getElementById('sl-bets'), btn);
+    }
+
+    async function spin() {
+      if (spinning) return;
+      if (S.balance < bet) {
+        showResult('sl-result', 'Nincs elég egyenleged!', 'lose');
+        return;
+      }
+      spinning = true;
+      document.getElementById('sl-spin-btn').disabled = true;
+      document.getElementById('sl-result').style.opacity = '0';
+
+      const finals = [0,1,2].map(() => Math.floor(Math.random() * SYMS.length));
+      const stops = [1000, 1600, 2200];
+
+      [0,1,2].forEach(i => {
+        const reel = document.getElementById('r' + i);
+        const sym  = document.getElementById('rs' + i);
+        reel.classList.add('spinning');
+
+        const iv = setInterval(() => {
+          sym.textContent = SYMS[Math.floor(Math.random() * SYMS.length)];
+        }, 90);
+
+        setTimeout(() => {
+          clearInterval(iv);
+          reel.classList.remove('spinning');
+          sym.textContent = SYMS[finals[i]];
+          if (i === 2) finalize(finals);
+        }, stops[i]);
+      });
+    }
+
+    async function finalize(finals) {
+      const s = finals.map(i => SYMS[i]);
+      let delta, msg, type, mood;
+
+      if (s[0] === '💀' && s[1] === '💀' && s[2] === '💀') {
+        delta = -(bet * 3);
+        msg   = `💀 Triplakoponyás átok! <b>−${bet*3} Ft</b>`;
+        type  = 'lose'; mood = 'happy';
+      } else if (s[0] === s[1] && s[1] === s[2]) {
+        delta = bet * 9; // net: +10x - 1x bet already counted
+        msg   = `🎉 JACKPOT! <b>+${bet*9} Ft</b>`;
+        type  = 'win'; mood = 'angry';
+        [0,1,2].forEach(i => {
+          const r = document.getElementById('r'+i);
+          r.classList.add('reel-win');
+          setTimeout(() => r.classList.remove('reel-win'), 1600);
+        });
+      } else if (s[0]===s[1] || s[1]===s[2] || s[0]===s[2]) {
+        delta = bet; // net: +2x - 1x bet
+        msg   = `✨ Két egyező! <b>+${bet} Ft</b>`;
+        type  = 'win'; mood = 'angry';
+      } else {
+        delta = -bet;
+        msg   = `Nem jött össze. <b>−${bet} Ft</b>`;
+        type  = 'lose'; mood = 'happy';
+      }
+
+      showResult('sl-result', msg, type);
+      setBanker('slots', mood);
+      await applyDelta(delta);
+      document.getElementById('sl-spin-btn').disabled = false;
+      spinning = false;
+    }
+
+    return { init, setBet, spin };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  BLACKJACK
+  // ════════════════════════════════════════════════════════════════
+  const BJ = (() => {
+    const SUITS  = ['♠','♥','♦','♣'];
+    const VALUES = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    let deck=[], pHand=[], dHand=[], bet=100, dealerUp=false;
+
+    function init() {
+      setBanker('blackjack','idle');
+      reset();
+    }
+
+    function reset() {
+      document.getElementById('bj-bet-phase').removeAttribute('hidden');
+      document.getElementById('bj-play-phase').setAttribute('hidden','');
+      document.getElementById('bj-new-round').setAttribute('hidden','');
+      document.getElementById('bj-result').style.opacity = '0';
+      document.getElementById('bj-dhand').innerHTML = '';
+      document.getElementById('bj-phand').innerHTML = '';
+      document.getElementById('bj-dtotal').textContent = '?';
+      document.getElementById('bj-ptotal').textContent = '0';
+      setBanker('blackjack','idle');
+    }
+
+    function setBet(amt, btn) {
+      bet = amt;
+      cbet_activate(document.getElementById('bj-bets'), btn);
+    }
+
+    function mkDeck() {
+      const d = [];
+      for (const s of SUITS) for (const v of VALUES) d.push({s,v});
+      for (let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}
+      return d;
+    }
+    function cv(c){ if(['J','Q','K'].includes(c.v))return 10; if(c.v==='A')return 11; return +c.v; }
+    function total(h){
+      let t=h.reduce((s,c)=>s+cv(c),0), a=h.filter(c=>c.v==='A').length;
+      while(t>21&&a>0){t-=10;a--;}
+      return t;
+    }
+    function isRed(s){ return s==='♥'||s==='♦'; }
+
+    function renderCard(c, faceDown=false) {
+      const d = document.createElement('div');
+      d.className = faceDown ? 'pcard face-down' : `pcard ${isRed(c.s)?'red':'black'}`;
+      if (!faceDown) d.innerHTML = `<span class="cv">${c.v}</span><span class="cs">${c.s}</span>`;
+      return d;
+    }
+
+    function repaint() {
+      const ph = document.getElementById('bj-phand');
+      const dh = document.getElementById('bj-dhand');
+      ph.innerHTML = ''; dh.innerHTML = '';
+      pHand.forEach(c => ph.appendChild(renderCard(c)));
+      dHand.forEach((c,i) => dh.appendChild(renderCard(c, i===1 && !dealerUp)));
+      document.getElementById('bj-ptotal').textContent = total(pHand);
+      document.getElementById('bj-dtotal').textContent = dealerUp
+        ? total(dHand)
+        : (cv(dHand[0]) + ' + ?');
+    }
+
+    function deal() {
+      if (S.balance < bet) { showResult('bj-result','Nincs elég egyenleged!','lose'); return; }
+      deck = mkDeck();
+      pHand = [deck.pop(), deck.pop()];
+      dHand = [deck.pop(), deck.pop()];
+      dealerUp = false;
+
+      document.getElementById('bj-cur-bet').textContent = bet.toLocaleString('hu-HU');
+      document.getElementById('bj-bet-phase').setAttribute('hidden','');
+      document.getElementById('bj-play-phase').removeAttribute('hidden');
+      document.getElementById('bj-actions').removeAttribute('hidden');
+      document.getElementById('bj-dbl').disabled = false;
+      repaint();
+
+      if (total(pHand) === 21) {
+        dealerUp = true; repaint();
+        total(dHand) === 21 ? endGame('tie') : endGame('bj');
+      }
+    }
+
+    function hit() {
+      pHand.push(deck.pop());
+      document.getElementById('bj-dbl').disabled = true;
+      repaint();
+      if (total(pHand) > 21) endGame('bust');
+      else if (total(pHand) === 21) stand();
+    }
+
+    function stand() {
+      dealerUp = true;
+      document.getElementById('bj-actions').setAttribute('hidden','');
+      while (total(dHand) < 17) dHand.push(deck.pop());
+      repaint();
+      const p=total(pHand), d=total(dHand);
+      if      (d>21)  endGame('dealer_bust');
+      else if (p>d)   endGame('win');
+      else if (d>p)   endGame('dealer_wins');
+      else            endGame('tie');
+    }
+
+    function dbl() {
+      if (S.balance < bet*2) { showResult('bj-result','Nincs elég a duplázáshoz!','lose'); return; }
+      bet *= 2;
+      document.getElementById('bj-cur-bet').textContent = bet.toLocaleString('hu-HU');
+      pHand.push(deck.pop());
+      repaint();
+      if (total(pHand) > 21) endGame('bust');
+      else stand();
+    }
+
+    async function endGame(outcome) {
+      dealerUp = true; repaint();
+      document.getElementById('bj-actions').setAttribute('hidden','');
+      document.getElementById('bj-new-round').removeAttribute('hidden');
+
+      const results = {
+        bj:          { delta: Math.floor(bet*1.5), msg: `🎉 Blackjack! <b>+${Math.floor(bet*1.5)} Ft</b>`,  type:'win',  mood:'angry' },
+        win:         { delta: bet,  msg: `✅ Nyertél! <b>+${bet} Ft</b>`,                                   type:'win',  mood:'angry' },
+        dealer_bust: { delta: bet,  msg: `✅ Az osztó kiégett! <b>+${bet} Ft</b>`,                           type:'win',  mood:'angry' },
+        bust:        { delta:-bet,  msg: `💥 Kiégtél! <b>−${bet} Ft</b>`,                                   type:'lose', mood:'happy' },
+        dealer_wins: { delta:-bet,  msg: `❌ Az osztó nyert. <b>−${bet} Ft</b>`,                             type:'lose', mood:'happy' },
+        tie: {
+          delta: -bet,
+          msg: `🤝 Döntetlen — <span class="tip">a ház nyer<span class="tip-text">Házelőny: döntetlen esetén az osztó viszi a tétet. Halkan, de következetesen.</span></span>. <b>−${bet} Ft</b>`,
+          type:'lose', mood:'happy'
+        },
+      };
+      const r = results[outcome];
+      showResult('bj-result', r.msg, r.type);
+      setBanker('blackjack', r.mood);
+      await applyDelta(r.delta);
+    }
+
+    return { init, reset, setBet, deal, hit, stand, dbl };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  CORRUPT DICE
+  // ════════════════════════════════════════════════════════════════
+  const DC = (() => {
+    const MULTS   = { low:2, high:2, seven:5, double:5 };
+    const DOT_MAP = {
+      1:[[1,1]],
+      2:[[0,0],[2,2]],
+      3:[[0,0],[1,1],[2,2]],
+      4:[[0,0],[0,2],[2,0],[2,2]],
+      5:[[0,0],[0,2],[1,1],[2,0],[2,2]],
+      6:[[0,0],[0,2],[1,0],[1,2],[2,0],[2,2]],
+    };
+
+    let betType='low', betAmt=100, bribeOn=false, bribeDie=0, rolling=false;
+
+    function init() {
+      setBanker('dice','idle');
+      document.getElementById('dc-result').style.opacity = '0';
+      document.getElementById('dc-sum').textContent = ' ';
+      renderDie('die0', 0); renderDie('die1', 0);
+    }
+
+    function setType(t, btn) {
+      betType = t;
+      cbet_activate(document.getElementById('dc-types'), btn);
+    }
+    function setAmt(a, btn) {
+      betAmt = a;
+      cbet_activate(document.getElementById('dc-amounts'), btn);
+    }
+
+    function toggleBribe() {
+      bribeOn = document.getElementById('bribe-chk').checked;
+      const sub = document.getElementById('bribe-subcontrols');
+      if (bribeOn) sub.removeAttribute('hidden');
+      else sub.setAttribute('hidden','');
+    }
+    function setBribeDie(idx) {
+      bribeDie = idx;
+      document.getElementById('bdie-0').classList.toggle('active', idx===0);
+      document.getElementById('bdie-1').classList.toggle('active', idx===1);
+    }
+
+    function renderDie(id, val) {
+      const el = document.getElementById(id);
+      el.innerHTML = '';
+      if (val === 0) return;
+      for (let r=0;r<3;r++) for (let c=0;c<3;c++) {
+        const dot = document.createElement('div');
+        const on  = (DOT_MAP[val]||[]).some(([dr,dc])=>dr===r&&dc===c);
+        dot.className = 'cdot' + (on ? '' : ' h');
+        el.appendChild(dot);
+      }
+    }
+
+    function rollOne(loaded, face) {
+      if (!loaded) return Math.floor(Math.random()*6)+1;
+      if (Math.random() < 0.38) return face;
+      const others = [1,2,3,4,5,6].filter(n=>n!==face);
+      return others[Math.floor(Math.random()*5)];
+    }
+
+    async function roll() {
+      if (rolling) return;
+      const cost = betAmt + (bribeOn ? 200 : 0);
+      if (S.balance < cost) { showResult('dc-result','Nincs elég egyenleged!','lose'); return; }
+
+      rolling = true;
+      document.getElementById('dc-roll-btn').disabled = true;
+      document.getElementById('dc-result').style.opacity = '0';
+
+      // track bribe stat
+      if (bribeOn) {
+        const stats = Object.assign({}, S.stats, { bribes_used: (S.stats.bribes_used||0)+1 });
+        S = await GameAPI.patch({ stats });
+        refreshBalances();
+      }
+
+      // roll animation
+      const d0 = document.getElementById('die0');
+      const d1 = document.getElementById('die1');
+      d0.classList.add('rolling'); d1.classList.add('rolling');
+      document.getElementById('dc-sum').textContent = '🎲...';
+
+      await sleep(950);
+      d0.classList.remove('rolling'); d1.classList.remove('rolling');
+
+      const bFace = parseInt(document.getElementById('bribe-num').value);
+      const r1 = rollOne(bribeOn && bribeDie===0, bFace);
+      const r2 = rollOne(bribeOn && bribeDie===1, bFace);
+      renderDie('die0', r1); renderDie('die1', r2);
+      const sum = r1 + r2;
+      document.getElementById('dc-sum').textContent = `${r1} + ${r2} = ${sum}`;
+
+      // evaluate
+      const won =
+        (betType==='low'    && sum<=6)   ||
+        (betType==='high'   && sum>=8)   ||
+        (betType==='seven'  && sum===7)  ||
+        (betType==='double' && r1===r2);
+
+      const profit  = won ? (MULTS[betType]-1)*betAmt : -betAmt;
+      const total   = profit - (bribeOn ? 200 : 0);
+
+      // bribe commentary
+      let bribeMsg = '';
+      if (bribeOn) {
+        const helped = (bribeDie===0 && r1===bFace) || (bribeDie===1 && r2===bFace);
+        if (won && helped)  bribeMsg = ' (A megvesztegetés "működött" 😏)';
+        else if (won)       bribeMsg = ' (A megvesztegetés nem kellett, de így is nyertél.)';
+        else if (helped)    bribeMsg = ` (A kocka megbillent, de a többi nem jött össze. +200 Ft áldozat.)`;
+        else                bribeMsg = ' (A megvesztegetés sem segített. 200 Ft ment a semmibe.)';
+      }
+
+      const sign = total >= 0 ? '+' : '';
+      showResult('dc-result',
+        `${won ? '✅' : '❌'} ${won ? 'Nyertél' : 'Veszítettél'}: <b>${sign}${total} Ft</b>${bribeMsg}`,
+        won ? 'win' : 'lose'
+      );
+
+      if (bribeOn && won)  setBanker('dice','angry', 'Figyelni fogom a kockáidat a jövőben.');
+      else if (bribeOn && !won) setBanker('dice','happy', 'A megvesztegetés sem segít mindenen. Viszont drága.');
+      else if (won)        setBanker('dice','angry');
+      else                 setBanker('dice','happy');
+
+      await applyDelta(total);
+      document.getElementById('dc-roll-btn').disabled = false;
+      rolling = false;
+    }
+
+    return { init, setType, setAmt, toggleBribe, setBribeDie, roll };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  Public API (called from HTML onclick)
+  // ════════════════════════════════════════════════════════════════
+  window.CAS = {
+    sl: { setBet: SL.setBet, spin: SL.spin },
+    bj: { setBet: BJ.setBet, deal: BJ.deal, hit: BJ.hit, stand: BJ.stand, dbl: BJ.dbl, reset: BJ.reset },
+    dc: { setType: DC.setType, setAmt: DC.setAmt, toggleBribe: DC.toggleBribe, setBribeDie: DC.setBribeDie, roll: DC.roll },
+
+    enter(game) {
+      showScreen(game);
+      if (game==='slots')     SL.init();
+      if (game==='blackjack') BJ.init();
+      if (game==='dice')      DC.init();
+    },
+    showLobby() {
+      showScreen('lobby');
+    },
+    async exitCasino() {
+      await GameAPI.exit(S.balance);
+    },
+  };
+
+})();
+</script>
 {% endblock %}
