@@ -395,6 +395,7 @@
   margin: 0.25rem 0;
 }
 .bj-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+[hidden] { display: none !important; }
 
 /* Tooltip for "házelőny" */
 .tip {
@@ -967,7 +968,7 @@
   const BJ = (() => {
     const SUITS  = ['♠','♥','♦','♣'];
     const VALUES = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-    let deck=[], pHand=[], dHand=[], bet=100, dealerUp=false;
+    let deck=[], pHand=[], dHand=[], bet=100, dealerUp=false, inPlay=false;
 
     function init() {
       setBanker('blackjack','idle');
@@ -975,6 +976,7 @@
     }
 
     function reset() {
+      inPlay = false;
       document.getElementById('bj-bet-phase').removeAttribute('hidden');
       document.getElementById('bj-play-phase').setAttribute('hidden','');
       document.getElementById('bj-new-round').setAttribute('hidden','');
@@ -1032,6 +1034,7 @@
       dealerUp = false;
 
       document.getElementById('bj-cur-bet').textContent = bet.toLocaleString('hu-HU');
+      inPlay = true;
       document.getElementById('bj-bet-phase').setAttribute('hidden','');
       document.getElementById('bj-play-phase').removeAttribute('hidden');
       document.getElementById('bj-actions').removeAttribute('hidden');
@@ -1045,6 +1048,7 @@
     }
 
     function hit() {
+      if (!inPlay) return;
       pHand.push(deck.pop());
       document.getElementById('bj-dbl').disabled = true;
       repaint();
@@ -1053,6 +1057,7 @@
     }
 
     function stand() {
+      if (!inPlay) return;
       dealerUp = true;
       document.getElementById('bj-actions').setAttribute('hidden','');
       while (total(dHand) < 17) dHand.push(deck.pop());
@@ -1075,6 +1080,7 @@
     }
 
     async function endGame(outcome) {
+      inPlay = false;
       dealerUp = true; repaint();
       document.getElementById('bj-actions').setAttribute('hidden','');
       document.getElementById('bj-new-round').removeAttribute('hidden');

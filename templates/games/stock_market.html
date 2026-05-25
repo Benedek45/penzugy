@@ -1,15 +1,865 @@
 {% extends "base.html" %}
-{% block title %}stock_market — Hamarosan{% endblock %}
+{% block title %}Tőzsde — Blackwell Exchange{% endblock %}
+
+{% block head %}
+<style>
+/* ── Root / Layout ──────────────────────────────────────── */
+#sm-root {
+  display: flex; flex-direction: column;
+  min-height: calc(100vh - 60px);
+  background: var(--dark);
+  position: relative; overflow: hidden;
+}
+
+/* ── Ticker bar ─────────────────────────────────────────── */
+#sm-ticker-bar {
+  display: flex; align-items: center; height: 34px; flex-shrink: 0;
+  background: #09090f; border-bottom: 1px solid var(--gold-dim);
+  overflow: hidden; z-index: 10;
+}
+.ticker-label {
+  font-family: var(--font-mono); font-size: 0.68rem; color: var(--gold);
+  padding: 0 0.8rem; white-space: nowrap; border-right: 1px solid var(--gold-dim);
+  flex-shrink: 0; letter-spacing: 0.08em;
+}
+#sm-ticker-wrap { flex: 1; overflow: hidden; height: 100%; }
+#sm-ticker-inner {
+  display: inline-flex; align-items: center; height: 100%;
+  white-space: nowrap; font-family: var(--font-mono); font-size: 0.72rem;
+  animation: ticker-scroll 28s linear infinite;
+}
+.tk-item { display: inline-flex; align-items: center; gap: 5px; padding: 0 14px; border-right: 1px solid #1e1e30; }
+.tk-emoji { font-size: 0.85rem; }
+.tk-sym   { color: var(--gold-light); font-weight: 700; letter-spacing: 0.04em; }
+.tk-price { color: var(--cream); }
+.tk-up    { color: #4CAF50; font-size: 0.65rem; }
+.tk-dn    { color: #e74c3c; font-size: 0.65rem; }
+@keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ── Body (bg + ui row) ─────────────────────────────────── */
+#sm-body {
+  flex: 1; display: flex; position: relative; min-height: 0;
+}
+#sm-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center 20%; opacity: 0.18; pointer-events: none;
+}
+
+/* ── Content row ─────────────────────────────────────────── */
+#sm-content {
+  position: relative; z-index: 2;
+  flex: 1; display: flex; min-height: 0;
+}
+
+/* ── Left: stock grid ────────────────────────────────────── */
+#sm-left {
+  flex: 1; min-width: 0; padding: 0.65rem 0.5rem 0.65rem 0.65rem;
+  overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;
+}
+#sm-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+/* ── Stock card ──────────────────────────────────────────── */
+.sc {
+  background: rgba(28, 28, 50, 0.95);
+  border: 1px solid rgba(90, 90, 130, 0.5);
+  border-left: 3px solid var(--gold-dim);
+  border-radius: 8px; overflow: hidden;
+  transition: border-left-color 0.4s, box-shadow 0.4s;
+  display: flex; flex-direction: column;
+}
+.sc.up   { border-left-color: #4CAF50; box-shadow: -2px 0 12px rgba(76,175,80,0.2); }
+.sc.dn   { border-left-color: #e74c3c; box-shadow: -2px 0 12px rgba(231,76,60,0.2); }
+.sc.ice  { border-left-color: #5bc8f5; box-shadow: -2px 0 12px rgba(91,200,245,0.25); }
+
+/* Card header */
+.sc-hd {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.45rem 0.65rem 0.35rem;
+  background: rgba(0,0,0,0.25);
+  border-bottom: 1px solid rgba(90,90,130,0.3);
+}
+.sc-emoji { font-size: 1rem; line-height: 1; flex-shrink: 0; }
+.sc-ticker {
+  font-family: var(--font-display); font-weight: 900; font-size: 0.88rem;
+  color: var(--gold); letter-spacing: 0.06em; flex-shrink: 0;
+}
+.sc-fullname {
+  font-size: 0.62rem; color: var(--cream-dark); font-style: italic;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
+}
+.sc-badges { display: flex; gap: 3px; flex-shrink: 0; font-size: 0.68rem; }
+.badge-ice    { color: #5bc8f5; }
+.badge-ins    { color: var(--gold-light); }
+
+/* Price + sparkline row */
+.sc-mid {
+  display: flex; align-items: stretch; gap: 0;
+  padding: 0.4rem 0.65rem 0.3rem;
+}
+.sc-price-block { flex-shrink: 0; width: 110px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.sc-price {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.05rem;
+  line-height: 1;
+}
+.sc-change { font-size: 0.72rem; font-weight: 600; }
+.price-up  { color: #4CAF50; }
+.price-dn  { color: #e74c3c; }
+.price-neu { color: var(--cream-dark); }
+.sc-spark-wrap { flex: 1; min-width: 0; display: flex; align-items: center; }
+.sparkline {
+  display: block; width: 100%; height: 42px;
+  border-radius: 4px; background: rgba(0,0,0,0.2);
+}
+
+/* Liquidity indicator */
+.sc-liq {
+  display: flex; align-items: center; gap: 4px;
+  padding: 0.15rem 0.65rem 0.2rem;
+  font-size: 0.62rem; color: var(--cream-dark);
+}
+.liq-bar { display: flex; gap: 2px; }
+.liq-pip { width: 8px; height: 4px; border-radius: 2px; background: rgba(90,90,130,0.35); }
+.liq-pip.on-high { background: #4CAF50; }
+.liq-pip.on-mid  { background: #f39c12; }
+.liq-pip.on-low  { background: #e74c3c; }
+
+/* Holdings bar */
+.sc-hold {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.7rem; color: var(--cream-dark);
+  border-top: 1px solid rgba(90,90,130,0.2);
+}
+.sc-hold .h-val { color: var(--cream); font-weight: 600; }
+
+/* Action row */
+.sc-act {
+  display: flex; align-items: center; gap: 3px;
+  padding: 0.3rem 0.65rem 0.45rem;
+  flex-wrap: nowrap;
+}
+.sc-act .sep { width: 1px; background: rgba(90,90,130,0.4); height: 16px; margin: 0 3px; flex-shrink: 0; }
+.ab { /* action button base */
+  font-family: var(--font-display); font-weight: 700; letter-spacing: 0.02em;
+  border: none; border-radius: 4px; cursor: pointer;
+  padding: 0.22rem 0.45rem; font-size: 0.65rem;
+  transition: filter 0.15s, transform 0.1s;
+  flex-shrink: 0; white-space: nowrap;
+}
+.ab:disabled { opacity: 0.3; cursor: not-allowed; }
+.ab-buy  { background: rgba(46, 125, 50, 0.7); color: #a5d6a7; border: 1px solid rgba(76,175,80,0.3); }
+.ab-buy:hover:not(:disabled) { background: rgba(76,175,80,0.85); color: #fff; }
+.ab-sell { background: rgba(139, 26, 26, 0.7); color: #ef9a9a; border: 1px solid rgba(231,76,60,0.3); }
+.ab-sell:hover:not(:disabled) { background: rgba(231,76,60,0.85); color: #fff; }
+
+/* ── Decorative 6th cell ─────────────────────────────────── */
+#sm-board-cell {
+  background: rgba(10,10,20,0.7); border: 1px solid var(--gold-dim);
+  border-radius: 8px; overflow: hidden; display: flex;
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 0.5rem; gap: 0.4rem;
+}
+#sm-board-img { width: 100%; max-height: 160px; object-fit: contain; opacity: 0.88; }
+#sm-board-npc {
+  font-size: 0.72rem; color: var(--cream-dark); font-style: italic;
+  text-align: center; line-height: 1.45; padding: 0 0.3rem;
+}
+#sm-board-npc::before { content: '🎩 '; font-style: normal; }
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+#sm-sidebar {
+  width: 250px; flex-shrink: 0;
+  padding: 0.65rem 0.65rem 0.65rem 0.5rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  overflow-y: auto;
+}
+
+/* ── Panel ───────────────────────────────────────────────── */
+.sp {
+  background: rgba(22, 22, 42, 0.96);
+  border: 1px solid rgba(90,90,130,0.5);
+  border-radius: 8px; padding: 0.6rem 0.75rem;
+}
+.sp-title {
+  font-family: var(--font-display); font-size: 0.78rem; font-weight: 700;
+  color: var(--gold); letter-spacing: 0.06em; margin-bottom: 0.45rem;
+  display: flex; align-items: center; gap: 0.3rem;
+}
+.sp-title::after {
+  content: ''; flex: 1; height: 1px; background: var(--gold-dim); opacity: 0.5; margin-left: 0.3rem;
+}
+
+/* Portfolio table */
+#pd-table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+#pd-table tr td { padding: 0.13rem 0; }
+#pd-table td:last-child { text-align: right; font-weight: 600; font-family: var(--font-mono); }
+#pd-table .row-total td { color: var(--gold-light); font-size: 0.82rem; border-top: 1px solid rgba(90,90,130,0.3); padding-top: 0.25rem; }
+#pd-table .row-pnl   td:last-child { font-size: 0.82rem; }
+
+
+
+/* Upgrades */
+.upg-item {
+  display: flex; align-items: flex-start; gap: 0.4rem;
+  padding: 0.35rem 0; border-bottom: 1px solid rgba(90,90,130,0.2);
+}
+.upg-item:last-child { border-bottom: none; padding-bottom: 0; }
+.upg-icon { font-size: 1rem; flex-shrink: 0; line-height: 1; margin-top: 1px; }
+.upg-icon img { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; }
+.upg-text { flex: 1; min-width: 0; }
+.upg-name { font-size: 0.72rem; font-weight: 700; color: var(--cream); line-height: 1.2; }
+.upg-desc { font-size: 0.62rem; color: var(--cream-dark); font-style: italic; line-height: 1.3; }
+.upg-btn {
+  font-family: var(--font-display); font-weight: 700; letter-spacing: 0.03em;
+  border: none; border-radius: 4px; cursor: pointer; padding: 0.18rem 0.55rem;
+  font-size: 0.65rem; flex-shrink: 0; margin-top: 1px; white-space: nowrap;
+  transition: filter 0.15s;
+}
+.upg-btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dim)); color: var(--dark); }
+.upg-btn-gold:hover { filter: brightness(1.15); }
+.upg-btn-owned { background: rgba(76,175,80,0.2); color: #4CAF50; border: 1px solid rgba(76,175,80,0.3); cursor: default; }
+.upg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Exit button */
+#sm-exit {
+  background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+  color: var(--dark); font-family: var(--font-display); font-weight: 900;
+  letter-spacing: 0.06em; border: none; border-radius: 8px;
+  cursor: pointer; padding: 0.65rem; font-size: 0.85rem;
+  width: 100%; transition: filter 0.15s, transform 0.1s;
+  box-shadow: 0 2px 12px var(--shadow-gold);
+}
+#sm-exit:hover { filter: brightness(1.12); transform: translateY(-1px); }
+
+/* ── Crash overlay ───────────────────────────────────────── */
+#sm-crash-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.82); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fade-in 0.2s ease;
+}
+#sm-crash-overlay.hidden { display: none; }
+.crash-box {
+  background: linear-gradient(160deg, #180000, #2a0000);
+  border: 2px solid var(--red-light); border-radius: 14px;
+  padding: 2.5rem 3.5rem; text-align: center;
+  box-shadow: 0 0 80px rgba(192,57,43,0.45), inset 0 0 40px rgba(139,26,26,0.2);
+  animation: slide-up 0.3s ease;
+}
+.crash-icon { font-size: 3.5rem; margin-bottom: 0.3rem; display: block; }
+.crash-title {
+  font-family: var(--font-display); font-size: 2.2rem; font-weight: 900;
+  color: var(--red-light); letter-spacing: 0.08em; margin-bottom: 0.5rem;
+}
+.crash-reason { font-size: 1rem; color: var(--cream-dark); font-style: italic; margin-bottom: 0.35rem; }
+.crash-pct    { font-size: 1.5rem; font-weight: 900; color: #ff6b6b; font-family: var(--font-display); }
+
+/* ── Stock picker modal ──────────────────────────────────── */
+#sm-modal {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(5px);
+  display: flex; align-items: center; justify-content: center;
+}
+#sm-modal.hidden { display: none; }
+.modal-box {
+  background: var(--dark-mid); border: 1px solid var(--gold-dim);
+  border-radius: 12px; padding: 1.5rem 1.75rem; min-width: 300px;
+  box-shadow: 0 8px 40px var(--shadow); animation: slide-up 0.2s ease;
+}
+.modal-title {
+  font-family: var(--font-display); font-weight: 700; color: var(--gold);
+  font-size: 1rem; margin-bottom: 0.75rem;
+}
+.pick-btn {
+  display: flex; align-items: center; gap: 0.5rem; width: 100%;
+  background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px; padding: 0.5rem 0.75rem; cursor: pointer;
+  color: var(--cream); font-size: 0.82rem; margin-bottom: 0.3rem;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: var(--font-body);
+}
+.pick-btn:hover { background: rgba(201,168,76,0.2); border-color: var(--gold-dim); color: var(--gold-light); }
+.pick-btn:last-of-type { margin-bottom: 0; }
+.pick-cancel {
+  display: block; width: 100%; margin-top: 0.6rem; text-align: center;
+  background: var(--dark); border: 1px solid var(--dark-light);
+  border-radius: 6px; padding: 0.4rem; cursor: pointer; color: var(--cream-dark);
+  font-size: 0.78rem; font-family: var(--font-body);
+  transition: background 0.15s;
+}
+.pick-cancel:hover { background: var(--dark-light); }
+
+/* ── Flash ───────────────────────────────────────────────── */
+#sm-flash {
+  position: fixed; bottom: 4.5rem; left: 50%; transform: translateX(-50%);
+  background: rgba(20,20,40,0.96); border: 1px solid var(--gold-dim);
+  border-radius: 6px; padding: 0.35rem 1rem; font-size: 0.78rem;
+  font-family: var(--font-mono); pointer-events: none; opacity: 0; z-index: 400;
+}
+#sm-flash.show { animation: flash-anim 2.2s ease forwards; }
+@keyframes flash-anim { 0%{opacity:0} 12%{opacity:1} 72%{opacity:1} 100%{opacity:0} }
+
+/* ── Misc ────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+@keyframes fade-in  { from{opacity:0} to{opacity:1} }
+@keyframes slide-up { from{transform:translateY(18px);opacity:0} to{transform:translateY(0);opacity:1} }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:600px;margin:4rem auto;text-align:center;padding:0 1rem;">
-  <div style="font-size:4rem;margin-bottom:1rem;">🚧</div>
-  <h1 style="margin-bottom:0.5rem;">stock_market</h1>
-  <p style="color:var(--cream-dark);font-style:italic;margin-bottom:2rem;">
-    Ez a mini-játék még fejlesztés alatt áll. Hamarosan!
-  </p>
-  <div class="npc-hint" id="npc-hint">Betöltés...</div>
-  <div style="margin-top:2rem;">
-    <a href="/" class="btn btn-gold">← Vissza a Plazára</a>
+<div id="sm-root">
+
+  <!-- Ticker -->
+  <div id="sm-ticker-bar">
+    <span class="ticker-label">▶ BLACKWELL EXCHANGE</span>
+    <div id="sm-ticker-wrap">
+      <div id="sm-ticker-inner">betöltés...</div>
+    </div>
   </div>
+
+  <!-- Body -->
+  <div id="sm-body">
+    <img src="{{ url_for('static', filename='assets/stockmarket_background.png') }}" id="sm-bg" alt="">
+
+    <div id="sm-content">
+
+      <!-- Left: stocks -->
+      <div id="sm-left">
+        <div id="sm-grid">
+          <!-- stock cards injected by JS -->
+          <!-- 6th cell: decorative board -->
+          <div id="sm-board-cell">
+            <img src="{{ url_for('static', filename='assets/stockmarket_screen.png') }}"
+                 id="sm-board-img" alt="Tőzsdei tábla">
+            <div id="sm-board-npc">Üdvözlöm a Blackwell Exchange-en.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: sidebar -->
+      <div id="sm-sidebar">
+
+        <!-- Portfolio -->
+        <div class="sp">
+          <div class="sp-title">💰 Portfólió</div>
+          <table id="pd-table">
+            <tr><td>Készpénz</td>    <td id="pd-cash">—</td></tr>
+            <tr><td>Részvények</td>  <td id="pd-invest">—</td></tr>
+            <tr class="row-total"><td>Összesen</td><td id="pd-total">—</td></tr>
+            <tr class="row-pnl">  <td>P&amp;L</td><td id="pd-pnl">—</td></tr>
+          </table>
+        </div>
+
+        <!-- Upgrades -->
+        <div class="sp">
+          <div class="sp-title">🔧 Fejlesztések</div>
+          <div id="sm-upg-list"><!-- injected --></div>
+        </div>
+
+        <!-- Exit -->
+        <button id="sm-exit" onclick="SM.exit()">Kilépés &amp; Eladás</button>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Crash overlay -->
+  <div id="sm-crash-overlay" class="hidden">
+    <div class="crash-box">
+      <span class="crash-icon">📉</span>
+      <div class="crash-title">PIACI ÖSSZEOMLÁS!</div>
+      <div class="crash-reason" id="c-reason"></div>
+      <div class="crash-pct"    id="c-pct"></div>
+    </div>
+  </div>
+
+  <!-- Stock picker modal -->
+  <div id="sm-modal" class="hidden">
+    <div class="modal-box">
+      <div class="modal-title" id="modal-title">Melyik részvény?</div>
+      <div id="modal-body"></div>
+      <button class="pick-cancel" onclick="SM.closeModal()">Mégsem</button>
+    </div>
+  </div>
+
+  <!-- Flash -->
+  <div id="sm-flash"></div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+'use strict';
+
+/* ─────────────── CONSTANTS ─────────────── */
+const TICK_MS   = 2500;
+const CRASH_SEC = 180;   // seconds between crashes
+const HIST      = 20;
+
+// liq = liquidity (shares). price impact = qty / (2*liq) on avg price.
+// KOR is a big stable bank → very liquid. ÁLO is a tiny startup → very illiquid.
+const STOCKS_DEF = [
+  { id:'LÓL', e:'🐴', name:'Lóverseny Industries Zrt.',               p:120, v:0.11, k:'volatile', liq:600  },
+  { id:'KOR', e:'🏦', name:'Korrupt Bank és Hitelintézet Rt.',        p:210, v:0.02, k:'stable',   liq:8000 },
+  { id:'SZR', e:'🎰', name:'Szerencse Casino Zrt.',                   p:155, v:0.06, k:'inverse',  liq:1200 },
+  { id:'CSŐ', e:'💀', name:'Csőd Holdings és Felszámolási Kft.',     p:480, v:0.025, k:'falling',  liq:200  },
+  { id:'ÁLO', e:'🚀', name:'Álom Tech Innovációs Nyrt.',              p:8,   v:0.045, k:'moon',    liq:150  },
+];
+
+const NPC = {
+  idle:  ['"A piac mindig igaza van — kivéve, amikor nem."', '"Portfóliója lenyűgöző. Lenyűgözően kicsi."', '"Diverzifikáljon! Veszítsen el több helyen egyszerre."', '"A volatilitás lehetőség a veszteségre."', '"A long-term befektető az, aki short-termben tévedett."'],
+  crash: ['"Ez teljesen normális piaci korrekció volt."', '"A rövid távú turbulencia hosszú távú lehetőség. Önnek nincs hosszú táv."', '"Néhány befektető ezt előre látta. Ön nem volt köztük."', '"Egészséges korrekció. A piac ettől egészségesebb lesz. Ön kevésbé."', '"Ez nem összeomlás. Ez egy agresszív vásárlási lehetőség."'],
+  moon:  ['"Gratulálok! Ez véletlenszerű volt — ne számítson rá megint."', '"Tízszorosára nőtt? Pontosan erre alapozná a nyugdíját."'],
+  buy:   ['"Bölcs döntés. Valószínűleg."', '"Az optimizmus szép dolog. Költséges, de szép."', '"Kellemes tranzakció. Az eladó nagyon örül."'],
+  sell:  ['"Eladott. A veszteség realizálva."', '"Bölcsen megszabadult tőle. Vagy idő előtt."', '"Eladta. A piac folytatódik az Ön nélkül."'],
+  prot:   ['"Összeomlást hárítottunk el. Kellemes befektetés volt."'],
+};
+const REASONS = [
+  'Egy elemző tweetelt valamit.',
+  'A jegybank váratlanul kamatot emelt.',
+  'Geopolitikai feszültség észlelhető.',
+  'Valaki nagy összeget vett ki.',
+  'Az algoritmusok döntöttek.',
+  'Kvantum-ingadozás.',
+  'A holdnaptár kedvezőtlen volt.',
+  'Pontosan ez volt a tervben.',
+];
+
+/* ─────────────── STATE ─────────────── */
+let S, startBal;
+let stocks = [];
+let tickTimer = null;
+let crashRemSec = CRASH_SEC;  // counts in real seconds
+let lastTickTime = 0;
+let crashProt = false, crashProtTimer = null;
+let algoOn = false;
+let insiderPend = null;   // { idx, dir }
+let pendUpg = null;
+const owned = { algo: false, regbribe: false };
+
+/* ─────────────── STOCKS ─────────────── */
+function initStocks() {
+  stocks = STOCKS_DEF.map(d => ({
+    id: d.id, e: d.e, name: d.name,
+    price: d.p, prev: d.p, vol: d.v, kind: d.k, liq: d.liq,
+    frozen: 0,
+    hist: Array(HIST).fill(d.p),
+    shares: 0, cost: 0,
+  }));
+}
+
+function step(st) {
+  if (st.frozen > 0) { st.frozen--; return; }
+  let pct = 0;
+  const v = st.vol;
+  switch (st.kind) {
+    case 'volatile': pct = Math.random() < 0.10 ? (Math.random()-0.35)*0.55 : (Math.random()-0.5)*v*2; break;
+    case 'stable':   pct = (Math.random()-0.48)*v; break;
+    case 'inverse':  pct = (Math.random()-0.45)*v; break;
+    case 'falling':  pct = -(Math.random()*0.035+0.004); break;
+    case 'moon':
+      if (Math.random() < 0.006) { pct = 9.0; sayNPC('moon'); }
+      else pct = (Math.random()-0.53)*v;
+      break;
+  }
+  st.prev = st.price;
+  st.price = Math.max(1, Math.round(st.price*(1+pct)*100)/100);
+  st.hist.push(st.price);
+  if (st.hist.length > HIST) st.hist.shift();
+}
+
+function doCrash() {
+  if (crashProt) { sayNPC('prot'); showCrash(0, true); return; }
+  const pct = 30 + Math.floor(Math.random()*21);
+  stocks.forEach(st => {
+    st.prev = st.price;
+    st.price = Math.max(1, Math.round(st.price*(1-pct/100)*100)/100);
+    st.hist.push(st.price); if (st.hist.length > HIST) st.hist.shift();
+  });
+  sayNPC('crash');
+  showCrash(pct, false);
+}
+
+function doAlgo() {
+  let bs = -1, bp = -Infinity;
+  stocks.forEach((st,i) => {
+    if (st.shares > 0 && st.cost > 0) {
+      const g = (st.price - st.cost/st.shares)/(st.cost/st.shares);
+      if (g > bp) { bp = g; bs = i; }
+    }
+  });
+  if (bs >= 0 && bp > 0.05) sellSt(bs, 1, true);
+  if (S.balance > 20) {
+    let bi = -1, bd = -Infinity;
+    stocks.forEach((st,i) => {
+      const hi = Math.max(...st.hist);
+      const d = hi > 0 ? (hi-st.price)/hi : 0;
+      if (d > bd && st.price <= S.balance) { bd = d; bi = i; }
+    });
+    if (bi >= 0 && bd > 0.05) buySt(bi, 1, true);
+  }
+}
+
+/* ─────────────── PORTFOLIO ─────────────── */
+function portVal() { return Math.round(stocks.reduce((s,st)=>s+st.shares*st.price,0)); }
+
+async function sync(patch) {
+  if (patch) S = await GameAPI.patch({ balance: Math.round(S.balance) });
+  renderPort(); renderUpg();
+}
+
+/* ─────────────── LIQUIDITY / SLIPPAGE ─────────────── */
+// Avg price paid when buying qty shares (linear impact model):
+//   avgBuy  = price × (1 + qty / (2×liq))
+//   avgSell = price × (1 − qty / (2×liq))
+// Total cost  = qty × avgBuy
+// Total proceeds = qty × avgSell
+function buyCost(st, qty) {
+  return Math.round(qty * st.price * (1 + qty / (2 * st.liq)));
+}
+function sellProceeds(st, qty) {
+  return Math.max(1, Math.round(qty * st.price * (1 - qty / (2 * st.liq))));
+}
+// Impact fraction (for display), clamped to 0
+function impactPct(st, qty) {
+  return (qty / (2 * st.liq)) * 100;
+}
+// Max affordable qty solving: price×q×(1+q/(2L)) ≤ balance  →  quadratic
+function maxAffordable(st, balance) {
+  const p = st.price, L = st.liq;
+  // p/(2L)·q² + p·q − balance = 0
+  const a = p / (2 * L), b = p;
+  return Math.max(0, Math.floor((-b + Math.sqrt(b * b + 4 * a * balance)) / (2 * a)));
+}
+
+/* ─────────────── ACTIONS ─────────────── */
+function buySt(idx, qty, silent) {
+  const st = stocks[idx];
+  const cost = buyCost(st, qty);
+  if (S.balance < cost) { if (!silent) flash('Nincs elég pénz!', 'r'); return; }
+  S.balance -= cost; st.shares += qty; st.cost += cost;
+  if (!silent) {
+    sayNPC('buy');
+    const imp = impactPct(st, qty);
+    flash(imp > 1
+      ? `Vásárolt ${qty} db — piaci hatás: +${imp.toFixed(1)}%`
+      : `Vásárolt ${qty} db`, 'g');
+  }
+  sync(true); renderCard(idx);
+}
+function sellSt(idx, qty, silent) {
+  const st = stocks[idx];
+  if (st.shares < qty) { if (!silent) flash('Nincs annyi részvény!', 'r'); return; }
+  const proc = sellProceeds(st, qty);
+  S.balance += proc;
+  const ns = st.shares - qty;
+  st.cost = ns === 0 ? 0 : st.cost * (ns / st.shares);
+  st.shares = ns;
+  if (!silent) {
+    sayNPC('sell');
+    const imp = impactPct(st, qty);
+    flash(imp > 1
+      ? `Eladott ${qty} db — piaci hatás: −${imp.toFixed(1)}%`
+      : `Eladott ${qty} db`, 'r');
+  }
+  sync(true); renderCard(idx);
+}
+
+/* ─────────────── UPGRADES ─────────────── */
+const COSTS = { insider:500, bribe:2000, algo:5000, regbribe:10000 };
+function buyUpg(id) {
+  const cost = COSTS[id];
+  if (S.balance < cost)               { flash('Nincs elég pénz!', 'r'); return; }
+  if ((id==='algo'||id==='regbribe') && owned[id]) { flash('Már aktív!', 'r'); return; }
+  S.balance -= cost;
+  if (id === 'algo') {
+    owned.algo = algoOn = true;
+    sync(true); flash('Algoritmikus kereskedés aktiválva!', 'g'); return;
+  }
+  if (id === 'regbribe') {
+    owned.regbribe = crashProt = true;
+    if (crashProtTimer) clearTimeout(crashProtTimer);
+    crashProtTimer = setTimeout(()=>{ crashProt=false; flash('Piaci védelem lejárt.','r'); }, 60000);
+    sync(true); flash('Összeomlás-védelem aktív (60 mp)!', 'g'); return;
+  }
+  sync(true); pendUpg = id; openModal(id);
+}
+function applyUpg(id, idx) {
+  const st = stocks[idx];
+  if (id === 'insider') {
+    const h = st.hist; const slope = h.length>=3 ? h[h.length-1]-h[h.length-3] : 0;
+    insiderPend = { idx, dir: slope>=0?'up':'down' };
+    renderBadges(idx); flash(`Tipp: ${st.id} → ${insiderPend.dir==='up'?'📈 FEL':'📉 LE'}`, 'g');
+  } else if (id === 'bribe') {
+    st.frozen = 3; renderCard(idx); flash(`${st.id} befagyasztva 3 körre!`, 'g');
+  }
+  closeModal();
+}
+
+/* ─────────────── RENDER ─────────────── */
+function renderAll() {
+  renderTicker(); stocks.forEach((_,i)=>renderCard(i)); renderPort(); renderUpg();
+}
+
+function renderCard(idx) {
+  const st = stocks[idx];
+  const el = ge(`sc-${idx}`); if (!el) return;
+
+  // Trend class
+  const up = st.price > st.prev, eq = st.price===st.prev;
+  el.className = `sc ${st.frozen>0?'ice':eq?'':up?'up':'dn'}`;
+
+  // Price
+  const pc = eq?'price-neu':up?'price-up':'price-dn';
+  const pe = el.querySelector('.sc-price');
+  if (pe) { pe.textContent = `${fmt(st.price)} Ft`; pe.className=`sc-price ${pc}`; }
+
+  const ce = el.querySelector('.sc-change');
+  if (ce && st.prev) {
+    const d=st.price-st.prev, p=(d/st.prev*100).toFixed(1);
+    ce.textContent=`${d>=0?'+':''}${p}%`; ce.className=`sc-change ${pc}`;
+  }
+
+  renderBadges(idx);
+  renderLiq(idx);
+  drawSpark(idx);
+
+  el.querySelector('.h-shares').textContent = `${st.shares} db`;
+  el.querySelector('.h-val').textContent = st.shares>0 ? `${fmt(Math.round(st.shares*st.price))} Ft` : '—';
+}
+
+function renderLiq(idx) {
+  const st = stocks[idx];
+  const el = ge(`liq-${idx}`); if (!el) return;
+  // 5 pips, each = liq/5 threshold; color tier by absolute liq
+  const tier = st.liq >= 3000 ? 'high' : st.liq >= 500 ? 'mid' : 'low';
+  const label = tier === 'high' ? 'Magas likviditás' : tier === 'mid' ? 'Közepes' : 'Alacsony';
+  // fill pips proportional to log-scale position across [100, 10000]
+  const filled = Math.round(Math.min(5, Math.max(1,
+    (Math.log(st.liq) - Math.log(100)) / (Math.log(10000) - Math.log(100)) * 5
+  )));
+  const pipClass = `on-${tier}`;
+  el.innerHTML =
+    `<span class="liq-bar">${Array.from({length:5},(_,i)=>
+      `<span class="liq-pip ${i<filled?pipClass:''}"></span>`).join('')}</span>` +
+    `<span>${label}</span>`;
+}
+
+function renderBadges(idx) {
+  const st = stocks[idx];
+  const el = ge(`sc-${idx}`); if (!el) return;
+  el.querySelector('.badge-ice').textContent = st.frozen>0 ? `❄️${st.frozen}` : '';
+  el.querySelector('.badge-ins').textContent = (insiderPend&&insiderPend.idx===idx) ? (insiderPend.dir==='up'?'📈':'📉') : '';
+}
+
+function drawSpark(idx) {
+  const st = stocks[idx];
+  const c = ge(`sp-${idx}`); if (!c) return;
+  const ctx=c.getContext('2d'), W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const h=st.hist; if (h.length<2) return;
+  const mn=Math.min(...h), mx=Math.max(...h), rng=mx-mn||1;
+  const up=h[h.length-1]>=h[0];
+  ctx.strokeStyle=up?'#4CAF50':'#e74c3c'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  h.forEach((v,i)=>{
+    const x=(i/(h.length-1))*W, y=H-((v-mn)/rng)*(H-3)-1.5;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.fillStyle=up?'rgba(76,175,80,0.13)':'rgba(231,76,60,0.13)';
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+}
+
+function renderPort() {
+  const pv=portVal(), tot=Math.round(S.balance+pv), pnl=tot-startBal;
+  setText('pd-cash',   `${fmt(Math.round(S.balance))} Ft`);
+  setText('pd-invest', pv>0?`${fmt(pv)} Ft`:'—');
+  setText('pd-total',  `${fmt(tot)} Ft`);
+  const pe=ge('pd-pnl');
+  if(pe){ pe.textContent=`${pnl>=0?'+':''}${fmt(pnl)} Ft`; pe.className=pnl>=0?'price-up':'price-dn'; }
+}
+
+function renderUpg() {
+  const list=ge('sm-upg-list'); if(!list) return;
+  const defs=[
+    { id:'insider',  icon:'💸', name:'Bennfentes tipp',         cost:500,   desc:'Következő ármozgás iránya előre kiderül', reuse:true  },
+    { id:'bribe',    icon:null, name:'Megvesztegetés',           cost:2000,  desc:'Egy részvény 3 körre befagy',             reuse:true, img:'stockmarket_handshake.png' },
+    { id:'algo',     icon:'📊', name:'Algoritmikus kereskedés',  cost:5000,  desc:'Auto vesz olcsón, elad drágán',           reuse:false },
+    { id:'regbribe', icon:'🏛️', name:'Szabályozó megvesztegetése', cost:10000, desc:'60 mp-ig nincs összeomlás',            reuse:false },
+  ];
+  list.innerHTML = defs.map(d => {
+    const isOwned = !d.reuse && owned[d.id];
+    const canAfford = Math.round(S.balance) >= d.cost;
+    const iconHtml = d.img
+      ? `<img src="/static/assets/${d.img}" alt="">`
+      : d.icon;
+    return `
+    <div class="upg-item">
+      <div class="upg-icon">${iconHtml}</div>
+      <div class="upg-text">
+        <div class="upg-name">${d.name}</div>
+        <div class="upg-desc">${d.desc}</div>
+      </div>
+      <button class="upg-btn ${isOwned?'upg-btn-owned':'upg-btn-gold'}"
+              ${(!canAfford && !isOwned)||isOwned?'disabled':''}
+              onclick="SM.buyUpg('${d.id}')">
+        ${isOwned ? '✓ Aktív' : fmt(d.cost)+' Ft'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function renderTicker() {
+  const inner=ge('sm-ticker-inner'); if(!inner) return;
+  const parts=stocks.map(st=>{
+    const up=st.price>=st.prev;
+    return `<span class="tk-item"><span class="tk-emoji">${st.e}</span><span class="tk-sym">${st.id}</span><span class="tk-price">${fmt(st.price)}</span><span class="${up?'tk-up':'tk-dn'}">${up?'▲':'▼'}</span></span>`;
+  }).join('');
+  inner.innerHTML = parts + parts;
+}
+
+/* ─────────────── CRASH UI ─────────────── */
+function showCrash(pct, prot) {
+  const ov=ge('sm-crash-overlay');
+  ge('c-reason').textContent = prot ? '⚠️ Összeomlás közeledett — de Ön védett volt.' : REASONS[Math.floor(Math.random()*REASONS.length)];
+  ge('c-pct').textContent    = prot ? '' : `−${pct}% minden részvény`;
+  ov.classList.remove('hidden');
+  setTimeout(()=>ov.classList.add('hidden'), 3200);
+}
+
+/* ─────────────── NPC ─────────────── */
+function sayNPC(mood) {
+  const pool=NPC[mood]||NPC.idle;
+  const line=pool[Math.floor(Math.random()*pool.length)];
+  const el=ge('sm-board-npc'); if(el) el.textContent=line;
+}
+
+/* ─────────────── MODAL ─────────────── */
+const MLABEL = { insider:'Melyik részvényre kérsz tippet?', bribe:'Melyik részvényt fagyasszuk be?' };
+function openModal(id) {
+  ge('modal-title').textContent = MLABEL[id]||'Melyik részvény?';
+  ge('modal-body').innerHTML = stocks.map((st,i)=>
+    `<button class="pick-btn" onclick="SM.applyUpg('${id}',${i})">${st.e} <strong>${st.id}</strong> — ${st.name}</button>`
+  ).join('');
+  ge('sm-modal').classList.remove('hidden');
+}
+function closeModal() { ge('sm-modal').classList.add('hidden'); pendUpg=null; }
+
+/* ─────────────── UTIL ─────────────── */
+function fmt(n)     { return Number(n).toLocaleString('hu-HU'); }
+function ge(id)     { return document.getElementById(id); }
+function setText(id,t){ const e=ge(id); if(e)e.textContent=t; }
+function flash(msg, col) {
+  const el=ge('sm-flash'); if(!el)return;
+  el.textContent=msg;
+  el.style.color = col==='g' ? 'var(--green-light)' : 'var(--red-light)';
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
+
+/* ─────────────── BUILD DOM ─────────────── */
+function buildCards() {
+  const grid=ge('sm-grid'); if(!grid) return;
+  const board=ge('sm-board-cell');
+  // Insert 5 cards before the board cell
+  stocks.forEach((st,i)=>{
+    const div=document.createElement('div');
+    div.className='sc'; div.id=`sc-${i}`;
+    div.innerHTML=`
+      <div class="sc-hd">
+        <span class="sc-emoji">${st.e}</span>
+        <span class="sc-ticker">${st.id}</span>
+        <span class="sc-fullname">${st.name}</span>
+        <span class="sc-badges">
+          <span class="badge-ice"></span>
+          <span class="badge-ins"></span>
+        </span>
+      </div>
+      <div class="sc-mid">
+        <div class="sc-price-block">
+          <span class="sc-price price-neu">—</span>
+          <span class="sc-change"></span>
+        </div>
+        <div class="sc-spark-wrap">
+          <canvas class="sparkline" id="sp-${i}" width="200" height="42"></canvas>
+        </div>
+      </div>
+      <div class="sc-liq" id="liq-${i}"></div>
+      <div class="sc-hold">
+        <span class="h-shares">0 db</span>
+        <span class="h-val">—</span>
+      </div>
+      <div class="sc-act">
+        <button class="ab ab-buy"  onclick="SM.buy(${i},1)">+1</button>
+        <button class="ab ab-buy"  onclick="SM.buy(${i},5)">+5</button>
+        <button class="ab ab-buy"  onclick="SM.buyMax(${i})">MAX</button>
+        <div class="sep"></div>
+        <button class="ab ab-sell" onclick="SM.sell(${i},1)">−1</button>
+        <button class="ab ab-sell" onclick="SM.sell(${i},5)">−5</button>
+        <button class="ab ab-sell" onclick="SM.sellAll(${i})">ALL</button>
+      </div>`;
+    grid.insertBefore(div, board);
+  });
+}
+
+/* ─────────────── TICK ─────────────── */
+function onTick() {
+  const now = Date.now();
+  const elapsed = (now - lastTickTime) / 1000; // real seconds since last tick
+  lastTickTime = now;
+
+  // Expire insider tip
+  if (insiderPend) { insiderPend = null; stocks.forEach((_,i)=>renderBadges(i)); }
+
+  stocks.forEach(step);
+  if (algoOn) doAlgo();
+
+  // Crash countdown in real seconds
+  crashRemSec -= elapsed;
+  if (crashRemSec <= 0) {
+    crashRemSec = CRASH_SEC + (Math.random()*30 - 15); // 165–195 s
+    doCrash();
+    renderPort();
+  }
+
+  renderAll();
+}
+
+/* ─────────────── INIT ─────────────── */
+async function init() {
+  S = await GameAPI.getState();
+  startBal = S.balance;
+  initStocks();
+  buildCards();
+  renderAll();
+  sayNPC('idle');
+  lastTickTime = Date.now();
+  tickTimer = setInterval(onTick, TICK_MS);
+}
+
+/* ─────────────── PUBLIC API ─────────────── */
+window.SM = {
+  buy:      (i,q) => buySt(i,q,false),
+  sell:     (i,q) => sellSt(i,q,false),
+  buyMax:   (i)   => { const q=maxAffordable(stocks[i], S.balance); q>0?buySt(i,q):flash('Nincs elég pénz!','r'); },
+  sellAll:  (i)   => { const st=stocks[i]; st.shares>0?sellSt(i,st.shares):flash('Nincs részvény!','r'); },
+  buyUpg:   (id)  => buyUpg(id),
+  applyUpg: (id,i)=> applyUpg(id,i),
+  closeModal:()   => closeModal(),
+  exit: async () => {
+    if (tickTimer)     clearInterval(tickTimer);
+    if (crashProtTimer)clearTimeout(crashProtTimer);
+    stocks.forEach(st=>{ if(st.shares>0){ S.balance+=Math.round(st.price*st.shares); st.shares=0; st.cost=0; } });
+    await GameAPI.exit(Math.round(S.balance));
+  },
+};
+
+init();
+})();
+</script>
 {% endblock %}

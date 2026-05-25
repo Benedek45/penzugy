@@ -24,11 +24,16 @@
     { "term": "Döntetlen", "explanation": "Blackjacknél döntetlen esetén a ház viszi a tétet. Kedves gesztus." }
   ],
   "stock_market": [
-    { "term": "Befektetés", "explanation": "Pénzt adni valaminek, azzal a reménnyel, hogy többet kapsz vissza. Remény." },
-    { "term": "Volatilitás", "explanation": "Mennyit mozog az árfolyam. A mi részvényeinknél: nagyon sokat." },
-    { "term": "Bennfentes kereskedés", "explanation": "Tilos. Hacsak nem fizetsz érte. Ekkor csak drága." },
-    { "term": "Tőzsde", "explanation": "Hely, ahol emberek számokat vesznek és adnak el. Komolyan." },
-    { "term": "Portfólió", "explanation": "Az összes befektetésed. Hamarosan az összes veszteséged." }
+    { "term": "Befektetés", "explanation": "Pénzt adni valaminek, azzal a reménnyel, hogy többet kapsz vissza. A remény nem pénzügyi stratégia." },
+    { "term": "Volatilitás", "explanation": "Mennyit ingadozik az árfolyam. A LÓL-nál: rendkívül sokat. A KOR-nál: unalmasan keveset." },
+    { "term": "Bennfentes kereskedés", "explanation": "Törvényileg tiltott. Hacsak nem fizetsz érte — ekkor csak drága." },
+    { "term": "Tőzsde", "explanation": "Hely, ahol emberek számokat vesznek és adnak el egymásnak. Komolyan, ez az egész." },
+    { "term": "Portfólió", "explanation": "Az összes befektetésed egy helyen. Hamarosan az összes veszteséged egy helyen." },
+    { "term": "Piaci korrekció", "explanation": "Amikor az árak zuhannak, de azt mondják, ez normális. Mert az. Ez nem vigasz." },
+    { "term": "Hype", "explanation": "Mesterségesen felkeltett lelkesedés egy részvény iránt. Rövid életű, de szórakoztató." },
+    { "term": "Algoritmikus kereskedés", "explanation": "Számítógép vesz és elad az emberi érzelmek helyett. Az érzelmek általában rosszabbak." },
+    { "term": "Stop-loss", "explanation": "Automatikus eladás, ha az ár egy szint alá süllyed. Ebben a játékban nincs ilyen. Sajnálom." },
+    { "term": "Moon", "explanation": "Tőzsdei szleng: az árfolyam rakétaszerű emelkedése. Az ÁLO-nál 0,6% eséllyel bekövetkezik." }
   ],
   "slots": [
     { "term": "Játékgép-adó", "explanation": "A nyerőgépek bevételének állami része. Te finanszírozod." },
