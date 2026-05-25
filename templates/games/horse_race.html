@@ -1,15 +1,584 @@
 {% extends "base.html" %}
-{% block title %}horse_race — Hamarosan{% endblock %}
+{% block title %}Lóverseny — Pénz Plaza{% endblock %}
+
+{% block head %}
+<style>
+  #game-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  #game-header { text-align: center; }
+  #game-header h1 { font-size: 2rem; }
+  #balance-display {
+    text-align: center;
+    font-size: 1.8rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--gold-light);
+  }
+
+  .phase { display: none; }
+  .phase.is-active { display: block; }
+
+  /* ── Betting phase ── */
+  #phase-betting {
+    background: var(--dark-mid);
+    border: 1px solid var(--dark-light);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  .horse-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .horse-card {
+    background: var(--dark);
+    border: 2px solid var(--dark-light);
+    border-radius: var(--radius);
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    transition: all var(--transition);
+    text-align: center;
+  }
+  .horse-card:hover {
+    border-color: var(--gold-dim);
+  }
+  .horse-card.selected {
+    border-color: var(--gold);
+    box-shadow: 0 0 12px var(--shadow-gold);
+    background: rgba(201,168,76,0.1);
+  }
+  .horse-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--gold-light);
+  }
+  .horse-odds {
+    font-size: 0.85rem;
+    color: var(--cream-dark);
+    margin-top: 0.2rem;
+  }
+  .horse-odds strong { color: var(--gold); }
+
+  #stats-panel {
+    background: var(--dark);
+    border: 1px solid var(--gold-dim);
+    border-radius: var(--radius);
+    padding: 0.8rem 1rem;
+    margin-bottom: 1rem;
+    display: none;
+    animation: fade-in 0.2s ease;
+  }
+  #stats-panel.is-visible { display: block; }
+  #stats-panel h3 {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    color: var(--red-light);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.4rem;
+  }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    color: var(--cream);
+    padding: 0.15rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .stat-label { color: var(--cream-dark); }
+
+  #bet-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+  #bet-row label {
+    color: var(--cream);
+    font-size: 0.9rem;
+  }
+  #bet-input {
+    width: 140px;
+  }
+  #bet-error {
+    color: var(--red-light);
+    font-size: 0.82rem;
+    min-height: 1.2rem;
+    width: 100%;
+  }
+  #no-money-msg {
+    text-align: center;
+    font-size: 1.2rem;
+    color: var(--cream-dark);
+    font-style: italic;
+    padding: 1rem 0;
+  }
+
+  /* ── Race phase ── */
+  #phase-race {
+    background: var(--dark-mid);
+    border: 1px solid var(--dark-light);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  #surface-indicator {
+    text-align: center;
+    font-size: 1rem;
+    font-family: var(--font-display);
+    color: var(--gold-light);
+    margin-bottom: 1rem;
+  }
+  #track {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+    background: var(--dark);
+    border-radius: var(--radius);
+    position: relative;
+    overflow: hidden;
+    min-height: 220px;
+  }
+  #track.dirt { background: #3a3520; }
+  #track.grass { background: #1a3a1a; }
+  .lane {
+    position: relative;
+    height: 40px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .lane::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 29px,
+      rgba(255,255,255,0.04) 29px,
+      rgba(255,255,255,0.04) 30px
+    );
+    pointer-events: none;
+  }
+  .runner {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    height: 36px;
+    line-height: 36px;
+    padding: 0 0.6rem;
+    background: var(--dark-mid);
+    border: 1px solid var(--gold-dim);
+    border-radius: 4px;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    white-space: nowrap;
+    z-index: 2;
+  }
+  .runner.animate {
+    transition: left 3s ease-in-out;
+  }
+  .runner.winner {
+    border-color: var(--gold);
+    box-shadow: 0 0 14px var(--shadow-gold);
+    color: var(--cream);
+  }
+  .runner.loser { opacity: 0.6; }
+
+  #race-result {
+    text-align: center;
+    padding: 0.8rem 1rem;
+    margin-top: 1rem;
+    border-radius: var(--radius);
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  #race-result.win {
+    background: rgba(46,125,50,0.88);
+    color: #a5d6a7;
+    border: 1px solid #388e3c;
+  }
+  #race-result.lose {
+    background: rgba(139,26,26,0.88);
+    color: #ffcdd2;
+    border: 1px solid #c62828;
+  }
+  #race-controls {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+  #exit-only { text-align: center; margin-top: 1rem; }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:600px;margin:4rem auto;text-align:center;padding:0 1rem;">
-  <div style="font-size:4rem;margin-bottom:1rem;">🚧</div>
-  <h1 style="margin-bottom:0.5rem;">horse_race</h1>
-  <p style="color:var(--cream-dark);font-style:italic;margin-bottom:2rem;">
-    Ez a mini-játék még fejlesztés alatt áll. Hamarosan!
-  </p>
-  <div class="npc-hint" id="npc-hint">Betöltés...</div>
-  <div style="margin-top:2rem;">
-    <a href="/" class="btn btn-gold">← Vissza a Plazára</a>
+<div id="game-container">
+
+  <div id="game-header">
+    <h1>🏇 Lóverseny</h1>
+    <p style="color:var(--cream-dark);font-style:italic;">Tedd meg a tipped, és nézd, ahogy a lovak elhúznak a pénzed után.</p>
   </div>
+
+  <div class="npc-hint" id="npc-hint">Betöltés...</div>
+
+  <div id="balance-display">Egyenleg: <span id="bal-value">...</span></div>
+
+  <!-- ═══ BETTING PHASE ═══ -->
+  <div id="phase-betting" class="phase is-active">
+    <div id="no-money-msg" hidden>Nincs pénzed.</div>
+    <div class="horse-grid" id="horse-grid"></div>
+    <div id="stats-panel">
+      <h3>🔍 REAL stats</h3>
+      <div id="stats-content"></div>
+    </div>
+    <div id="bet-row">
+      <label for="bet-input">Tét:</label>
+      <input type="number" id="bet-input" min="1" placeholder="Összeg" value="">
+      <button class="btn btn-gold" id="start-btn" disabled>Indítás</button>
+    </div>
+    <div id="bet-error"></div>
+    <div id="exit-only">
+      <button class="btn btn-dark" id="exit-btn-horse">Kilépés</button>
+    </div>
+  </div>
+
+  <!-- ═══ RACE PHASE ═══ -->
+  <div id="phase-race" class="phase">
+    <div id="surface-indicator"></div>
+    <div id="track" class="grass"></div>
+    <div id="race-result"></div>
+    <div id="race-controls">
+      <button class="btn btn-gold" id="retry-btn">Fogadj újra</button>
+      <button class="btn btn-dark" id="exit-btn-race">Kilépés</button>
+    </div>
+  </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+
+  /* ═══════════════════════════════════════════
+     HORSE DATA
+  ═══════════════════════════════════════════ */
+  const ALL_HORSES = [
+    { name: 'Haru Urara',         odds: 50, winPct:  2, dirtMul: 30   },
+    { name: 'Oguri Cap',          odds:  3, winPct: 33, dirtMul:  1   },
+    { name: 'Agnes Tachyon',      odds:  6, winPct: 17, dirtMul:  0.76},
+    { name: 'Gold Ship',          odds:  5, winPct: 20, dirtMul:  0.55},
+    { name: 'Matikanetannhauser', odds: 20, winPct:  5, dirtMul:  0.8 },
+    { name: 'Daitaku Helios',     odds: 15, winPct:  7, dirtMul:  1.43},
+    { name: 'Marvelous Sunday',   odds: 10, winPct: 10, dirtMul:  0.8 },
+    { name: 'Manhattan Cafe',     odds:  4, winPct: 25, dirtMul:  0.56},
+    { name: 'T.M. Opera O',       odds:  2, winPct: 50, dirtMul:  0.5 },
+    { name: 'Tokai Teio',         odds:  3, winPct: 33, dirtMul:  0.61},
+    { name: 'Special Week',       odds:  4, winPct: 25, dirtMul:  0.68},
+    { name: 'Vodka',              odds:  4, winPct: 25, dirtMul:  1.2 },
+  ];
+
+  /* ═══════════════════════════════════════════
+     STATE
+  ═══════════════════════════════════════════ */
+  let state;
+  let currentHorses = [];
+  let selectedIdx = -1;
+  let racing = false;
+
+  /* ═══════════════════════════════════════════
+     DOM REFS
+  ═══════════════════════════════════════════ */
+  const $ = id => document.getElementById(id);
+  const balValue   = $('bal-value');
+  const horseGrid  = $('horse-grid');
+  const statsPanel = $('stats-panel');
+  const statsCnt   = $('stats-content');
+  const betInput   = $('bet-input');
+  const betError   = $('bet-error');
+  const startBtn   = $('start-btn');
+  const noMoney    = $('no-money-msg');
+  const phaseBet   = $('phase-betting');
+  const phaseRace  = $('phase-race');
+  const surfaceInd = $('surface-indicator');
+  const track      = $('track');
+  const raceResult = $('race-result');
+  const retryBtn   = $('retry-btn');
+  const exitBtnH   = $('exit-btn-horse');
+  const exitBtnR   = $('exit-btn-race');
+
+  /* ═══════════════════════════════════════════
+     UTILITIES
+  ═══════════════════════════════════════════ */
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function sum(arr) {
+    return arr.reduce((a, b) => a + b, 0);
+  }
+
+  function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  function showPhase(phase) {
+    [phaseBet, phaseRace].forEach(p => p.classList.remove('is-active'));
+    phase.classList.add('is-active');
+  }
+
+  /* ═══════════════════════════════════════════
+     HORSE SELECTION & RENDERING
+  ═══════════════════════════════════════════ */
+  function pickHorses() {
+    const shuffled = shuffle([...ALL_HORSES]);
+    currentHorses = shuffled.slice(0, 4).map(h => ({
+      ...h,
+      fake_stats: {
+        stamina: randInt(40, 99),
+        power:   randInt(40, 99),
+        speed:   randInt(40, 99),
+        weight:  randInt(400, 600),
+      },
+    }));
+    selectedIdx = -1;
+  }
+
+  function renderHorses() {
+    horseGrid.innerHTML = '';
+    currentHorses.forEach((h, i) => {
+      const card = document.createElement('div');
+      card.className = 'horse-card';
+      card.dataset.idx = i;
+      card.innerHTML = `
+        <div class="horse-name">${h.name}</div>
+        <div class="horse-odds">Szorzó: <strong>${h.odds}x</strong></div>
+      `;
+      card.addEventListener('click', () => selectHorse(i));
+      horseGrid.appendChild(card);
+    });
+    statsPanel.classList.remove('is-visible');
+    validateBet();
+  }
+
+  function selectHorse(idx) {
+    selectedIdx = idx;
+    document.querySelectorAll('.horse-card').forEach((c, i) => {
+      c.classList.toggle('selected', i === idx);
+    });
+    const h = currentHorses[idx];
+    statsCnt.innerHTML = `
+      <div class="stat-row"><span class="stat-label">Stamina</span><span>${h.fake_stats.stamina}</span></div>
+      <div class="stat-row"><span class="stat-label">Power</span><span>${h.fake_stats.power}</span></div>
+      <div class="stat-row"><span class="stat-label">Speed</span><span>${h.fake_stats.speed}</span></div>
+      <div class="stat-row"><span class="stat-label">Weight</span><span>${h.fake_stats.weight} kg</span></div>
+    `;
+    statsPanel.classList.add('is-visible');
+    validateBet();
+  }
+
+  /* ═══════════════════════════════════════════
+     BET VALIDATION
+  ═══════════════════════════════════════════ */
+  function validateBet() {
+    const bet = parseInt(betInput.value, 10);
+    const valid = selectedIdx >= 0 && !isNaN(bet) && bet >= 1 && bet <= state.balance;
+    startBtn.disabled = !valid;
+    if (isNaN(bet) || bet < 1) {
+      betError.textContent = '';
+    } else if (bet > state.balance) {
+      betError.textContent = 'A tét nem lehet nagyobb az egyenlegednél.';
+    } else {
+      betError.textContent = '';
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     WINNER SELECTION
+  ═══════════════════════════════════════════ */
+  function pickWinner(probs) {
+    const total = sum(probs);
+    let r = Math.random() * total;
+    for (let i = 0; i < probs.length; i++) {
+      r -= probs[i];
+      if (r <= 0) return i;
+    }
+    return probs.length - 1;
+  }
+
+  function computeProbabilities(isDirt) {
+    let probs = currentHorses.map(h => h.winPct);
+    if (isDirt) {
+      probs = currentHorses.map((h, i) => probs[i] * h.dirtMul);
+    }
+    const s = sum(probs);
+    return probs.map(p => p / s);
+  }
+
+  /* ═══════════════════════════════════════════
+     RACE
+  ═══════════════════════════════════════════ */
+  async function startRace() {
+    if (racing) return;
+    const bet = parseInt(betInput.value, 10);
+    if (selectedIdx < 0 || isNaN(bet) || bet < 1 || bet > state.balance) return;
+
+    racing = true;
+
+    const isDirt = Math.random() < 0.2;
+    const probs = computeProbabilities(isDirt);
+    const winnerIdx = pickWinner(probs);
+
+    const trackClass = isDirt ? 'dirt' : 'grass';
+    track.className = trackClass;
+    surfaceInd.textContent = isDirt
+      ? '🏁 Pálya: Dirt — a por száll, a lovak lihegnek...'
+      : '🏁 Pálya: Grass — zöld gyep, tiszta verseny.';
+
+    const lanesHtml = currentHorses.map((h, i) =>
+      `<div class="lane" data-idx="${i}"><div class="runner" id="runner-${i}">🐴 ${h.name}</div></div>`
+    ).join('');
+    track.innerHTML = lanesHtml;
+
+    showPhase(phaseRace);
+    raceResult.textContent = '';
+    raceResult.className = '';
+    retryBtn.disabled = true;
+
+    await sleep(50);
+
+    const runnerEls = currentHorses.map((_, i) => $(`runner-${i}`));
+    runnerEls.forEach((el, i) => {
+      const offset = Math.floor(Math.random() * 35) + 5;
+      const dest = i === winnerIdx ? 88 : Math.max(15, 88 - offset);
+      el.style.left = '0%';
+      el.classList.add('animate');
+      el.style.left = dest + '%';
+    });
+
+    await sleep(3200);
+
+    runnerEls.forEach((el, i) => {
+      el.classList.toggle('winner', i === winnerIdx);
+      el.classList.toggle('loser', i !== winnerIdx);
+    });
+
+    const playerHorse = currentHorses[selectedIdx];
+    const won = winnerIdx === selectedIdx;
+    let delta, newBalance;
+
+    if (won) {
+      delta = bet * playerHorse.odds - bet;
+      newBalance = state.balance + delta;
+      raceResult.innerHTML = `🏆 Nyertél! <b>+${delta.toLocaleString('hu-HU')} Ft</b>`;
+      raceResult.className = 'win';
+    } else {
+      delta = -bet;
+      newBalance = state.balance + delta;
+      if (newBalance < 0) newBalance = 0;
+      raceResult.innerHTML = `😞 Vesztettél. <b>-${bet.toLocaleString('hu-HU')} Ft</b>`;
+      raceResult.className = 'lose';
+    }
+
+    const winnerName = currentHorses[winnerIdx].name;
+    raceResult.innerHTML += `<br><span style="font-size:0.85rem;opacity:0.8;">Győztes: ${winnerName}</span>`;
+
+    state.balance = newBalance;
+    balValue.textContent = fmt(state.balance);
+
+    retryBtn.disabled = false;
+    racing = false;
+  }
+
+  /* ═══════════════════════════════════════════
+     RESET & EXIT
+  ═══════════════════════════════════════════ */
+  function resetGame() {
+    pickHorses();
+    renderHorses();
+    betInput.value = '';
+    betError.textContent = '';
+    selectedIdx = -1;
+    statsPanel.classList.remove('is-visible');
+    raceResult.textContent = '';
+    raceResult.className = '';
+    showPhase(phaseBet);
+    validateBet();
+    updateZeroState();
+  }
+
+  async function exitGame() {
+    await GameAPI.exit(state.balance);
+  }
+
+  /* ═══════════════════════════════════════════
+     ZERO BALANCE HANDLING
+  ═══════════════════════════════════════════ */
+  function updateZeroState() {
+    if (state.balance <= 0) {
+      noMoney.removeAttribute('hidden');
+      horseGrid.style.display = 'none';
+      statsPanel.style.display = 'none';
+      betInput.disabled = true;
+      startBtn.style.display = 'none';
+    } else {
+      noMoney.setAttribute('hidden', '');
+      horseGrid.style.display = 'grid';
+      statsPanel.style.display = '';
+      betInput.disabled = false;
+      startBtn.style.display = '';
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════════ */
+  async function init() {
+    state = await GameAPI.getState();
+    balValue.textContent = fmt(state.balance);
+
+    pickHorses();
+    renderHorses();
+    updateZeroState();
+
+    betInput.addEventListener('input', validateBet);
+    startBtn.addEventListener('click', startRace);
+    retryBtn.addEventListener('click', resetGame);
+    exitBtnH.addEventListener('click', exitGame);
+    exitBtnR.addEventListener('click', exitGame);
+  }
+
+  init();
+})();
+</script>
 {% endblock %}
