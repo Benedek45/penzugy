@@ -6,6 +6,7 @@
     <div id="game-toast" class="toast-notification"></div>
 
     <div class="game-header">
+        <button class="back-arrow-btn" onclick="exitGame(false)" title="Vissza a városba">←</button>
         <h2>♟️ Abszurd Sakkautomata</h2>
         <div id="npc-hint" class="hint-box">Válassz nehézséget a kezdéshez!</div>
     </div>
@@ -25,7 +26,11 @@
 
         <div class="form-group">
             <label for="bet-amount">Tét összege (Ft):</label>
-            <input type="number" id="bet-amount" value="500" min="100" step="100">
+            <select id="bet-amount">
+                <option value="100">100 Ft</option>
+                <option value="500" selected>500 Ft</option>
+                <option value="1000">1000 Ft</option>
+            </select>
         </div>
 
         <button id="start-btn" onclick="startGame()">Üzlet indítása</button>
@@ -48,7 +53,28 @@
 
 <style>
 .chess-game { max-width: 600px; margin: 0 auto; padding: 20px; font-family: var(--font-body); color: var(--cream); text-align: center; position: relative; }
-.hint-box { background-color: var(--dark-mid); padding: 15px; border-radius: 5px; border: 1px solid var(--gold); margin-bottom: 20px; font-style: italic; min-height: 60px; display: flex; align-items: center; justify-content: center; line-height: 1.4; }
+.game-header { position: relative; margin-bottom: 20px; }
+
+/* Vissza nyíl stílusa */
+.back-arrow-btn {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    background: transparent;
+    color: var(--gold);
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px 10px;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+.back-arrow-btn:hover {
+    color: var(--gold-light);
+    transform: scale(1.1);
+}
+
+.hint-box { background-color: var(--dark-mid); padding: 15px; border-radius: 5px; border: 1px solid var(--gold); margin-bottom: 20px; font-style: italic; min-height: 60px; display: flex; align-items: center; justify-content: center; line-height: 1.4; margin-top: 10px; }
 .panel { background-color: var(--dark-mid); padding: 20px; border-radius: 8px; box-shadow: var(--shadow); }
 .form-group { margin-bottom: 15px; text-align: left; }
 .form-group label { display: block; margin-bottom: 5px; color: var(--gold-light); }
@@ -72,8 +98,6 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
 .black-piece { color: var(--gold); filter: drop-shadow(1px 1px 1px #000); transition: all 0.5s ease; } 
 
 /* ANIMÁCIÓS ÉS ÚJ STÍLUSOK */
-
-/* Beépített Toast értesítő sáv stílusa */
 .toast-notification {
     position: fixed;
     top: -100px;
@@ -97,7 +121,6 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
     opacity: 1;
 }
 
-/* 1. Tőzsdei Gondolkodó Háttér (AI kör) */
 @keyframes market-analysis {
     0% { background-position: 0% 0%; }
     100% { background-position: 100% 100%; }
@@ -109,12 +132,10 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
     animation: market-analysis 4s linear infinite;
 }
 
-/* AI vakvillanó szimuláció (Minimax vizualizációhoz) */
 .square.ai-thinking-flash {
     background-color: rgba(212, 175, 55, 0.25) !important;
 }
 
-/* 2. Profit és Veszteség effektek */
 @keyframes profit-float {
     0% { transform: translateY(0) scale(0.8); opacity: 0; }
     20% { opacity: 1; }
@@ -138,7 +159,6 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
     animation: loss-flash 0.5s ease-out forwards;
 }
 
-/* 4. Csődeljárás (Összeomlás) effekt */
 @keyframes market-crash {
     0% { transform: translateY(0) rotate(0deg); opacity: 1; }
     100% { transform: translateY(300px) rotate(45deg); opacity: 0; }
@@ -201,7 +221,7 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
         "A váratlan vészhelyzetekre (például betegség, autószerelés) mindig legyen legalább 3-6 havi tartalékod!",
         "Az internetbank és a mobilalkalmazás a nap 24 órájában, térbeli és időbeli korlátok nélkül elérhető.",
         "A bankkártya fizikai tulajdonosa jogilag mindig a kibocsátó bank marad, te csak a használatára vagy jogosult.",
-        "A POS-terminál (értékesítési helyen működő terminál) az üzletekach elhelyezett elektronikus kártyaolvasó.",
+        "A POS-terminál (értékesítési helyen működő terminál) az üzletekben elhelyezett elektronikus kártyaolvasó.",
         "A hitelkártya használata után komoly kamatot kell fizetned, ha a türelmi idő lejárta előtt nem törleszted.",
         "A digitális számlapénz mozgatása sokkal olcsóbb a nemzetgazdaságnak, mint a fizikai készpénz gyártása.",
         "Részletes pénzügyi terv nélkül csak vakon tapogatózol a jövőbeli céljaid felé.",
@@ -216,7 +236,8 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
         "A hitelfelvétel nem ingyenpénz: a jövőbeli jövedelmedet költöd el előre, aminek komoly ára (kamata) van."
     ];
 
-    let board = [
+    let board;
+    const initialBoard = [
         ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
         ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
         ['', '', '', '', '', '', '', ''],
@@ -240,7 +261,12 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
     async function init() {
         state = await GameAPI.getState();
         document.getElementById('current-balance-display').textContent = state.balance;
+        resetBoardData();
         createVisualBoard();
+    }
+
+    function resetBoardData() {
+        board = JSON.parse(JSON.stringify(initialBoard));
     }
 
     function updateTurnIndicator() {
@@ -279,15 +305,16 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
 
     window.startGame = function() {
         const inputBet = parseInt(document.getElementById('bet-amount').value);
-        if (isNaN(inputBet) || inputBet < 100) { showToast("A minimális tét összege 100 Ft!"); return; }
         if (inputBet > state.balance && state.balance > 0) { showToast("Nincs elegendő fedezeted a számládon!"); return; }
+        
         betAmount = inputBet;
         difficulty = document.getElementById('difficulty').value;
         gameActive = true;
         playerTurn = true;
         
+        resetBoardData();
         const boardEl = document.getElementById('chess-board');
-        boardEl.classList.remove('crashed');
+        boardEl.className = "board";
 
         document.getElementById('setup-panel').style.display = 'none';
         document.getElementById('play-panel').style.display = 'block';
@@ -322,7 +349,7 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
             clearHighlights();
             selectedSquare = { r, c };
             e.currentTarget.classList.add('selected');
-            possibleMoves = getLegalMovesForPiece(r, c, board);
+            possibleMoves = getFilteredLegalMoves(r, c, board);
             highlightMoves(possibleMoves);
         } else {
             selectedSquare = null;
@@ -362,13 +389,14 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
             triggerCaptureEffect(toR, toC, isWhiteTurn);
         }
 
-        if (target === 'k') { endGame(true, "Gratulálunk! Megnyerted a játszmát és a profitot!"); return; }
-        if (target === 'K') { endGame(false, "Sajnos a gép mattot adott. Elveszítetted a tétet."); return; }
         board[toR][toC] = piece;
         board[fromR][fromC] = '';
         if (piece === 'P' && toR === 0) board[toR][toC] = 'Q';
         if (piece === 'p' && toR === 7) board[toR][toC] = 'q';
         createVisualBoard();
+
+        const nextTurnIsWhite = (piece !== piece.toUpperCase());
+        checkGameStatus(nextTurnIsWhite);
     }
 
     function aiTurn() {
@@ -377,8 +405,15 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
         const advice = adviceList[Math.floor(Math.random() * adviceList.length)];
         document.getElementById('npc-hint').textContent = advice;
 
-        const aiMoves = getAllLegalMoves(board, false);
-        if (aiMoves.length === 0) { endGame(true, "A gépnek elfogytak a lehetőségei, bedobta a törölközőt! Nyertél!"); return; }
+        const aiMoves = getAllFilteredLegalMoves(board, false);
+        if (aiMoves.length === 0) {
+            if (isKingInCheck(board, false)) {
+                endGame(true, "Sakk-matt! Megnyerted a játszmát és a profitot!");
+            } else {
+                endGame('draw', "Patt helyzet! Nem maradt szabályos lépés. A tőzsdei meccs döntetlen lett.");
+            }
+            return;
+        }
         
         let move;
         if (difficulty === 'easy') move = aiMoves[Math.floor(Math.random() * aiMoves.length)];
@@ -389,6 +424,21 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
         
         playerTurn = true;
         updateTurnIndicator();
+    }
+
+    function checkGameStatus(isWhiteTurn) {
+        const moves = getAllFilteredLegalMoves(board, isWhiteTurn);
+        if (moves.length === 0) {
+            if (isKingInCheck(board, isWhiteTurn)) {
+                if (isWhiteTurn) {
+                    endGame(false, "Sakk-matt! A gép nyert, elveszítetted a tétet.");
+                } else {
+                    endGame(true, "Sakk-matt! Megnyerted a játszmát és a profitot!");
+                }
+            } else {
+                endGame('draw', "Patt helyzet! Szabályos lépések híján a meccs döntetlen lett.");
+            }
+        }
     }
 
     function highlightMoves(moves) {
@@ -442,6 +492,44 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
         return m;
     }
 
+    function isKingInCheck(b, isWhite) {
+        let kingRow = -1, kingCol = -1;
+        const targetKing = isWhite ? 'K' : 'k';
+        
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                if (b[r][c] === targetKing) {
+                    kingRow = r; kingCol = c; break;
+                }
+            }
+            if (kingRow !== -1) break;
+        }
+        if (kingRow === -1) return false;
+
+        let opponentMoves = getAllLegalMoves(b, !isWhite);
+        return opponentMoves.some(m => m.toR === kingRow && m.toC === kingCol);
+    }
+
+    function getFilteredLegalMoves(r, c, b) {
+        const rawMoves = getLegalMovesForPiece(r, c, b);
+        const isWhite = b[r][c] === b[r][c].toUpperCase();
+        
+        return rawMoves.filter(m => {
+            const src = b[m.fromR][m.fromC], dst = b[m.toR][m.toC];
+            b[m.toR][m.toC] = src; b[m.fromR][m.fromC] = '';
+            const inCheck = isKingInCheck(b, isWhite);
+            b[m.fromR][m.fromC] = src; b[m.toR][m.toC] = dst;
+            return !inCheck;
+        });
+    }
+
+    function getAllFilteredLegalMoves(b, isWhite) {
+        let m = [];
+        for(let r=0;r<8;r++) for(let c=0;c<8;c++)
+            if (b[r][c] && (b[r][c]===b[r][c].toUpperCase())===isWhite) m = m.concat(getFilteredLegalMoves(r,c,b));
+        return m;
+    }
+
     function flashSquare(r, c) {
         if (!gameActive) return;
         const sq = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
@@ -452,7 +540,7 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
     }
 
     function minimaxDecision(b, depth, isWhite) {
-        const moves = getAllLegalMoves(b, isWhite);
+        const moves = getAllFilteredLegalMoves(b, isWhite);
         if (moves.length === 0) return null;
         let best = null, val = isWhite ? -100000 : 100000;
         moves.sort(()=>Math.random()-0.5);
@@ -472,7 +560,7 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
 
     function minimaxValue(b, depth, alpha, beta, isWhite) {
         if (depth === 0) return evaluateBoard(b);
-        const moves = getAllLegalMoves(b, isWhite);
+        const moves = getAllFilteredLegalMoves(b, isWhite);
         if (moves.length === 0) return evaluateBoard(b);
         if (isWhite) {
             let v = -100000;
@@ -507,7 +595,6 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
         return e;
     }
 
-    // Új beépített értesítési sávot kezelő függvény (Toast)
     function showToast(message, duration = 3500) {
         const toast = document.getElementById('game-toast');
         toast.textContent = message;
@@ -516,7 +603,6 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
         return new Promise((resolve) => {
             setTimeout(() => {
                 toast.classList.remove('show');
-                // Megvárjuk a CSS elhalványulási animáció végét is (300ms)
                 setTimeout(resolve, 300);
             }, duration);
         });
@@ -531,20 +617,32 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
             setTimeout(async () => {
                 document.getElementById('chess-board').classList.remove('ai-analyzing');
                 await showToast("Végelszámolás indult... A tőzsde összeomlott.");
-                await GameAPI.exit(state.balance - betAmount);
+                endGame(false, "Veszteség realizálva.");
             }, 1200);
         }
     };
 
-    async function endGame(playerWon, message) {
+    // Átalakított játék végrehajtás: Nem lép ki, hanem visszaadja a menüt
+    async function endGame(gameResult, message) {
         gameActive = false;
         document.getElementById('chess-board').classList.remove('ai-analyzing');
         
-        // Először megmutatjuk az elegáns belső értesítést
+        // Frissítjük a lokális egyenleget az eredmény alapján
+        if (gameResult === true) state.balance += betAmount;
+        else if (gameResult === false) state.balance -= betAmount;
+
+        // Kijelezzük a szép üzenetet
         await showToast(message, 4000); 
+
+        // Frissítjük a kijelzőt
+        document.getElementById('current-balance-display').textContent = state.balance;
+
+        // Visszaváltunk a kezdőmenüre a bezárás helyett
+        document.getElementById('play-panel').style.display = 'none';
+        document.getElementById('setup-panel').style.display = 'block';
         
-        // Miután lefutott és eltűnt a felirat, csak akkor lépünk ki az API-val
-        await GameAPI.exit(state.balance + (playerWon ? betAmount : -betAmount));
+        resetBoardData();
+        createVisualBoard();
     }
 
     window.exitGame = async function(c) { await GameAPI.exit(c !== false ? c : state.balance); };
