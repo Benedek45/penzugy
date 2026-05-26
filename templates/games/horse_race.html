@@ -151,13 +151,32 @@
     border-radius: var(--radius);
     position: relative;
     overflow: hidden;
-    min-height: 220px;
+    min-height: 260px;
   }
   #track.dirt { background: #3a3520; }
   #track.grass { background: #1a3a1a; }
+  #track::after {
+    content: '';
+    position: absolute;
+    top: 0.8rem;
+    right: 7%;
+    bottom: 0.8rem;
+    width: 5px;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--cream) 0,
+      var(--cream) 9px,
+      var(--dark) 9px,
+      var(--dark) 18px
+    );
+    border-left: 1px solid var(--gold-dim);
+    border-right: 1px solid var(--gold-dim);
+    opacity: 0.8;
+    z-index: 1;
+  }
   .lane {
     position: relative;
-    height: 40px;
+    height: 52px;
     background: rgba(0,0,0,0.25);
     border-radius: 4px;
     overflow: hidden;
@@ -177,11 +196,13 @@
   }
   .runner {
     position: absolute;
-    top: 2px;
+    top: 4px;
     left: 0;
-    height: 36px;
-    line-height: 36px;
-    padding: 0 0.6rem;
+    height: 44px;
+    padding: 0 0.7rem 0 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
     background: var(--dark-mid);
     border: 1px solid var(--gold-dim);
     border-radius: 4px;
@@ -192,15 +213,134 @@
     white-space: nowrap;
     z-index: 2;
   }
+  .runner.horse-0 {
+    --horse-main: var(--gold-light);
+    --horse-mane: var(--dark);
+    --horse-saddle: var(--red-light);
+  }
+  .runner.horse-1 {
+    --horse-main: var(--cream);
+    --horse-mane: var(--gold);
+    --horse-saddle: var(--green-light);
+  }
+  .runner.horse-2 {
+    --horse-main: var(--red-light);
+    --horse-mane: var(--dark);
+    --horse-saddle: var(--gold);
+  }
+  .runner.horse-3 {
+    --horse-main: var(--cream-dark);
+    --horse-mane: var(--dark);
+    --horse-saddle: var(--gold-light);
+  }
   .runner.animate {
     transition: left 3s ease-in-out;
+  }
+  .runner::before {
+    content: '';
+    position: absolute;
+    left: -0.35rem;
+    bottom: 0.2rem;
+    width: 1.5rem;
+    height: 0.45rem;
+    background: rgba(245,240,232,0.18);
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-0.2rem);
+  }
+  #track.dirt .runner.animate::before {
+    animation: dust-puff 0.42s ease-out infinite;
   }
   .runner.winner {
     border-color: var(--gold);
     box-shadow: 0 0 14px var(--shadow-gold);
     color: var(--cream);
+    transform: translateY(-1px);
+  }
+  .runner.winner .horse-svg {
+    filter: drop-shadow(0 0 8px var(--gold-light));
   }
   .runner.loser { opacity: 0.6; }
+
+  .horse-svg {
+    width: 80px;
+    height: 44px;
+    flex: 0 0 auto;
+    overflow: visible;
+    transform-origin: 50% 72%;
+    filter: drop-shadow(0 2px 2px var(--shadow));
+  }
+  .horse-body,
+  .horse-neck,
+  .horse-head {
+    fill: var(--horse-main);
+    stroke: var(--dark);
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+  }
+  .horse-mane,
+  .horse-tail {
+    fill: var(--horse-mane);
+    stroke: var(--dark);
+    stroke-width: 1.4;
+    stroke-linejoin: round;
+  }
+  .horse-saddle {
+    fill: var(--horse-saddle);
+    stroke: var(--dark);
+    stroke-width: 1;
+  }
+  .horse-eye { fill: var(--dark); }
+  .horse-leg {
+    fill: none;
+    stroke: var(--horse-main);
+    stroke-width: 4.8;
+    stroke-linecap: round;
+    transform-box: fill-box;
+    transform-origin: 50% 0;
+  }
+  .horse-jockey {
+    fill: var(--horse-saddle);
+    stroke: var(--dark);
+    stroke-width: 1.2;
+  }
+  .horse-jockey-head {
+    fill: var(--cream);
+    stroke: var(--dark);
+    stroke-width: 1.2;
+  }
+  .horse-jockey-cap {
+    fill: var(--dark);
+    stroke: none;
+  }
+  .horse-jockey-arm {
+    fill: none;
+    stroke: var(--cream);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+  .runner-name {
+    min-width: 7.2rem;
+    text-shadow: 0 1px 2px var(--shadow);
+  }
+  .runner.animate .horse-svg {
+    animation: horse-bob 0.34s ease-in-out infinite;
+  }
+  .runner.animate .horse-head {
+    animation: head-nod 0.34s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: 20% 90%;
+  }
+  .runner.animate .horse-tail {
+    animation: tail-flick 0.34s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: 90% 45%;
+  }
+  .runner.animate .leg-a { animation: gallop-a 0.34s linear infinite; }
+  .runner.animate .leg-b { animation: gallop-b 0.34s linear infinite; }
+  .runner.animate .leg-c { animation: gallop-c 0.34s linear infinite; }
+  .runner.animate .leg-d { animation: gallop-d 0.34s linear infinite; }
 
   #race-result {
     text-align: center;
@@ -242,6 +382,39 @@
   @keyframes fade-in {
     from { opacity: 0; transform: translateY(-6px); }
     to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes horse-bob {
+    0%, 100% { transform: translateY(1px) rotate(-0.5deg); }
+    50% { transform: translateY(-3px) rotate(0.8deg); }
+  }
+  @keyframes head-nod {
+    0%, 100% { transform: rotate(4deg); }
+    50% { transform: rotate(-7deg); }
+  }
+  @keyframes tail-flick {
+    0%, 100% { transform: rotate(-8deg); }
+    50% { transform: rotate(16deg); }
+  }
+  @keyframes gallop-a {
+    0%, 100% { transform: rotate(25deg) translateY(0); }
+    50% { transform: rotate(-34deg) translateY(-1px); }
+  }
+  @keyframes gallop-b {
+    0%, 100% { transform: rotate(-32deg) translateY(-1px); }
+    50% { transform: rotate(28deg) translateY(0); }
+  }
+  @keyframes gallop-c {
+    0%, 100% { transform: rotate(-24deg) translateY(0); }
+    50% { transform: rotate(35deg) translateY(-1px); }
+  }
+  @keyframes gallop-d {
+    0%, 100% { transform: rotate(32deg) translateY(-1px); }
+    50% { transform: rotate(-25deg) translateY(0); }
+  }
+  @keyframes dust-puff {
+    0% { opacity: 0; transform: translateX(0) scale(0.4); }
+    35% { opacity: 0.85; }
+    100% { opacity: 0; transform: translateX(-1.6rem) scale(1.4); }
   }
 </style>
 {% endblock %}
@@ -382,6 +555,46 @@
     }
   }
 
+  function horseSvg() {
+    return `
+      <svg class="horse-svg" viewBox="0 0 140 75" aria-hidden="true" focusable="false">
+        <!-- tail (left side, sweeps back and up) -->
+        <path class="horse-tail" d="M37,42 C26,31 15,28 10,33 C14,41 26,50 38,50 Z"/>
+        <!-- hind legs (rear of body, x~46-58) -->
+        <path class="horse-leg leg-c" d="M47,54 C42,62 35,67 31,73 M28,73 L35,73"/>
+        <path class="horse-leg leg-d" d="M57,54 C57,62 59,68 60,73 M57,73 L64,73"/>
+        <!-- body -->
+        <ellipse class="horse-body" cx="62" cy="42" rx="26" ry="13"/>
+        <!-- rump bump (adds horse-like silhouette at the back) -->
+        <path class="horse-body" d="M36,42 C34,34 38,28 44,29 C44,35 38,40 36,44 Z"/>
+        <!-- saddle -->
+        <path class="horse-saddle" d="M50,30 H76 C78,30 79,32 78,35 L76,37 H49 L47,34 C47,31 48,30 50,30 Z"/>
+        <!-- neck (rises from front-right of body toward upper right) -->
+        <path class="horse-neck" d="M84,33 C89,24 94,17 98,14 C96,22 92,31 86,38 Z"/>
+        <!-- head (faces right, connected to top of neck) -->
+        <path class="horse-head" d="M97,14 C101,6 113,7 117,15 C119,22 115,28 105,27 C99,25 96,20 97,14 Z"/>
+        <!-- ear -->
+        <path class="horse-head" d="M100,12 L104,4 L108,11 Z"/>
+        <!-- mane (runs along back of neck) -->
+        <path class="horse-mane" d="M97,14 C93,11 90,17 87,25 C85,32 84,36 86,38 L88,36 C87,30 89,23 93,17 C96,12 97,14 Z"/>
+        <!-- eye -->
+        <circle class="horse-eye" cx="109" cy="17" r="2.1"/>
+        <!-- nostril -->
+        <ellipse fill="rgba(0,0,0,0.30)" cx="116" cy="23" rx="1.6" ry="1.1"/>
+        <!-- fore legs (front area, x~72-82) -->
+        <path class="horse-leg leg-a" d="M73,54 C68,62 62,67 59,73 M56,73 L63,73"/>
+        <path class="horse-leg leg-b" d="M82,54 C87,62 92,67 95,73 M92,73 L99,73"/>
+        <!-- jockey torso -->
+        <ellipse class="horse-jockey" cx="63" cy="26" rx="9" ry="11"/>
+        <!-- jockey head -->
+        <circle class="horse-jockey-head" cx="69" cy="14" r="6"/>
+        <!-- jockey cap -->
+        <path class="horse-jockey-cap" d="M63,13 C64,5 76,5 76,13 L78,15 C78,16 61,16 61,15 Z"/>
+        <!-- jockey arm/reins -->
+        <path class="horse-jockey-arm" d="M70,21 L90,16"/>
+      </svg>`;
+  }
+
   /* ═══════════════════════════════════════════
      HORSE SELECTION & RENDERING
   ═══════════════════════════════════════════ */
@@ -490,9 +703,14 @@
       ? '🏁 Pálya: Dirt — a por száll, a lovak lihegnek...'
       : '🏁 Pálya: Grass — zöld gyep, tiszta verseny.';
 
-    const lanesHtml = currentHorses.map((h, i) =>
-      `<div class="lane" data-idx="${i}"><div class="runner" id="runner-${i}">🐴 ${h.name}</div></div>`
-    ).join('');
+    const lanesHtml = currentHorses.map((h, i) => `
+      <div class="lane" data-idx="${i}">
+        <div class="runner horse-${i % 4}" id="runner-${i}">
+          ${horseSvg()}
+          <span class="runner-name">${h.name}</span>
+        </div>
+      </div>
+    `).join('');
     track.innerHTML = lanesHtml;
 
     showPhase(phaseRace);
