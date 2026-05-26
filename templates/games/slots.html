@@ -1,15 +1,1282 @@
 {% extends "base.html" %}
-{% block title %}slots — Hamarosan{% endblock %}
+{% block title %}Nyerőgépek — Pénz Plaza{% endblock %}
+
+{% block head %}
+<style>
+/* ═══════════════════════════════════════════════════
+   SLOTS — shared wrapper
+═══════════════════════════════════════════════════ */
+#slots-app {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 3rem;
+}
+
+/* Screen toggle */
+.slots-screen          { display: none; }
+.slots-screen.is-active{ display: block; }
+
+/* ═══════════════════════════════════════════════════
+   LOBBY
+═══════════════════════════════════════════════════ */
+#screen-lobby {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 20px 64px var(--shadow), 0 0 40px var(--shadow-gold);
+  background: linear-gradient(135deg, var(--dark) 0%, var(--dark-mid) 100%);
+  min-height: 500px;
+}
+
+/* Lobby title */
+.lobby-title {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 2rem 1rem 1rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  color: var(--gold-light);
+  text-shadow: 0 4px 16px rgba(0,0,0,0.8), 0 0 24px var(--shadow-gold);
+  letter-spacing: 0.05em;
+}
+
+/* Machine grid */
+.machines-grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem 2rem 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.machine-card {
+  background: rgba(42,42,78,0.6);
+  border: 2px solid var(--gold-dim);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+  color: var(--cream);
+  position: relative;
+  overflow: hidden;
+}
+
+.machine-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(201,168,76,0.1), transparent 70%);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.machine-card:hover::before,
+.machine-card:focus-visible::before {
+  opacity: 1;
+}
+
+.machine-card:hover,
+.machine-card:focus-visible {
+  border-color: var(--gold);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px var(--shadow), 0 0 24px var(--shadow-gold);
+  outline: none;
+}
+
+.machine-icon {
+  font-size: 3.5rem;
+  margin-bottom: 0.8rem;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+}
+
+.machine-name {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.03em;
+}
+
+.machine-desc {
+  font-size: 0.85rem;
+  color: var(--cream-dark);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* NPC */
+#lobby-npc {
+  position: absolute;
+  bottom: 1rem;
+  right: 1.5rem;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+#npc-speech {
+  background: rgba(20,18,40,0.93);
+  border: 1px solid var(--gold-dim);
+  border-radius: 10px 10px 4px 10px;
+  padding: 0.5rem 0.85rem;
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  font-style: italic;
+  color: var(--cream);
+  max-width: min(240px, 30vw);
+  text-align: right;
+  margin-bottom: 0.3rem;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.npc-icon {
+  font-size: clamp(3rem, 6vw, 4.5rem);
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.7));
+}
+
+/* Exit button */
+#lobby-exit-btn {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 4;
+}
+
+/* ═══════════════════════════════════════════════════
+   GAME SCREENS — shared skeleton
+═══════════════════════════════════════════════════ */
+.game-screen {
+  position: relative;
+  min-height: 72vh;
+  border-radius: 18px;
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 20px 64px var(--shadow), 0 0 40px var(--shadow-gold);
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--dark) 0%, var(--dark-mid) 100%);
+}
+
+.game-ui {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 5rem;
+  min-height: 72vh;
+}
+
+/* ── Shared UI atoms ── */
+.balance-strip {
+  background: rgba(10,8,24,0.75);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius);
+  padding: 0.35rem 1rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--gold-light);
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.bet-row {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0.3rem 0;
+}
+
+.cbet {
+  padding: 0.35rem 0.8rem;
+  background: rgba(42,42,78,0.85);
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px;
+  color: var(--cream);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.cbet.active,
+.cbet:hover {
+  background: var(--gold);
+  border-color: var(--gold-light);
+  color: var(--dark);
+  font-weight: 700;
+}
+
+.result-banner {
+  padding: 0.55rem 1.2rem;
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0.5rem 0;
+  min-height: 2.4rem;
+  transition: opacity 0.25s;
+}
+
+.result-banner.win  { background: rgba(46,125,50,0.88); color: #a5d6a7; border: 1px solid #388e3c; }
+.result-banner.lose { background: rgba(139,26,26,0.88); color: #ffcdd2; border: 1px solid #c62828; }
+.result-banner.info { background: rgba(42,42,78,0.88); color: var(--gold-light); border: 1px solid var(--gold-dim); }
+
+.back-row {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 3;
+}
+
+[hidden] { display: none !important; }
+
+/* ═══════════════════════════════════════════════════
+   QUIZ GAME
+═══════════════════════════════════════════════════ */
+.quiz-container {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.quiz-difficulty {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.quiz-question {
+  background: rgba(10,8,24,0.85);
+  border: 2px solid var(--gold-dim);
+  border-radius: 12px;
+  padding: 1.5rem;
+  font-size: 1.1rem;
+  color: var(--cream);
+  text-align: center;
+  line-height: 1.6;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 12px rgba(0,0,0,0.5);
+}
+
+.quiz-answers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.quiz-answer {
+  background: rgba(42,42,78,0.85);
+  border: 2px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 0.9rem 1.2rem;
+  color: var(--cream);
+  cursor: pointer;
+  font-size: 1rem;
+  text-align: left;
+  transition: all var(--transition);
+}
+
+.quiz-answer:hover {
+  background: rgba(201,168,76,0.2);
+  border-color: var(--gold);
+  transform: translateX(4px);
+}
+
+.quiz-answer.correct {
+  background: rgba(46,125,50,0.6);
+  border-color: #4CAF50;
+}
+
+.quiz-answer.wrong {
+  background: rgba(139,26,26,0.6);
+  border-color: #c62828;
+}
+
+.quiz-orb {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin: 1rem 0;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  animation: orb-float 2s ease-in-out infinite;
+}
+
+.quiz-orb.win {
+  background: radial-gradient(circle at 30% 30%, #4CAF50, #2E7D32);
+  border: 3px solid #66BB6A;
+}
+
+.quiz-orb.lose {
+  background: radial-gradient(circle at 30% 30%, #c62828, #8B1A1A);
+  border: 3px solid #EF5350;
+}
+
+@keyframes orb-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* ═══════════════════════════════════════════════════
+   BINGO GAME
+═══════════════════════════════════════════════════ */
+.bingo-container {
+  width: 100%;
+  max-width: 650px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+}
+
+.bingo-term {
+  background: rgba(10,8,24,0.9);
+  border: 3px solid var(--gold);
+  border-radius: 16px;
+  padding: 2rem;
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  text-align: center;
+  letter-spacing: 0.05em;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.8);
+  box-shadow: 0 0 32px var(--shadow-gold);
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bingo-answers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.bingo-answer {
+  background: rgba(42,42,78,0.85);
+  border: 2px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 0.9rem 1.2rem;
+  color: var(--cream);
+  cursor: pointer;
+  font-size: 0.95rem;
+  text-align: left;
+  transition: all var(--transition);
+  line-height: 1.5;
+}
+
+.bingo-answer:hover {
+  background: rgba(201,168,76,0.2);
+  border-color: var(--gold);
+}
+
+.bingo-answer.correct {
+  background: rgba(46,125,50,0.6);
+  border-color: #4CAF50;
+}
+
+.bingo-answer.wrong {
+  background: rgba(139,26,26,0.6);
+  border-color: #c62828;
+}
+
+.bingo-help-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(201,168,76,0.2);
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--gold-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bingo-help-btn:hover {
+  background: var(--gold);
+  color: var(--dark);
+  transform: scale(1.1);
+}
+
+.bingo-help-text {
+  background: rgba(10,8,24,0.95);
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  color: var(--cream);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+  max-width: 500px;
+}
+
+/* ═══════════════════════════════════════════════════
+   WHEEL GAME
+═══════════════════════════════════════════════════ */
+.wheel-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+}
+
+.wheel-wrapper {
+  position: relative;
+  width: 400px;
+  height: 400px;
+}
+
+.wheel {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 8px solid var(--gold);
+  box-shadow: 0 0 40px var(--shadow-gold), inset 0 0 20px rgba(0,0,0,0.5);
+  transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+  position: relative;
+}
+
+.wheel-pointer {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-top: 40px solid var(--gold);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+  z-index: 10;
+}
+
+.wheel-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle at 30% 30%, var(--gold-light), var(--gold));
+  border-radius: 50%;
+  border: 4px solid var(--dark);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+/* ═══════════════════════════════════════════════════
+   SCRATCH GAME
+═══════════════════════════════════════════════════ */
+.scratch-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.scratch-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  background: rgba(10,8,24,0.85);
+  border: 3px solid var(--gold-dim);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: inset 0 2px 12px rgba(0,0,0,0.6);
+}
+
+.scratch-cell {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid var(--gold-dim);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.scratch-cell::before {
+  content: '?';
+  font-size: 2rem;
+  color: rgba(255,255,255,0.3);
+  font-weight: 700;
+}
+
+.scratch-cell.scratched {
+  background: rgba(42,42,78,0.6);
+  cursor: default;
+  animation: scratch-reveal 0.4s ease;
+}
+
+.scratch-cell.scratched::before {
+  display: none;
+}
+
+.scratch-cell.winning {
+  background: rgba(46,125,50,0.4);
+  border-color: #4CAF50;
+  animation: scratch-win 0.6s ease infinite;
+}
+
+@keyframes scratch-reveal {
+  0% { transform: scale(0.8) rotateY(90deg); opacity: 0; }
+  50% { transform: scale(1.1) rotateY(0deg); opacity: 1; }
+  100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+}
+
+@keyframes scratch-win {
+  0%, 100% { box-shadow: 0 0 0 rgba(76,175,80,0); }
+  50% { box-shadow: 0 0 20px rgba(76,175,80,0.8); }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="max-width:600px;margin:4rem auto;text-align:center;padding:0 1rem;">
-  <div style="font-size:4rem;margin-bottom:1rem;">🚧</div>
-  <h1 style="margin-bottom:0.5rem;">slots</h1>
-  <p style="color:var(--cream-dark);font-style:italic;margin-bottom:2rem;">
-    Ez a mini-játék még fejlesztés alatt áll. Hamarosan!
-  </p>
-  <div class="npc-hint" id="npc-hint">Betöltés...</div>
-  <div style="margin-top:2rem;">
-    <a href="/" class="btn btn-gold">← Vissza a Plazára</a>
-  </div>
+<div id="slots-app">
+
+  <!-- ══════════════════════ LOBBY ══════════════════════ -->
+  <section id="screen-lobby" class="slots-screen is-active">
+    <h1 class="lobby-title">🎰 Nyerőgépek Csarnoka</h1>
+
+    <div class="machines-grid">
+      <button class="machine-card" onclick="SL.enter('quiz')">
+        <span class="machine-icon">🧠</span>
+        <div class="machine-name">Kvíz Gép</div>
+        <div class="machine-desc">Válaszolj pénzügyi kérdésekre, és nyerj! A tudás valóban pénz.</div>
+      </button>
+
+      <button class="machine-card" onclick="SL.enter('bingo')">
+        <span class="machine-icon">📚</span>
+        <div class="machine-name">Bingó</div>
+        <div class="machine-desc">Ismerd fel a pénzügyi fogalmakat! Súgó fizetős — a tudás pénz.</div>
+      </button>
+
+      <button class="machine-card" onclick="SL.enter('wheel')">
+        <span class="machine-icon">🎡</span>
+        <div class="machine-name">Szerencsekerék</div>
+        <div class="machine-desc">Pörgesd meg a kereket! 16 mező, köztük egy Jackpot.</div>
+      </button>
+
+      <button class="machine-card" onclick="SL.enter('scratch')">
+        <span class="machine-icon">🎫</span>
+        <div class="machine-name">Kaparós Sorsjegy</div>
+        <div class="machine-desc">Kapard le a 4×4 rácsot! 3 egyforma szimbólum = nyeremény.</div>
+      </button>
+    </div>
+
+    <div id="lobby-npc">
+      <div id="npc-speech">Üdvözöllek! Melyik gépet próbálod ki?</div>
+      <div class="npc-icon">🤵</div>
+    </div>
+
+    <div id="lobby-exit-btn">
+      <button class="btn btn-dark" onclick="SL.exitSlots()">← Vissza a Plazára</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ QUIZ ══════════════════════ -->
+  <section id="screen-quiz" class="slots-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🧠 Kvíz Gép</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="qz-balance">—</span> Ft</div>
+
+      <div class="quiz-container">
+        <div class="quiz-difficulty" id="qz-difficulty">
+          <button class="cbet active" onclick="SL.qz.setDiff('easy',this)">Könnyű (100 Ft)</button>
+          <button class="cbet" onclick="SL.qz.setDiff('medium',this)">Közepes (500 Ft)</button>
+          <button class="cbet" onclick="SL.qz.setDiff('hard',this)">Nehéz (1000 Ft)</button>
+        </div>
+
+        <div class="quiz-question" id="qz-question">Válassz nehézségi szintet és nyomd meg a "Kérdés" gombot!</div>
+
+        <div class="quiz-answers" id="qz-answers"></div>
+
+        <div id="qz-orb-wrap" hidden>
+          <div class="quiz-orb" id="qz-orb"></div>
+        </div>
+
+        <div class="result-banner info" id="qz-result" style="opacity:0;"> </div>
+
+        <button class="btn btn-gold" id="qz-next-btn" onclick="SL.qz.nextQuestion()">
+          Kérdés
+        </button>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SL.showLobby()">← Vissza a lobbiba</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ BINGO ══════════════════════ -->
+  <section id="screen-bingo" class="slots-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">📚 Bingó</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="bg-balance">—</span> Ft</div>
+
+      <div class="bingo-container">
+        <button class="bingo-help-btn" id="bg-help-btn" onclick="SL.bg.showHelp()" title="Súgó — 150 Ft">❓</button>
+
+        <div class="bingo-term" id="bg-term">Nyomd meg a "Következő" gombot!</div>
+
+        <div id="bg-help-wrap" hidden>
+          <div class="bingo-help-text" id="bg-help-text"></div>
+        </div>
+
+        <div class="bingo-answers" id="bg-answers"></div>
+
+        <div class="result-banner info" id="bg-result" style="opacity:0;"> </div>
+
+        <button class="btn btn-gold" id="bg-next-btn" onclick="SL.bg.next()">
+          Következő fogalom
+        </button>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SL.showLobby()">← Vissza a lobbiba</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ WHEEL ══════════════════════ -->
+  <section id="screen-wheel" class="slots-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🎡 Szerencsekerék</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="wh-balance">—</span> Ft</div>
+
+      <div class="wheel-container">
+        <div class="wheel-wrapper">
+          <div class="wheel-pointer"></div>
+          <div class="wheel" id="wh-wheel"></div>
+          <div class="wheel-center">🎰</div>
+        </div>
+
+        <div style="text-align:center;color:var(--cream-dark);font-size:0.85rem;">
+          Tét: <strong style="color:var(--gold);">200 Ft</strong> pörgetésenként
+        </div>
+
+        <button class="btn btn-gold" id="wh-spin-btn" onclick="SL.wh.spin()"
+                style="font-size:1.1rem;padding:0.7rem 2.5rem;">
+          PÖRGETÉS
+        </button>
+
+        <div class="result-banner info" id="wh-result" style="opacity:0;min-width:300px;"> </div>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SL.showLobby()">← Vissza a lobbiba</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ SCRATCH ══════════════════════ -->
+  <section id="screen-scratch" class="slots-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🎫 Kaparós Sorsjegy</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="sc-balance">—</span> Ft</div>
+
+      <div class="scratch-container">
+        <div style="text-align:center;color:var(--cream-dark);font-size:0.85rem;margin-bottom:0.5rem;">
+          Tét: <strong style="color:var(--gold);">500 Ft</strong> · Kapard le az összes mezőt! · 3 egyforma = nyeremény
+        </div>
+
+        <div class="scratch-grid" id="sc-grid"></div>
+
+        <div class="result-banner info" id="sc-result" style="opacity:0;min-width:300px;"> </div>
+
+        <button class="btn btn-gold" id="sc-new-btn" onclick="SL.sc.newCard()" hidden>
+          Új sorsjegy (500 Ft)
+        </button>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SL.showLobby()">← Vissza a lobbiba</button>
+    </div>
+  </section>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+
+  let S = null;
+
+  async function init() {
+    S = await GameAPI.getState();
+    refreshBalances();
+    setNPC('Üdvözöllek! Melyik gépet próbálod ki?');
+  }
+  init();
+
+  function refreshBalances() {
+    const b = S.balance;
+    ['qz-balance','bg-balance','wh-balance','sc-balance'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = b.toLocaleString('hu-HU');
+    });
+  }
+
+  const SCREENS = ['lobby','quiz','bingo','wheel','scratch'];
+
+  function showScreen(name) {
+    SCREENS.forEach(s => {
+      const el = document.getElementById('screen-' + s);
+      if (!el) return;
+      if (s === name) { el.classList.add('is-active'); el.removeAttribute('hidden'); }
+      else            { el.classList.remove('is-active'); el.setAttribute('hidden',''); }
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  ['quiz','bingo','wheel','scratch'].forEach(s =>
+    document.getElementById('screen-' + s).setAttribute('hidden','')
+  );
+
+  function setNPC(msg) {
+    document.getElementById('npc-speech').textContent = msg;
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function showResult(id, html, type) {
+    const el = document.getElementById(id);
+    el.innerHTML = html;
+    el.className = 'result-banner ' + type;
+    el.style.opacity = '1';
+  }
+
+  async function applyDelta(delta) {
+    S = await GameAPI.patch({ balance: S.balance + delta });
+    refreshBalances();
+  }
+
+  function cbet_activate(container, btn) {
+    container.querySelectorAll('.cbet').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  //  QUIZ GAME
+  // ════════════════════════════════════════════════════════════════
+  const QUIZ_DATA = {
+    easy: [
+      { q: "Mi az infláció?", a: ["Áremelkedés", "Árcsökkenés", "Adó"], c: 0 },
+      { q: "Mi a kamat?", a: ["Pénz használatának ára", "Adó", "Bérleti díj"], c: 0 },
+      { q: "Mi a költségvetés?", a: ["Hitel", "Bevételek és kiadások terve", "Befektetés"], c: 1 },
+      { q: "Mi a megtakarítás?", a: ["Kölcsön", "Kiadás", "Félretett pénz"], c: 2 },
+      { q: "Mi a bankkártya?", a: ["Készpénz-helyettesítő eszköz", "Hitel", "Biztosítás"], c: 0 },
+      { q: "Mi a háztartás?", a: ["Egy ház", "Közös jövedelemmel rendelkező személyek", "Bolt"], c: 1 },
+      { q: "Mi a jövedelem?", a: ["Kiadás", "Adó", "Pénzben kapott bevétel"], c: 2 },
+      { q: "Mi a bankszámla?", a: ["Pénzkezelési eszköz", "Hitel", "Biztosítás"], c: 0 },
+      { q: "Mi az átutalás?", a: ["Készpénz felvétel", "Pénz küldése bankszámláról", "Hitel"], c: 1 },
+      { q: "Mi a szűkösség?", a: ["Bőség", "Kevesebb erőforrás, mint igény", "Megtakarítás"], c: 1 },
+    ],
+    medium: [
+      { q: "Mi az EBKM?", a: ["Adó", "Betétek valódi éves hozama", "Kamat"], c: 1 },
+      { q: "Mi a THM?", a: ["Teljes Hiteldíj Mutató", "Tőzsdei ár", "Adókulcs"], c: 0 },
+      { q: "Mi a likviditás?", a: ["Biztonság", "Hozam", "Milyen gyorsan tehető pénzzé"], c: 2 },
+      { q: "Mi a részvény?", a: ["Tulajdonjogot megtestesítő értékpapír", "Hitel", "Betét"], c: 0 },
+      { q: "Mi a kötvény?", a: ["Részvény", "Hitelviszonyt megtestesítő értékpapír", "Betét"], c: 1 },
+      { q: "Mi az osztalék?", a: ["Adó", "Részvényes részesedése a nyereségből", "Kamat"], c: 1 },
+      { q: "Mi a tőzsde?", a: ["Bank", "Piac, ahol értékpapírok gazdát cserélnek", "Bolt"], c: 1 },
+      { q: "Mi a jelzáloghitel?", a: ["Lakáscélú hitel, ingatlan a fedezet", "Személyi hitel", "Diákhitel"], c: 0 },
+      { q: "Mi a diákhitel?", a: ["Lakáshitel", "Autóhitel", "Felsőoktatási hallgatóknak, alacsony kamat"], c: 2 },
+      { q: "Mi a bankszámlakivonat?", a: ["Hitel", "Pénzügyi események értesítése", "Biztosítás"], c: 1 },
+    ],
+    hard: [
+      { q: "Mi a kamatkockázat?", a: ["Piaci kamatláb változása átértékeli a befektetést", "Adó", "Infláció"], c: 0 },
+      { q: "Mi az annuitásos törlesztés?", a: ["Változó törlesztő", "Állandó havi törlesztőrészlet", "Egyösszegű"], c: 1 },
+      { q: "Mi a devizakockázat?", a: ["Kamat változás", "Árfolyamváltozás átértékelheti a befektetést", "Infláció"], c: 1 },
+      { q: "Mi az OBA?", a: ["Országos Betétbiztosítási Alap", "Adó", "Bank"], c: 0 },
+      { q: "Mi a BEVA?", a: ["Bank", "Befektető-védelmi Alap", "Adó"], c: 1 },
+      { q: "Mi a kincstárjegy?", a: ["1 évnél hosszabb állampapír", "1 éves vagy rövidebb lejáratú állampapír", "Részvény"], c: 1 },
+      { q: "Mi a lineáris törlesztés?", a: ["Állandó tőketörlesztés", "Állandó havi törlesztő", "Egyösszegű"], c: 0 },
+      { q: "Mi az adósságfék?", a: ["Hitel", "Megakadályozza a túlzott eladósodást", "Adó"], c: 1 },
+      { q: "Mi a pénz időértéke?", a: ["100 Ft ma többet ér, mint holnap", "Infláció", "Kamat"], c: 0 },
+      { q: "Mi a kamatos kamat?", a: ["Egyszeri kamat", "Kamat tőkésítése időszakonként", "Adó"], c: 1 },
+    ]
+  };
+
+  const QZ = (() => {
+    let diff = 'easy', currentQ = null, answered = false;
+    const bets = { easy: 100, medium: 500, hard: 1000 };
+
+    function setDiff(d, btn) {
+      diff = d;
+      cbet_activate(document.getElementById('qz-difficulty'), btn);
+    }
+
+    function nextQuestion() {
+      if (S.balance < bets[diff]) {
+        showResult('qz-result', 'Nincs elég egyenleged!', 'lose');
+        return;
+      }
+      answered = false;
+      const pool = QUIZ_DATA[diff];
+      currentQ = pool[Math.floor(Math.random() * pool.length)];
+      document.getElementById('qz-question').textContent = currentQ.q;
+      document.getElementById('qz-orb-wrap').setAttribute('hidden', '');
+      document.getElementById('qz-result').style.opacity = '0';
+      document.getElementById('qz-next-btn').textContent = 'Kérdés';
+
+      const answersEl = document.getElementById('qz-answers');
+      answersEl.innerHTML = '';
+      currentQ.a.forEach((ans, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-answer';
+        btn.textContent = ans;
+        btn.onclick = () => answer(i, btn);
+        answersEl.appendChild(btn);
+      });
+    }
+
+    async function answer(idx, btn) {
+      if (answered) return;
+      answered = true;
+      const bet = bets[diff];
+      const correct = idx === currentQ.c;
+
+      document.querySelectorAll('.quiz-answer').forEach((b, i) => {
+        if (i === currentQ.c) b.classList.add('correct');
+        else if (i === idx && !correct) b.classList.add('wrong');
+        b.onclick = null;
+      });
+
+      const orbWrap = document.getElementById('qz-orb-wrap');
+      const orb = document.getElementById('qz-orb');
+      orbWrap.removeAttribute('hidden');
+
+      if (correct) {
+        orb.className = 'quiz-orb win';
+        orb.textContent = '💰';
+        const win = bet * 2;
+        showResult('qz-result', `✅ Helyes! <b>+${win} Ft</b>`, 'win');
+        setNPC('Gratulálok! A tudás valóban pénz!');
+        await applyDelta(win);
+      } else {
+        orb.className = 'quiz-orb lose';
+        orb.textContent = '💸';
+        showResult('qz-result', `❌ Rossz válasz! <b>−${bet} Ft</b>`, 'lose');
+        setNPC('Ne csüggedj! A következő kérdés a tiéd lehet!');
+        await applyDelta(-bet);
+      }
+
+      document.getElementById('qz-next-btn').textContent = 'Következő kérdés';
+    }
+
+    return { setDiff, nextQuestion };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  BINGO GAME
+  // ════════════════════════════════════════════════════════════════
+  const BINGO_DATA = [
+    { term: "ROI", def: "Return on Investment — befektetés megtérülése", wrong: ["Adó", "Kamat", "Hitel"] },
+    { term: "EBKM", def: "Egységes Betéti Kamatláb Mérték — betétek valódi hozama", wrong: ["Adókulcs", "Tőzsdei index", "Hiteldíj"] },
+    { term: "THM", def: "Teljes Hiteldíj Mutató — hitel teljes költsége százalékban", wrong: ["Tőzsdei ár", "Adó", "Kamat"] },
+    { term: "OBA", def: "Országos Betétbiztosítási Alap — banki betétek védelme", wrong: ["Adó", "Bank", "Hitel"] },
+    { term: "BEVA", def: "Befektető-védelmi Alap — befektetések védelme", wrong: ["Bank", "Adó", "Hitel"] },
+    { term: "Likviditás", def: "Milyen gyorsan tehető pénzzé egy befektetés", wrong: ["Biztonság", "Hozam", "Kamat"] },
+    { term: "Infláció", def: "Tartós árszínvonal-emelkedés, pénz értéktelenedése", wrong: ["Árcsökkenés", "Adó", "Kamat"] },
+    { term: "Defláció", def: "Általános árszínvonal csökkenése", wrong: ["Áremelkedés", "Infláció", "Adó"] },
+    { term: "Kamat", def: "Pénz használatának ára", wrong: ["Adó", "Bérleti díj", "Osztalék"] },
+    { term: "Hozam", def: "Befektetésből származó nyereség", wrong: ["Adó", "Kiadás", "Hitel"] },
+    { term: "Osztalék", def: "Részvényes részesedése a vállalat nyereségéből", wrong: ["Adó", "Kamat", "Bér"] },
+    { term: "Részvény", def: "Tulajdonjogot megtestesítő értékpapír", wrong: ["Hitel", "Betét", "Adó"] },
+    { term: "Kötvény", def: "Hitelviszonyt megtestesítő értékpapír", wrong: ["Részvény", "Betét", "Adó"] },
+    { term: "Állampapír", def: "Állam által kibocsátott értékpapír", wrong: ["Részvény", "Betét", "Adó"] },
+    { term: "Kincstárjegy", def: "1 éves vagy rövidebb lejáratú állampapír", wrong: ["Részvény", "Hosszú lejáratú", "Betét"] },
+    { term: "Államkötvény", def: "1 évnél hosszabb lejáratú állampapír", wrong: ["Részvény", "Rövid lejáratú", "Betét"] },
+    { term: "Tőzsde", def: "Piac, ahol értékpapírok gazdát cserélnek", wrong: ["Bank", "Bolt", "Adó"] },
+    { term: "Kamatkockázat", def: "Piaci kamatláb változása átértékeli a befektetést", wrong: ["Adó", "Infláció", "Hitel"] },
+    { term: "Devizakockázat", def: "Árfolyamváltozás átértékelheti a befektetést", wrong: ["Kamat", "Infláció", "Adó"] },
+    { term: "Jelzáloghitel", def: "Lakáscélú hitel, ingatlan a fedezet", wrong: ["Személyi hitel", "Diákhitel", "Adó"] },
+    { term: "Diákhitel", def: "Felsőoktatási hallgatóknak, alacsony kamatú kölcsön", wrong: ["Lakáshitel", "Autóhitel", "Adó"] },
+    { term: "Annuitásos", def: "Állandó havi törlesztőrészlet", wrong: ["Változó", "Egyösszegű", "Adó"] },
+    { term: "Lineáris", def: "Állandó tőketörlesztés", wrong: ["Változó", "Egyösszegű", "Adó"] },
+    { term: "Adósságfék", def: "Megakadályozza a túlzott eladósodást", wrong: ["Hitel", "Adó", "Kamat"] },
+    { term: "Életbiztosítás", def: "Halálra vagy meghatározott eseményre szóló biztosítás", wrong: ["Lakás", "Autó", "Adó"] },
+    { term: "Költségvetés", def: "Bevételek és kiadások terve", wrong: ["Hitel", "Befektetés", "Adó"] },
+    { term: "Megtakarítás", def: "Félretett pénz jövőbeli célokra", wrong: ["Kölcsön", "Kiadás", "Adó"] },
+    { term: "Bankbetét", def: "Banknak kölcsönadott pénz kamatért", wrong: ["Hitel", "Adó", "Biztosítás"] },
+    { term: "Betéti kártya", def: "Saját pénz használata", wrong: ["Bank pénze", "Hitel", "Adó"] },
+    { term: "Hitelkártya", def: "Bank pénzének használata", wrong: ["Saját pénz", "Betét", "Adó"] },
+    { term: "Átutalás", def: "Pénz küldése bankszámláról", wrong: ["Készpénz", "Hitel", "Adó"] },
+    { term: "Inkasszó", def: "Automatikus beszedési megbízás", wrong: ["Átutalás", "Hitel", "Adó"] },
+    { term: "Pénzforgalom", def: "Pénzmozgások összessége", wrong: ["Adó", "Hitel", "Kamat"] },
+    { term: "Szűkösség", def: "Kevesebb erőforrás, mint igény", wrong: ["Bőség", "Megtakarítás", "Adó"] },
+    { term: "Háztartás", def: "Közös jövedelemmel rendelkező személyek", wrong: ["Ház", "Bolt", "Adó"] },
+    { term: "Jövedelem", def: "Pénzben és természetben kapott bevétel", wrong: ["Kiadás", "Adó", "Hitel"] },
+    { term: "Pénz időértéke", def: "100 Ft ma többet ér, mint holnap", wrong: ["Infláció", "Kamat", "Adó"] },
+    { term: "Kamatos kamat", def: "Kamat tőkésítése időszakonként", wrong: ["Egyszeri kamat", "Adó", "Hitel"] },
+    { term: "Árfolyamnyereség", def: "Drágábban eladni, mint venni", wrong: ["Adó", "Kamat", "Osztalék"] },
+    { term: "Értékpapírszámla", def: "Különleges számla értékpapírok kezelésére", wrong: ["Bankszámla", "Hitel", "Adó"] },
+    { term: "Hitelkockázat", def: "Kibocsátó nem teljesíti kötelezettségeit", wrong: ["Kamat", "Infláció", "Adó"] },
+    { term: "Likviditási kockázat", def: "Befektetés nehezen tehető pénzzé", wrong: ["Kamat", "Adó", "Infláció"] },
+    { term: "Fogyasztási hitel", def: "Adós jövedelme/vagyona a fedezet", wrong: ["Lakáshitel", "Diákhitel", "Adó"] },
+    { term: "Pénzügyi terv", def: "Útiterv a célokhoz", wrong: ["Hitel", "Adó", "Költségvetés"] },
+    { term: "Befektetés", def: "Pénz lekötése nyereség reményében", wrong: ["Kiadás", "Adó", "Hitel"] },
+    { term: "Bankszámlakivonat", def: "Pénzügyi események értesítése", wrong: ["Hitel", "Biztosítás", "Adó"] },
+    { term: "Erőforrások", def: "Munka, idő, jövedelem, vagyon", wrong: ["Adó", "Hitel", "Kiadás"] },
+    { term: "ÁKK", def: "Államadósság Kezelő Központ", wrong: ["Adó", "Bank", "Hitel"] },
+    { term: "KSH", def: "Központi Statisztikai Hivatal", wrong: ["Bank", "Adó", "Hitel"] },
+    { term: "Nem életbiztosítás", def: "Lakás, vagyon, felelősség, gépjármű biztosítás", wrong: ["Halál", "Nyugdíj", "Adó"] },
+  ];
+
+  const BG = (() => {
+    let currentTerm = null, answered = false, helpUsed = false;
+
+    function next() {
+      if (S.balance < 200) {
+        showResult('bg-result', 'Nincs elég egyenleged! (200 Ft kell)', 'lose');
+        return;
+      }
+      answered = false;
+      helpUsed = false;
+      currentTerm = BINGO_DATA[Math.floor(Math.random() * BINGO_DATA.length)];
+      document.getElementById('bg-term').textContent = currentTerm.term;
+      document.getElementById('bg-help-wrap').setAttribute('hidden', '');
+      document.getElementById('bg-result').style.opacity = '0';
+      document.getElementById('bg-help-btn').disabled = false;
+
+      const answersEl = document.getElementById('bg-answers');
+      answersEl.innerHTML = '';
+
+      const options = [currentTerm.def, ...currentTerm.wrong];
+      const shuffled = options.sort(() => Math.random() - 0.5);
+
+      shuffled.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'bingo-answer';
+        btn.textContent = opt;
+        btn.onclick = () => answer(opt, btn);
+        answersEl.appendChild(btn);
+      });
+    }
+
+    async function answer(selected, btn) {
+      if (answered) return;
+      answered = true;
+
+      const correct = selected === currentTerm.def;
+
+      document.querySelectorAll('.bingo-answer').forEach(b => {
+        if (b.textContent === currentTerm.def) b.classList.add('correct');
+        else if (b === btn && !correct) b.classList.add('wrong');
+        b.onclick = null;
+      });
+
+      if (correct) {
+        const win = 300;
+        showResult('bg-result', `✅ Helyes! <b>+${win} Ft</b>`, 'win');
+        setNPC('Okos vagy! A tudás befektetés!');
+        await applyDelta(win);
+      } else {
+        showResult('bg-result', `❌ Rossz válasz! <b>−200 Ft</b>`, 'lose');
+        setNPC('A tudás pénz — szó szerint!');
+        await applyDelta(-200);
+      }
+    }
+
+    async function showHelp() {
+      if (helpUsed || answered) return;
+      if (S.balance < 150) {
+        showResult('bg-result', 'Nincs elég egyenleged a súgóhoz! (150 Ft)', 'lose');
+        return;
+      }
+      helpUsed = true;
+      document.getElementById('bg-help-btn').disabled = true;
+      document.getElementById('bg-help-wrap').removeAttribute('hidden');
+      document.getElementById('bg-help-text').textContent = currentTerm.def;
+      setNPC('Okos döntés! A tudás befektetés. (−150 Ft)');
+      await applyDelta(-150);
+    }
+
+    return { next, showHelp };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  WHEEL GAME
+  // ════════════════════════════════════════════════════════════════
+  const WHEEL_SEGMENTS = [
+    { label: '+100', value: 100, color: '#4CAF50', count: 4 },
+    { label: '+300', value: 300, color: '#66BB6A', count: 3 },
+    { label: '+500', value: 500, color: '#81C784', count: 2 },
+    { label: '+1000', value: 1000, color: '#A5D6A7', count: 1 },
+    { label: '-100', value: -100, color: '#EF5350', count: 2 },
+    { label: '-300', value: -300, color: '#E57373', count: 2 },
+    { label: '-500', value: -500, color: '#EF9A9A', count: 1 },
+    { label: 'JACKPOT +5000', value: 5000, color: '#FFD700', count: 1 },
+  ];
+
+  const WH = (() => {
+    let spinning = false;
+    let segments = [];
+    let currentRotation = 0;
+
+    function init() {
+      segments = [];
+      WHEEL_SEGMENTS.forEach(seg => {
+        for (let i = 0; i < seg.count; i++) {
+          segments.push(seg);
+        }
+      });
+      segments.sort(() => Math.random() - 0.5);
+
+      const wheel = document.getElementById('wh-wheel');
+      const segCount = segments.length;
+      const segAngle = 360 / segCount;
+
+      let gradient = 'conic-gradient(';
+      segments.forEach((seg, i) => {
+        const start = i * segAngle;
+        const end = (i + 1) * segAngle;
+        gradient += `${seg.color} ${start}deg ${end}deg`;
+        if (i < segments.length - 1) gradient += ', ';
+      });
+      gradient += ')';
+      wheel.style.background = gradient;
+
+      segments.forEach((seg, i) => {
+        const angle = (i + 0.5) * segAngle;
+        const label = document.createElement('div');
+        label.style.cssText = `
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(${angle}deg) translateY(-140px);
+          color: ${seg.value >= 0 ? '#fff' : '#000'};
+          font-weight: 700;
+          font-size: 0.9rem;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+          pointer-events: none;
+        `;
+        label.textContent = seg.label;
+        wheel.appendChild(label);
+      });
+    }
+
+    async function spin() {
+      if (spinning) return;
+      if (S.balance < 200) {
+        showResult('wh-result', 'Nincs elég egyenleged! (200 Ft kell)', 'lose');
+        return;
+      }
+
+      spinning = true;
+      document.getElementById('wh-spin-btn').disabled = true;
+      document.getElementById('wh-result').style.opacity = '0';
+
+      await applyDelta(-200);
+
+      const wheel = document.getElementById('wh-wheel');
+      const segCount = segments.length;
+      const segAngle = 360 / segCount;
+      const winIndex = Math.floor(Math.random() * segCount);
+      const winSeg = segments[winIndex];
+
+      const targetAngle = 360 - (winIndex + 0.5) * segAngle;
+      const spins = 5;
+      const finalRotation = currentRotation + (spins * 360) + targetAngle - (currentRotation % 360);
+
+      wheel.style.transform = `rotate(${finalRotation}deg)`;
+      currentRotation = finalRotation;
+
+      await sleep(4100);
+
+      if (winSeg.value > 0) {
+        showResult('wh-result', `🎉 ${winSeg.label} Ft! <b>+${winSeg.value} Ft</b>`, 'win');
+        setNPC(winSeg.value >= 1000 ? 'Hűha! Nagy nyeremény!' : 'Szép volt!');
+        await applyDelta(winSeg.value);
+      } else {
+        showResult('wh-result', `💸 ${winSeg.label} Ft`, 'lose');
+        setNPC('Ne csüggedj! A következő pörgetés a tiéd lehet!');
+      }
+
+      document.getElementById('wh-spin-btn').disabled = false;
+      spinning = false;
+    }
+
+    return { init, spin };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  SCRATCH GAME
+  // ════════════════════════════════════════════════════════════════
+  const SCRATCH_SYMBOLS = [
+    { sym: '💰', count: 3, value: 2000 },
+    { sym: '💎', count: 2, value: 5000 },
+    { sym: '🎩', count: 3, value: 1000 },
+    { sym: '🍒', count: 4, value: 500 },
+    { sym: '💀', count: 2, value: -1000 },
+    { sym: '⭐', count: 2, value: 0 },
+  ];
+
+  const SC = (() => {
+    let grid = [], scratched = 0, finished = false;
+
+    function newCard() {
+      if (S.balance < 500) {
+        showResult('sc-result', 'Nincs elég egyenleged! (500 Ft kell)', 'lose');
+        return;
+      }
+
+      scratched = 0;
+      finished = false;
+      document.getElementById('sc-new-btn').setAttribute('hidden', '');
+      document.getElementById('sc-result').style.opacity = '0';
+
+      applyDelta(-500);
+
+      grid = [];
+      SCRATCH_SYMBOLS.forEach(s => {
+        for (let i = 0; i < s.count; i++) {
+          grid.push({ sym: s.sym, value: s.value });
+        }
+      });
+      while (grid.length < 16) {
+        grid.push({ sym: '⭐', value: 0 });
+      }
+      grid.sort(() => Math.random() - 0.5);
+
+      const gridEl = document.getElementById('sc-grid');
+      gridEl.innerHTML = '';
+      grid.forEach((cell, i) => {
+        const el = document.createElement('div');
+        el.className = 'scratch-cell';
+        el.dataset.index = i;
+        el.onclick = () => scratch(i, el);
+        gridEl.appendChild(el);
+      });
+    }
+
+    async function scratch(idx, el) {
+      if (finished || el.classList.contains('scratched')) return;
+
+      el.classList.add('scratched');
+      el.textContent = grid[idx].sym;
+      el.onclick = null;
+      scratched++;
+
+      if (scratched === 16) {
+        finished = true;
+        await checkWin();
+      }
+    }
+
+    async function checkWin() {
+      const counts = {};
+      grid.forEach(cell => {
+        counts[cell.sym] = (counts[cell.sym] || 0) + 1;
+      });
+
+      let winSym = null, winValue = 0;
+      for (const sym in counts) {
+        if (counts[sym] >= 3) {
+          const symData = SCRATCH_SYMBOLS.find(s => s.sym === sym);
+          if (symData && symData.value > winValue) {
+            winSym = sym;
+            winValue = symData.value;
+          }
+        }
+      }
+
+      if (winSym) {
+        document.querySelectorAll('.scratch-cell').forEach((el, i) => {
+          if (grid[i].sym === winSym) el.classList.add('winning');
+        });
+
+        if (winValue > 0) {
+          showResult('sc-result', `🎉 3× ${winSym}! <b>+${winValue} Ft</b>`, 'win');
+          setNPC(winValue >= 2000 ? 'Fantasztikus! Jackpot!' : 'Szép nyeremény!');
+          await applyDelta(winValue);
+        } else {
+          showResult('sc-result', `💀 3× ${winSym}! <b>${winValue} Ft</b>`, 'lose');
+          setNPC('Balszerencse! De ne add fel!');
+          await applyDelta(winValue);
+        }
+      } else {
+        showResult('sc-result', `Nincs 3 egyforma. <b>−500 Ft</b>`, 'lose');
+        setNPC('Legközelebb több szerencséd lesz!');
+      }
+
+      document.getElementById('sc-new-btn').removeAttribute('hidden');
+    }
+
+    return { newCard };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  Public API
+  // ════════════════════════════════════════════════════════════════
+  window.SL = {
+    qz: { setDiff: QZ.setDiff, nextQuestion: QZ.nextQuestion },
+    bg: { next: BG.next, showHelp: BG.showHelp },
+    wh: { spin: WH.spin },
+    sc: { newCard: SC.newCard },
+
+    enter(game) {
+      showScreen(game);
+      if (game === 'wheel') WH.init();
+      if (game === 'scratch') SC.newCard();
+    },
+    showLobby() {
+      showScreen('lobby');
+    },
+    async exitSlots() {
+      await GameAPI.exit(S.balance);
+    },
+  };
+
+})();
+</script>
 {% endblock %}

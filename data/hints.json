@@ -51,5 +51,43 @@
     { "term": "Minimálbér", "explanation": "A törvényes legkisebb fizetés. Pontosan ennyit keresel most." },
     { "term": "Munkabér", "explanation": "Pénz munkáért cserébe. Kevesebb, mint gondolnád." },
     { "term": "Adó", "explanation": "A fizetésedből levont rész. Nem kérdeznek." }
+  ],
+  "quiz": [
+    { "term": "Infláció", "explanation": "Tartós árszínvonal-emelkedés. A pénzed egyre kevesebbet ér." },
+    { "term": "Kamat", "explanation": "Pénz használatának ára. A bank fizet neked, vagy te fizetsz a banknak." },
+    { "term": "Likviditás", "explanation": "Milyen gyorsan tehető pénzzé egy befektetés. A készpénz a leglikvidebb." },
+    { "term": "Részvény", "explanation": "Tulajdonjogot megtestesítő értékpapír. Részesedsz a vállalatból." },
+    { "term": "Kötvény", "explanation": "Hitelviszonyt megtestesítő értékpapír. Kölcsönadsz a kibocsátónak." },
+    { "term": "THM", "explanation": "Teljes Hiteldíj Mutató. Megmutatja a hitel valódi költségét." },
+    { "term": "EBKM", "explanation": "Egységes Betéti Kamatláb Mérték. A betétek valódi hozama." },
+    { "term": "Osztalék", "explanation": "A vállalat nyereségéből a részvényeseknek jutó rész." },
+    { "term": "Tőzsde", "explanation": "Piac, ahol értékpapírok gazdát cserélnek. Itt kereskednek a részvényekkel." },
+    { "term": "Megtakarítás", "explanation": "Félretett pénz jövőbeli célokra vagy váratlan helyzetekre." }
+  ],
+  "bingo": [
+    { "term": "ROI", "explanation": "Return on Investment — befektetés megtérülése. Megmutatja, mennyit hozott a befektetés." },
+    { "term": "OBA", "explanation": "Országos Betétbiztosítási Alap. Védi a banki betéteket csőd esetén." },
+    { "term": "BEVA", "explanation": "Befektető-védelmi Alap. A kockázatosabb befektetéseket védi." },
+    { "term": "ÁKK", "explanation": "Államadósság Kezelő Központ. Az állampapírokat kezeli." },
+    { "term": "KSH", "explanation": "Központi Statisztikai Hivatal. Gazdasági adatokat gyűjt és elemez." },
+    { "term": "Defláció", "explanation": "Általános árszínvonal csökkenése. Az infláció ellentéte." },
+    { "term": "Hozam", "explanation": "Befektetésből származó nyereség. Lehet kamat, osztalék vagy árfolyamnyereség." },
+    { "term": "Árfolyamnyereség", "explanation": "Drágábban eladni, mint venni. A különbség a nyereség." },
+    { "term": "Kincstárjegy", "explanation": "1 éves vagy rövidebb lejáratú állampapír. Rövid távú befektetés." },
+    { "term": "Annuitásos", "explanation": "Állandó havi törlesztőrészlet. A kamat és tőke aránya változik." }
+  ],
+  "wheel": [
+    { "term": "Szerencse", "explanation": "Véletlen esemény. A pénzügyekben jobb a tervezésre hagyatkozni." },
+    { "term": "Kockázat", "explanation": "Annak valószínűsége, hogy elveszíted a pénzed. A keréken magas." },
+    { "term": "Jackpot", "explanation": "A legnagyobb nyeremény. Nagyon ritka, de nagyon vonzó." },
+    { "term": "Várható érték", "explanation": "Átlagos nyeremény hosszú távon. A szerencsekeréken negatív." },
+    { "term": "Valószínűség", "explanation": "Annak az esélye, hogy valami bekövetkezik. 0 és 1 közötti szám." }
+  ],
+  "scratch": [
+    { "term": "Sorsjegy", "explanation": "Szerencsejáték, ahol kaparással derül ki az eredmény. Azonnali visszajelzés." },
+    { "term": "Nyerési esély", "explanation": "Annak valószínűsége, hogy nyersz. A kaparós sorsjegyeknél általában alacsony." },
+    { "term": "Szimbólum", "explanation": "Jelkép, ami meghatározza az eredményt. 3 egyforma = nyeremény." },
+    { "term": "Kockázat", "explanation": "A befektetett pénz elvesztésének lehetősége. Itt 500 Ft-onként." },
+    { "term": "Megtérülés", "explanation": "A befektetett pénzhez képest mennyit kapsz vissza. Általában kevesebbet." }
   ]
 }
