@@ -13,6 +13,10 @@
   }
   #game-header { text-align: center; }
   #game-header h1 { font-size: 2rem; }
+  .game-subtitle {
+    color: var(--cream-dark);
+    font-style: italic;
+  }
   #balance-display {
     text-align: center;
     font-size: 1.8rem;
@@ -217,6 +221,16 @@
     color: #ffcdd2;
     border: 1px solid #c62828;
   }
+  .result-winner {
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+  .result-save-error {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+    color: var(--red-light);
+  }
   #race-controls {
     display: flex;
     gap: 0.75rem;
@@ -237,7 +251,7 @@
 
   <div id="game-header">
     <h1>🏇 Lóverseny</h1>
-    <p style="color:var(--cream-dark);font-style:italic;">Tedd meg a tipped, és nézd, ahogy a lovak elhúznak a pénzed után.</p>
+    <p class="game-subtitle">Tedd meg a tipped, és nézd, ahogy a lovak elhúznak a pénzed után.</p>
   </div>
 
   <div class="npc-hint" id="npc-hint">Betöltés...</div>
@@ -312,6 +326,7 @@
      DOM REFS
   ═══════════════════════════════════════════ */
   const $ = id => document.getElementById(id);
+  const npcHint    = $('npc-hint');
   const balValue   = $('bal-value');
   const horseGrid  = $('horse-grid');
   const statsPanel = $('stats-panel');
@@ -355,6 +370,16 @@
   function showPhase(phase) {
     [phaseBet, phaseRace].forEach(p => p.classList.remove('is-active'));
     phase.classList.add('is-active');
+  }
+
+  async function loadHint() {
+    try {
+      const hint = await GameAPI.getHint();
+      npcHint.innerHTML = `<strong>${hint.term}:</strong> ${hint.explanation}`;
+    } catch (err) {
+      console.warn('Horse race hint load failed', err);
+      npcHint.textContent = 'A lóverseny-tanácsadó ma nem ért rá. Gyanús.';
+    }
   }
 
   /* ═══════════════════════════════════════════
@@ -511,9 +536,15 @@
     }
 
     const winnerName = currentHorses[winnerIdx].name;
-    raceResult.innerHTML += `<br><span style="font-size:0.85rem;opacity:0.8;">Győztes: ${winnerName}</span>`;
+    raceResult.innerHTML += `<br><span class="result-winner">Győztes: ${winnerName}</span>`;
 
-    state.balance = newBalance;
+    try {
+      state = await GameAPI.patch({ balance: newBalance });
+    } catch (err) {
+      console.error('Horse race balance update failed', err);
+      state.balance = newBalance;
+      raceResult.innerHTML += '<span class="result-save-error">A kassza nem frissült a szerveren. Kilépéskor újrapróbáljuk.</span>';
+    }
     balValue.textContent = fmt(state.balance);
 
     retryBtn.disabled = false;
@@ -564,6 +595,7 @@
      INIT
   ═══════════════════════════════════════════ */
   async function init() {
+    loadHint();
     state = await GameAPI.getState();
     balValue.textContent = fmt(state.balance);
 
