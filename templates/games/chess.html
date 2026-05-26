@@ -1,15 +1,555 @@
 {% extends "base.html" %}
-{% block title %}chess — Hamarosan{% endblock %}
+{% block title %}Abszurd Sakkautomata{% endblock %}
+
 {% block content %}
-<div style="max-width:600px;margin:4rem auto;text-align:center;padding:0 1rem;">
-  <div style="font-size:4rem;margin-bottom:1rem;">🚧</div>
-  <h1 style="margin-bottom:0.5rem;">chess</h1>
-  <p style="color:var(--cream-dark);font-style:italic;margin-bottom:2rem;">
-    Ez a mini-játék még fejlesztés alatt áll. Hamarosan!
-  </p>
-  <div class="npc-hint" id="npc-hint">Betöltés...</div>
-  <div style="margin-top:2rem;">
-    <a href="/" class="btn btn-gold">← Vissza a Plazára</a>
-  </div>
+<div id="game-container" class="chess-game">
+    <div id="game-toast" class="toast-notification"></div>
+
+    <div class="game-header">
+        <h2>♟️ Abszurd Sakkautomata</h2>
+        <div id="npc-hint" class="hint-box">Válassz nehézséget a kezdéshez!</div>
+    </div>
+
+    <div id="setup-panel" class="panel">
+        <h3>Pénzügyi Stratégia és Nehézségi Szint</h3>
+        <p>Jelenlegi tőkéd: <span id="current-balance-display">...</span> Ft</p>
+        
+        <div class="form-group">
+            <label for="difficulty">Gép nehézsége:</label>
+            <select id="difficulty">
+                <option value="easy">Könnyű (Részeg bróker - teljesen véletlenszerű lépések)</option>
+                <option value="medium" selected>Közepes (Gyakornok elemző - anyagi előnyre törekszik)</option>
+                <option value="hard">Nehéz (A tőke cápája - komoly pozíciókat is számol)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="bet-amount">Tét összege (Ft):</label>
+            <input type="number" id="bet-amount" value="500" min="100" step="100">
+        </div>
+
+        <button id="start-btn" onclick="startGame()">Üzlet indítása</button>
+        <button class="exit-btn" onclick="exitGame(false)">Vissza a városba</button>
+    </div>
+
+    <div id="play-panel" class="panel" style="display: none;">
+        <div class="game-status">
+            <div>Kockáztatott tét: <span id="active-bet">0</span> Ft</div>
+            <div id="turn-indicator" class="status-badge">Várakozás...</div>
+        </div>
+
+        <div id="chess-board" class="board"></div>
+
+        <div class="control-buttons">
+            <button class="exit-btn" onclick="surrenderGame()">Csődeljárás (Játék feladása)</button>
+        </div>
+    </div>
 </div>
+
+<style>
+.chess-game { max-width: 600px; margin: 0 auto; padding: 20px; font-family: var(--font-body); color: var(--cream); text-align: center; position: relative; }
+.hint-box { background-color: var(--dark-mid); padding: 15px; border-radius: 5px; border: 1px solid var(--gold); margin-bottom: 20px; font-style: italic; min-height: 60px; display: flex; align-items: center; justify-content: center; line-height: 1.4; }
+.panel { background-color: var(--dark-mid); padding: 20px; border-radius: 8px; box-shadow: var(--shadow); }
+.form-group { margin-bottom: 15px; text-align: left; }
+.form-group label { display: block; margin-bottom: 5px; color: var(--gold-light); }
+.form-group select, .form-group input { width: 100%; padding: 10px; background-color: var(--dark); border: 1px solid var(--dark-mid); color: white; border-radius: 4px; }
+
+.status-badge { padding: 5px 15px; border-radius: 20px; transition: all 0.3s ease; background: rgba(0,0,0,0.3); display: inline-block; }
+.status-badge.player-active { background: rgba(255, 255, 255, 0.15); color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+
+button { background-color: var(--gold); color: var(--dark); border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; margin: 5px; }
+.exit-btn { background-color: var(--red); color: white; }
+
+/* Meleg mályvás sakkasztal stílusa */
+.board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); width: 100%; max-width: 440px; aspect-ratio: 1 / 1; margin: 0 auto 20px auto; border: 4px solid var(--dark-mid); position: relative; overflow: hidden; transition: all 0.3s ease; }
+.square { display: flex; justify-content: center; align-items: center; font-size: 34px; cursor: pointer; user-select: none; position: relative; transition: background-color 0.2s ease; }
+.square.light { background-color: #141419; } 
+.square.dark { background-color: #5B2C6F; } 
+.square.selected { background-color: #C0392B !important; } 
+.square.highlight::after { content: ''; width: 14px; height: 14px; background-color: rgba(255, 255, 255, 0.4); border-radius: 50%; position: absolute; }
+
+.white-piece { color: #E0E0E0; filter: drop-shadow(1px 1px 1px #000); transition: all 0.5s ease; } 
+.black-piece { color: var(--gold); filter: drop-shadow(1px 1px 1px #000); transition: all 0.5s ease; } 
+
+/* ANIMÁCIÓS ÉS ÚJ STÍLUSOK */
+
+/* Beépített Toast értesítő sáv stílusa */
+.toast-notification {
+    position: fixed;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--dark-mid);
+    color: var(--cream);
+    border: 2px solid var(--gold);
+    padding: 15px 30px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 1000;
+    transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+.toast-notification.show {
+    top: 30px;
+    opacity: 1;
+}
+
+/* 1. Tőzsdei Gondolkodó Háttér (AI kör) */
+@keyframes market-analysis {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+}
+.board.ai-analyzing {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+    background-image: linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    animation: market-analysis 4s linear infinite;
+}
+
+/* AI vakvillanó szimuláció (Minimax vizualizációhoz) */
+.square.ai-thinking-flash {
+    background-color: rgba(212, 175, 55, 0.25) !important;
+}
+
+/* 2. Profit és Veszteség effektek */
+@keyframes profit-float {
+    0% { transform: translateY(0) scale(0.8); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(-40px) scale(1.4); opacity: 0; }
+}
+.profit-text {
+    position: absolute;
+    color: #2ECC71;
+    font-weight: bold;
+    font-size: 18px;
+    pointer-events: none;
+    z-index: 10;
+    animation: profit-float 0.8s ease-out forwards;
+}
+
+@keyframes loss-flash {
+    0% { background-color: rgba(192, 41, 43, 0.6); }
+    100% { background-color: transparent; }
+}
+.loss-effect {
+    animation: loss-flash 0.5s ease-out forwards;
+}
+
+/* 4. Csődeljárás (Összeomlás) effekt */
+@keyframes market-crash {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(300px) rotate(45deg); opacity: 0; }
+}
+.board.crashed .square {
+    pointer-events: none;
+}
+.board.crashed .white-piece, .board.crashed .black-piece {
+    animation: market-crash 1.2s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    let state;
+    let betAmount = 0;
+    let difficulty = 'medium';
+    let gameActive = false;
+    let playerTurn = true;
+    let selectedSquare = null;
+    let possibleMoves = [];
+
+    const adviceList = [
+        "Gazdálkodni annyi, mint tudatos döntéseket hozni a szűkös erőforrások beosztásáról.",
+        "A Maslow-féle szükségletpiramis alján a fizikai szükségletek, a tetején az önmegvalósítás áll.",
+        "A szűkösség általános gazdasági probléma: sem az időnk, sem a pénzünk nem végtelen.",
+        "Aki nem tervez és gazdálkodik tudatosan, az a puszta véletlenre bízza a jövőjét.",
+        "Minden döntés egyben áldozat is: amire most költesz, azt más dologra már nem tudod felhasználni.",
+        "Észszerű gazdasági döntés: a várható legtöbb előny elérése a lehető legkevesebb hátránnyal.",
+        "A szükséglet és a vágy nem ugyanaz – az ivóvíz létszükséglet, a luxusóra csupán vágy.",
+        "Csak addig nyújtózkodj, ameddig a takaród ér! Ne verj magad felesleges adósságokba.",
+        "A pontos családi költségvetés vezetésével időben láthatod, ha közeledik a pénzügyi csőd.",
+        "Ha a kiadásaid összege meghaladja a bevételeidet, az hiány – azonnal faragd le a költségeket!",
+        "A készpénz otthoni tartása drága az infláció miatt és veszélyes is, inkább használd a bankot!",
+        "A bankszámla olyan, mint egy digitális pénztárca, amit biztonságosan kezelhetsz.",
+        "Soha ne add meg a bankkártyád PIN-kódját (titkos személyi azonosító számát) senkinek!",
+        "Nyilvános, ingyenes wifihálózatról soha ne intézz bankolást, mert könnyen ellophatják az adataidat.",
+        "A betéti kártyával a saját számládon lévő pénzt költöd, míg a hitelkártyával a bank pénzét használod.",
+        "A dombornyomott bankkártya régen az indigós lehúzókhoz kellett, ma már inkább extra szolgáltatásokat jelent.",
+        "Az EBKM (Egységesített Betéti Kamatláb Mutató) megmutatja, hogy a pénzed ténylegesen mennyit fial egy év alatt.",
+        "Ne tegyél minden tojást egy kosárba – diverzifikáld (oszd meg több részre) a befektetéseidet a biztonságért!",
+        "A piaci alapszabály: a nagy hozam mindig nagy kockázattal jár. Az alacsony hozam biztonságosabb.",
+        "A munkavégző képességed a legfontosabb erőforrásod – fejleszd folyamatosan tanulással!",
+        "A folyó fogyasztási kiadások (mint a lakásrezsi és az élelmiszer) a mindennapi élet alapjai.",
+        "Az adó egy kötelező állami elvonás, amiből a közösségi szolgáltatásokat (iskolák, utak) finanszírozzák.",
+        "Fogyasztó az a magánszemély, aki saját szükségletei kielégítésére terméket vagy szolgáltatást vásárol.",
+        "A termelő az a gazdasági szereplő, aki előállítja az árut, amit te később a piacon megveszel.",
+        "A Maslow-piramis szerint a biztonságra való törekvés egy alapvető, hiányalapú szükségletünk.",
+        "A tudatos vásárló mindig megkérdezi magától: Tényleg szükségem van erre, vagy csak megkívántam?",
+        "A nettó jövedelem az a tiszta pénzösszeg, amit az adók levonása után ténylegesen kézhez kapsz.",
+        "A családi pótlék egy transzfer (ellenszolgáltatás nélküli) jövedelem, amit az állam nyújt a családoknak.",
+        "A vagyonból származó jövedelem (például a lakáskiadásból befolyó bérleti díj) növeli a szabadságodat.",
+        "A tartós fogyasztási cikkek (például egy autó vagy hűtő) beszerzése hosszú távú pénzügyi elköteleződés.",
+        "A szociológiai háztartás olyan emberek közössége, akik közös költségvetésből, együtt élnek.",
+        "A természetbeni juttatások (például céges autó vagy telefon) jelentősen csökkentik a saját kiadásaidat.",
+        "A luxusjavak fogyasztása sokkal gyorsabban nő, mint ahogy a fizetésed és a jövedelmed emelkedik.",
+        "A költségvetés egyensúlya: a bevételek és a kiadások tervezett, pontos összehangolása.",
+        "A váratlan vészhelyzetekre (például betegség, autószerelés) mindig legyen legalább 3-6 havi tartalékod!",
+        "Az internetbank és a mobilalkalmazás a nap 24 órájában, térbeli és időbeli korlátok nélkül elérhető.",
+        "A bankkártya fizikai tulajdonosa jogilag mindig a kibocsátó bank marad, te csak a használatára vagy jogosult.",
+        "A POS-terminál (értékesítési helyen működő terminál) az üzletekach elhelyezett elektronikus kártyaolvasó.",
+        "A hitelkártya használata után komoly kamatot kell fizetned, ha a türelmi idő lejárta előtt nem törleszted.",
+        "A digitális számlapénz mozgatása sokkal olcsóbb a nemzetgazdaságnak, mint a fizikai készpénz gyártása.",
+        "Részletes pénzügyi terv nélkül csak vakon tapogatózol a jövőbeli céljaid felé.",
+        "Rövid távú cél például egy nyári fesztiválbérlet, míg a hosszú távú cél egy saját lakás megvásárlása.",
+        "A befektetés likviditása azt mutatja meg, hogy milyen gyorsan és veszteség nélkül tudod azt készpénzzé tenni.",
+        "A kincstárjegy egy rövid távú (maximum 1 éves), az államkötvény pedig egy hosszú távú hitel az állam részére.",
+        "A részvény tulajdonjogot és osztalékot biztosít a cégben, míg a kötvény csak egy kölcsönviszonyt testesít meg.",
+        "A BUX-index (Budapesti Értéktőzsde Index) a legnagyobb magyar vállalatok részvényeinek átlagos mozgását mutatja.",
+        "Az OBA (Országos Betétbiztosítási Alap) 100 ezer euróig kártalanít, ha a bankod esetleg csődbe menne.",
+        "A BEVA (Befektetővédelmi Alap) a befektetőket védi meg, ha a brókercégük visszaélést követne el.",
+        "A devizakockázat akkor érint téged, ha külföldi pénznemben (például euróban vagy dollárban) tartod a megtakarításod.",
+        "A hitelfelvétel nem ingyenpénz: a jövőbeli jövedelmedet költöd el előre, aminek komoly ára (kamata) van."
+    ];
+
+    let board = [
+        ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+        ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+        ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+    ];
+
+    const piecesSymbols = {
+        'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
+        'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙', '': ''
+    };
+
+    const pieceValues = {
+        'p': 10, 'n': 30, 'b': 30, 'r': 50, 'q': 90, 'k': 9000,
+        'P': 10, 'N': 30, 'B': 30, 'R': 50, 'Q': 90, 'K': 9000
+    };
+
+    async function init() {
+        state = await GameAPI.getState();
+        document.getElementById('current-balance-display').textContent = state.balance;
+        createVisualBoard();
+    }
+
+    function updateTurnIndicator() {
+        const indicator = document.getElementById('turn-indicator');
+        const boardEl = document.getElementById('chess-board');
+        if (playerTurn) {
+            indicator.textContent = "Te következel";
+            indicator.classList.add('player-active');
+            boardEl.classList.remove('ai-analyzing');
+        } else {
+            indicator.textContent = "Az automata elemez...";
+            indicator.classList.remove('player-active');
+            boardEl.classList.add('ai-analyzing');
+        }
+    }
+
+    function createVisualBoard() {
+        const boardEl = document.getElementById('chess-board');
+        boardEl.innerHTML = '';
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const square = document.createElement('div');
+                square.className = `square ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
+                square.dataset.row = r;
+                square.dataset.col = c;
+                const piece = board[r][c];
+                if (piece) {
+                    square.textContent = piecesSymbols[piece];
+                    square.classList.add(piece === piece.toUpperCase() ? 'white-piece' : 'black-piece');
+                }
+                square.addEventListener('click', handleSquareClick);
+                boardEl.appendChild(square);
+            }
+        }
+    }
+
+    window.startGame = function() {
+        const inputBet = parseInt(document.getElementById('bet-amount').value);
+        if (isNaN(inputBet) || inputBet < 100) { showToast("A minimális tét összege 100 Ft!"); return; }
+        if (inputBet > state.balance && state.balance > 0) { showToast("Nincs elegendő fedezeted a számládon!"); return; }
+        betAmount = inputBet;
+        difficulty = document.getElementById('difficulty').value;
+        gameActive = true;
+        playerTurn = true;
+        
+        const boardEl = document.getElementById('chess-board');
+        boardEl.classList.remove('crashed');
+
+        document.getElementById('setup-panel').style.display = 'none';
+        document.getElementById('play-panel').style.display = 'block';
+        document.getElementById('active-bet').textContent = betAmount;
+        updateTurnIndicator();
+        createVisualBoard();
+    };
+
+    function handleSquareClick(e) {
+        if (!gameActive || !playerTurn) return;
+        const r = parseInt(e.currentTarget.dataset.row);
+        const c = parseInt(e.currentTarget.dataset.col);
+        const piece = board[r][c];
+
+        if (selectedSquare) {
+            const isMoveLegal = possibleMoves.some(m => m.toR === r && m.toC === c);
+            if (isMoveLegal) {
+                executeMove(selectedSquare.r, selectedSquare.c, r, c);
+                selectedSquare = null;
+                clearHighlights();
+                if (gameActive) {
+                    playerTurn = false;
+                    updateTurnIndicator();
+                    const thinkTime = 1500 + Math.random() * 1500;
+                    setTimeout(aiTurn, thinkTime);
+                }
+                return;
+            }
+        }
+
+        if (piece && piece === piece.toUpperCase()) {
+            clearHighlights();
+            selectedSquare = { r, c };
+            e.currentTarget.classList.add('selected');
+            possibleMoves = getLegalMovesForPiece(r, c, board);
+            highlightMoves(possibleMoves);
+        } else {
+            selectedSquare = null;
+            clearHighlights();
+        }
+    }
+
+    function triggerCaptureEffect(row, col, isPlayerCapture) {
+        const targetSquare = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+        if (!targetSquare) return;
+
+        if (isPlayerCapture) {
+            const profitSymbols = ['+Ft', '$$$', 'PROFIT', '+100%'];
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const effectEl = document.createElement('div');
+                    effectEl.className = 'profit-text';
+                    effectEl.textContent = profitSymbols[Math.floor(Math.random() * profitSymbols.length)];
+                    effectEl.style.left = `${Math.random() * 30 + 10}px`;
+                    effectEl.style.top = `${Math.random() * 20}px`;
+                    targetSquare.appendChild(effectEl);
+                    setTimeout(() => effectEl.remove(), 800);
+                }, i * 150);
+            }
+        } else {
+            targetSquare.classList.add('loss-effect');
+            setTimeout(() => targetSquare.classList.remove('loss-effect'), 500);
+        }
+    }
+
+    function executeMove(fromR, fromC, toR, toC) {
+        const piece = board[fromR][fromC];
+        const target = board[toR][toC];
+        
+        if (target !== '') {
+            const isWhiteTurn = (piece === piece.toUpperCase());
+            triggerCaptureEffect(toR, toC, isWhiteTurn);
+        }
+
+        if (target === 'k') { endGame(true, "Gratulálunk! Megnyerted a játszmát és a profitot!"); return; }
+        if (target === 'K') { endGame(false, "Sajnos a gép mattot adott. Elveszítetted a tétet."); return; }
+        board[toR][toC] = piece;
+        board[fromR][fromC] = '';
+        if (piece === 'P' && toR === 0) board[toR][toC] = 'Q';
+        if (piece === 'p' && toR === 7) board[toR][toC] = 'q';
+        createVisualBoard();
+    }
+
+    function aiTurn() {
+        if (!gameActive) return;
+        
+        const advice = adviceList[Math.floor(Math.random() * adviceList.length)];
+        document.getElementById('npc-hint').textContent = advice;
+
+        const aiMoves = getAllLegalMoves(board, false);
+        if (aiMoves.length === 0) { endGame(true, "A gépnek elfogytak a lehetőségei, bedobta a törölközőt! Nyertél!"); return; }
+        
+        let move;
+        if (difficulty === 'easy') move = aiMoves[Math.floor(Math.random() * aiMoves.length)];
+        else move = minimaxDecision(board, difficulty === 'medium' ? 2 : 3, false);
+        
+        if (!move) move = aiMoves[Math.floor(Math.random() * aiMoves.length)];
+        executeMove(move.fromR, move.fromC, move.toR, move.toC);
+        
+        playerTurn = true;
+        updateTurnIndicator();
+    }
+
+    function highlightMoves(moves) {
+        moves.forEach(m => {
+            const sq = document.querySelector(`[data-row="${m.toR}"][data-col="${m.toC}"]`);
+            if (sq) sq.classList.add('highlight');
+        });
+    }
+
+    function clearHighlights() {
+        document.querySelectorAll('.square').forEach(sq => {
+            sq.classList.remove('selected', 'highlight');
+        });
+    }
+
+    function getLegalMovesForPiece(r, c, b) {
+        const piece = b[r][c];
+        const isWhite = piece === piece.toUpperCase();
+        const type = piece.toLowerCase();
+        let moves = [];
+        const add = (tr, tc) => {
+            if (tr<0 || tr>7 || tc<0 || tc>7) return false;
+            if (!b[tr][tc]) { moves.push({fromR:r,fromC:c,toR:tr,toC:tc}); return true; }
+            if ((b[tr][tc] === b[tr][tc].toUpperCase()) !== isWhite) { moves.push({fromR:r,fromC:c,toR:tr,toC:tc}); }
+            return false;
+        };
+        if (type==='p') {
+            const d = isWhite ? -1 : 1;
+            if (r+d>=0 && r+d<=7 && !b[r+d][c]) {
+                moves.push({fromR:r,fromC:c,toR:r+d,toC:c});
+                if (r===(isWhite?6:1) && !b[r+2*d][c]) moves.push({fromR:r,fromC:c,toR:r+2*d,toC:c});
+            }
+            [-1,1].forEach(dc=>{
+                if (r+d>=0 && r+d<=7 && c+dc>=0 && c+dc<=7 && b[r+d][c+dc] && (b[r+d][c+dc]===b[r+d][c+dc].toUpperCase())!==isWhite)
+                    moves.push({fromR:r,fromC:c,toR:r+d,toC:c+dc});
+            });
+        } else if (type==='n') [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(o=>add(r+o[0],c+o[1]));
+        else if (type==='b') [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(d=>{let s=1; while(add(r+d[0]*s,c+d[1]*s)) s++;});
+        else if (type==='r') [[-1,0],[1,0],[0,-1],[0,1]].forEach(d=>{let s=1; while(add(r+d[0]*s,c+d[1]*s)) s++;});
+        else if (type==='q'||type==='k') {
+            const l = type==='k'?1:8;
+            [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]].forEach(d=>{let s=1; while(s<=l && add(r+d[0]*s,c+d[1]*s)) s++;});
+        }
+        return moves;
+    }
+
+    function getAllLegalMoves(b, isWhite) {
+        let m = [];
+        for(let r=0;r<8;r++) for(let c=0;c<8;c++)
+            if (b[r][c] && (b[r][c]===b[r][c].toUpperCase())===isWhite) m = m.concat(getLegalMovesForPiece(r,c,b));
+        return m;
+    }
+
+    function flashSquare(r, c) {
+        if (!gameActive) return;
+        const sq = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+        if (sq) {
+            sq.classList.add('ai-thinking-flash');
+            setTimeout(() => sq.classList.remove('ai-thinking-flash'), 80);
+        }
+    }
+
+    function minimaxDecision(b, depth, isWhite) {
+        const moves = getAllLegalMoves(b, isWhite);
+        if (moves.length === 0) return null;
+        let best = null, val = isWhite ? -100000 : 100000;
+        moves.sort(()=>Math.random()-0.5);
+        for (let m of moves) {
+            flashSquare(m.fromR, m.fromC);
+            flashSquare(m.toR, m.toC);
+
+            const src = b[m.fromR][m.fromC], dst = b[m.toR][m.toC];
+            b[m.toR][m.toC] = src; b[m.fromR][m.fromC] = '';
+            let v = minimaxValue(b, depth-1, -100000, 100000, !isWhite);
+            b[m.fromR][m.fromC] = src; b[m.toR][m.toC] = dst;
+            if (!isWhite) { if (v < val) { val = v; best = m; } }
+            else { if (v > val) { val = v; best = m; } }
+        }
+        return best;
+    }
+
+    function minimaxValue(b, depth, alpha, beta, isWhite) {
+        if (depth === 0) return evaluateBoard(b);
+        const moves = getAllLegalMoves(b, isWhite);
+        if (moves.length === 0) return evaluateBoard(b);
+        if (isWhite) {
+            let v = -100000;
+            for (let m of moves) {
+                const src = b[m.fromR][m.fromC], dst = b[m.toR][m.toC];
+                b[m.toR][m.toC] = src; b[m.fromR][m.fromC] = '';
+                v = Math.max(v, minimaxValue(b, depth-1, alpha, beta, false));
+                b[m.fromR][m.fromC] = src; b[m.toR][m.toC] = dst;
+                alpha = Math.max(alpha, v); if (beta <= alpha) break;
+            }
+            return v;
+        } else {
+            let v = 100000;
+            for (let m of moves) {
+                const src = b[m.fromR][m.fromC], dst = b[m.toR][m.toC];
+                b[m.toR][m.toC] = src; b[m.fromR][m.fromC] = '';
+                v = Math.min(v, minimaxValue(b, depth-1, alpha, beta, true));
+                b[m.fromR][m.fromC] = src; b[m.toR][m.toC] = dst;
+                beta = Math.min(beta, v); if (beta <= alpha) break;
+            }
+            return v;
+        }
+    }
+
+    function evaluateBoard(b) {
+        let e = 0;
+        for(let r=0;r<8;r++) for(let c=0;c<8;c++)
+            if (b[r][c]) {
+                const isWhite = b[r][c]===b[r][c].toUpperCase();
+                e += (isWhite?1:-1) * pieceValues[b[r][c]];
+            }
+        return e;
+    }
+
+    // Új beépített értesítési sávot kezelő függvény (Toast)
+    function showToast(message, duration = 3500) {
+        const toast = document.getElementById('game-toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                toast.classList.remove('show');
+                // Megvárjuk a CSS elhalványulási animáció végét is (300ms)
+                setTimeout(resolve, 300);
+            }, duration);
+        });
+    }
+
+    window.surrenderGame = function() { 
+        if (confirm("Biztosan csődeljárást indítasz és feladod a meccset?")) {
+            gameActive = false;
+            const boardEl = document.getElementById('chess-board');
+            boardEl.classList.add('crashed');
+            
+            setTimeout(async () => {
+                document.getElementById('chess-board').classList.remove('ai-analyzing');
+                await showToast("Végelszámolás indult... A tőzsde összeomlott.");
+                await GameAPI.exit(state.balance - betAmount);
+            }, 1200);
+        }
+    };
+
+    async function endGame(playerWon, message) {
+        gameActive = false;
+        document.getElementById('chess-board').classList.remove('ai-analyzing');
+        
+        // Először megmutatjuk az elegáns belső értesítést
+        await showToast(message, 4000); 
+        
+        // Miután lefutott és eltűnt a felirat, csak akkor lépünk ki az API-val
+        await GameAPI.exit(state.balance + (playerWon ? betAmount : -betAmount));
+    }
+
+    window.exitGame = async function(c) { await GameAPI.exit(c !== false ? c : state.balance); };
+
+    init();
+})();
+</script>
 {% endblock %}
