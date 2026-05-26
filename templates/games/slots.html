@@ -353,6 +353,12 @@
   position: relative;
 }
 
+.bingo-difficulty {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .bingo-term {
   background: rgba(10,8,24,0.9);
   border: 3px solid var(--gold);
@@ -453,6 +459,12 @@
   align-items: center;
   gap: 1.5rem;
   position: relative;
+}
+
+.wheel-difficulty {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .wheel-wrapper {
@@ -662,6 +674,12 @@
       <div class="bingo-container">
         <button class="bingo-help-btn" id="bg-help-btn" onclick="SL.bg.showHelp()" title="Súgó — 150 Ft">❓</button>
 
+        <div class="bingo-difficulty" id="bg-difficulty">
+          <button class="cbet active" onclick="SL.bg.setDiff('easy',this)">Könnyű (100 Ft)</button>
+          <button class="cbet" onclick="SL.bg.setDiff('medium',this)">Közepes (300 Ft)</button>
+          <button class="cbet" onclick="SL.bg.setDiff('hard',this)">Nehéz (500 Ft)</button>
+        </div>
+
         <div class="bingo-term" id="bg-term">Nyomd meg a "Következő" gombot!</div>
 
         <div id="bg-help-wrap" hidden>
@@ -690,14 +708,20 @@
       <div class="balance-strip">💰 Egyenleg: <span id="wh-balance">—</span> Ft</div>
 
       <div class="wheel-container">
+        <div class="wheel-difficulty" id="wh-difficulty">
+          <button class="cbet active" onclick="SL.wh.setDiff('easy',this)">Könnyű (100 Ft)</button>
+          <button class="cbet" onclick="SL.wh.setDiff('medium',this)">Közepes (300 Ft)</button>
+          <button class="cbet" onclick="SL.wh.setDiff('hard',this)">Nehéz (500 Ft)</button>
+        </div>
+
         <div class="wheel-wrapper">
           <div class="wheel-pointer"></div>
           <div class="wheel" id="wh-wheel"></div>
           <div class="wheel-center">🎰</div>
         </div>
 
-        <div style="text-align:center;color:var(--cream-dark);font-size:0.85rem;">
-          Tét: <strong style="color:var(--gold);">200 Ft</strong> pörgetésenként
+        <div style="text-align:center;color:var(--cream-dark);font-size:0.85rem;" id="wh-info">
+          Tét: <strong style="color:var(--gold);">100 Ft</strong> · 6 mező · Max nyeremény: 500 Ft
         </div>
 
         <button class="btn btn-gold" id="wh-spin-btn" onclick="SL.wh.spin()"
@@ -849,10 +873,16 @@
   const QZ = (() => {
     let diff = 'easy', currentQ = null, answered = false;
     const bets = { easy: 100, medium: 500, hard: 1000 };
+    const winRanges = { easy: [100, 200], medium: [500, 1000], hard: [1000, 2000] };
 
     function setDiff(d, btn) {
       diff = d;
       cbet_activate(document.getElementById('qz-difficulty'), btn);
+    }
+
+    function getRandomWin() {
+      const [min, max] = winRanges[diff];
+      return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
     function nextQuestion() {
@@ -898,7 +928,7 @@
       if (correct) {
         orb.className = 'quiz-orb win';
         orb.textContent = '💰';
-        const win = bet * 2;
+        const win = getRandomWin();
         showResult('qz-result', `✅ Helyes! <b>+${win} Ft</b>`, 'win');
         setNPC('Gratulálok! A tudás valóban pénz!');
         await applyDelta(win);
@@ -973,11 +1003,23 @@
   ];
 
   const BG = (() => {
-    let currentTerm = null, answered = false, helpUsed = false;
+    let diff = 'easy', currentTerm = null, answered = false, helpUsed = false;
+    const bets = { easy: 100, medium: 300, hard: 500 };
+    const winRanges = { easy: [100, 300], medium: [300, 600], hard: [600, 1000] };
+
+    function setDiff(d, btn) {
+      diff = d;
+      cbet_activate(document.getElementById('bg-difficulty'), btn);
+    }
+
+    function getRandomWin() {
+      const [min, max] = winRanges[diff];
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
 
     function next() {
-      if (S.balance < 200) {
-        showResult('bg-result', 'Nincs elég egyenleged! (200 Ft kell)', 'lose');
+      if (S.balance < bets[diff]) {
+        showResult('bg-result', `Nincs elég egyenleged! (${bets[diff]} Ft kell)`, 'lose');
         return;
       }
       answered = false;
@@ -1016,14 +1058,14 @@
       });
 
       if (correct) {
-        const win = 300;
+        const win = getRandomWin();
         showResult('bg-result', `✅ Helyes! <b>+${win} Ft</b>`, 'win');
         setNPC('Okos vagy! A tudás befektetés!');
         await applyDelta(win);
       } else {
-        showResult('bg-result', `❌ Rossz válasz! <b>−200 Ft</b>`, 'lose');
+        showResult('bg-result', `❌ Rossz válasz! <b>−${bets[diff]} Ft</b>`, 'lose');
         setNPC('A tudás pénz — szó szerint!');
-        await applyDelta(-200);
+        await applyDelta(-bets[diff]);
       }
     }
 
@@ -1041,38 +1083,84 @@
       await applyDelta(-150);
     }
 
-    return { next, showHelp };
+    return { next, showHelp, setDiff };
   })();
 
   // ════════════════════════════════════════════════════════════════
   //  WHEEL GAME
   // ════════════════════════════════════════════════════════════════
-  const WHEEL_SEGMENTS = [
-    { label: '+100', value: 100, color: '#4CAF50', count: 4 },
-    { label: '+300', value: 300, color: '#66BB6A', count: 3 },
-    { label: '+500', value: 500, color: '#81C784', count: 2 },
-    { label: '+1000', value: 1000, color: '#A5D6A7', count: 1 },
-    { label: '-100', value: -100, color: '#EF5350', count: 2 },
-    { label: '-300', value: -300, color: '#E57373', count: 2 },
-    { label: '-500', value: -500, color: '#EF9A9A', count: 1 },
-    { label: 'JACKPOT +5000', value: 5000, color: '#FFD700', count: 1 },
-  ];
+  const WHEEL_CONFIGS = {
+    easy: {
+      bet: 100,
+      segments: [
+        { label: '+100', value: 100, color: '#4CAF50' },
+        { label: '+200', value: 200, color: '#66BB6A' },
+        { label: '+300', value: 300, color: '#81C784' },
+        { label: '+500', value: 500, color: '#A5D6A7' },
+        { label: '-50', value: -50, color: '#EF5350' },
+        { label: '-100', value: -100, color: '#E57373' },
+      ]
+    },
+    medium: {
+      bet: 300,
+      segments: [
+        { label: '+200', value: 200, color: '#4CAF50' },
+        { label: '+400', value: 400, color: '#66BB6A' },
+        { label: '+600', value: 600, color: '#81C784' },
+        { label: '+800', value: 800, color: '#A5D6A7' },
+        { label: '+1000', value: 1000, color: '#C8E6C9' },
+        { label: '+1200', value: 1200, color: '#E8F5E9' },
+        { label: '+1500', value: 1500, color: '#F1F8E9' },
+        { label: '+300', value: 300, color: '#DCEDC8' },
+        { label: '-100', value: -100, color: '#EF5350' },
+        { label: '-200', value: -200, color: '#E57373' },
+        { label: '-300', value: -300, color: '#EF9A9A' },
+        { label: '-400', value: -400, color: '#FFCDD2' },
+      ]
+    },
+    hard: {
+      bet: 500,
+      segments: [
+        { label: '+500', value: 500, color: '#4CAF50' },
+        { label: '+800', value: 800, color: '#66BB6A' },
+        { label: '+1000', value: 1000, color: '#81C784' },
+        { label: '+1500', value: 1500, color: '#A5D6A7' },
+        { label: '+2000', value: 2000, color: '#C8E6C9' },
+        { label: '+2500', value: 2500, color: '#E8F5E9' },
+        { label: '+3000', value: 3000, color: '#F1F8E9' },
+        { label: '+3500', value: 3500, color: '#DCEDC8' },
+        { label: '+4000', value: 4000, color: '#D7CCC8' },
+        { label: '+4500', value: 4500, color: '#BCAAA4' },
+        { label: '+5000', value: 5000, color: '#FFD700' },
+        { label: '+200', value: 200, color: '#A1887F' },
+        { label: '-200', value: -200, color: '#EF5350' },
+        { label: '-400', value: -400, color: '#E57373' },
+        { label: '-600', value: -600, color: '#EF9A9A' },
+        { label: '-800', value: -800, color: '#FFCDD2' },
+        { label: '-1000', value: -1000, color: '#FF8A80' },
+        { label: '-1500', value: -1500, color: '#FF5252' },
+      ]
+    }
+  };
 
   const WH = (() => {
-    let spinning = false;
+    let diff = 'easy', spinning = false;
     let segments = [];
     let currentRotation = 0;
 
+    function setDiff(d, btn) {
+      diff = d;
+      cbet_activate(document.getElementById('wh-difficulty'), btn);
+      init();
+    }
+
     function init() {
-      segments = [];
-      WHEEL_SEGMENTS.forEach(seg => {
-        for (let i = 0; i < seg.count; i++) {
-          segments.push(seg);
-        }
-      });
+      const config = WHEEL_CONFIGS[diff];
+      segments = config.segments.slice();
       segments.sort(() => Math.random() - 0.5);
 
       const wheel = document.getElementById('wh-wheel');
+      wheel.innerHTML = '';
       const segCount = segments.length;
       const segAngle = 360 / segCount;
 
@@ -1085,6 +1173,7 @@
       });
       gradient += ')';
       wheel.style.background = gradient;
+      wheel.style.transform = `rotate(${currentRotation}deg)`;
 
       segments.forEach((seg, i) => {
         const angle = (i + 0.5) * segAngle;
@@ -1096,19 +1185,24 @@
           transform: translate(-50%, -50%) rotate(${angle}deg) translateY(-140px);
           color: ${seg.value >= 0 ? '#fff' : '#000'};
           font-weight: 700;
-          font-size: 0.9rem;
+          font-size: ${segCount > 12 ? '0.75rem' : '0.9rem'};
           text-shadow: 0 2px 4px rgba(0,0,0,0.8);
           pointer-events: none;
         `;
         label.textContent = seg.label;
         wheel.appendChild(label);
       });
+
+      const maxWin = Math.max(...config.segments.map(s => s.value));
+      document.getElementById('wh-info').innerHTML = 
+        `Tét: <strong style="color:var(--gold);">${config.bet} Ft</strong> · ${segCount} mező · Max nyeremény: ${maxWin} Ft`;
     }
 
     async function spin() {
       if (spinning) return;
-      if (S.balance < 200) {
-        showResult('wh-result', 'Nincs elég egyenleged! (200 Ft kell)', 'lose');
+      const config = WHEEL_CONFIGS[diff];
+      if (S.balance < config.bet) {
+        showResult('wh-result', `Nincs elég egyenleged! (${config.bet} Ft kell)`, 'lose');
         return;
       }
 
@@ -1116,7 +1210,7 @@
       document.getElementById('wh-spin-btn').disabled = true;
       document.getElementById('wh-result').style.opacity = '0';
 
-      await applyDelta(-200);
+      await applyDelta(-config.bet);
 
       const wheel = document.getElementById('wh-wheel');
       const segCount = segments.length;
@@ -1146,7 +1240,7 @@
       spinning = false;
     }
 
-    return { init, spin };
+    return { init, spin, setDiff };
   })();
 
   // ════════════════════════════════════════════════════════════════
@@ -1260,8 +1354,8 @@
   // ════════════════════════════════════════════════════════════════
   window.SL = {
     qz: { setDiff: QZ.setDiff, nextQuestion: QZ.nextQuestion },
-    bg: { next: BG.next, showHelp: BG.showHelp },
-    wh: { spin: WH.spin },
+    bg: { next: BG.next, showHelp: BG.showHelp, setDiff: BG.setDiff },
+    wh: { spin: WH.spin, setDiff: WH.setDiff },
     sc: { newCard: SC.newCard },
 
     enter(game) {

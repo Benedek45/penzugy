@@ -6,7 +6,7 @@
     <div id="game-toast" class="toast-notification"></div>
 
     <div class="game-header">
-        <button class="back-arrow-btn" onclick="exitGame(false)" title="Vissza a városba">←</button>
+        <button class="btn btn-dark back-btn" onclick="exitGame(false)" title="Vissza a városba">← Vissza</button>
         <h2>♟️ Abszurd Sakkautomata</h2>
         <div id="npc-hint" class="hint-box">Válassz nehézséget a kezdéshez!</div>
     </div>
@@ -53,51 +53,37 @@
 
 <style>
 .chess-game { max-width: 600px; margin: 0 auto; padding: 20px; font-family: var(--font-body); color: var(--cream); text-align: center; position: relative; }
-.game-header { position: relative; margin-bottom: 20px; }
+.game-header { position: relative; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
-/* Vissza nyíl stílusa */
-.back-arrow-btn {
-    position: absolute;
-    left: 0;
-    top: 5px;
-    background: transparent;
-    color: var(--gold);
-    border: none;
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-    padding: 5px 10px;
-    transition: color 0.2s ease, transform 0.2s ease;
-}
-.back-arrow-btn:hover {
-    color: var(--gold-light);
-    transform: scale(1.1);
+.back-btn {
+    align-self: flex-start;
+    margin-bottom: 10px;
 }
 
 .hint-box { background-color: var(--dark-mid); padding: 15px; border-radius: 5px; border: 1px solid var(--gold); margin-bottom: 20px; font-style: italic; min-height: 60px; display: flex; align-items: center; justify-content: center; line-height: 1.4; margin-top: 10px; }
 .panel { background-color: var(--dark-mid); padding: 20px; border-radius: 8px; box-shadow: var(--shadow); }
 .form-group { margin-bottom: 15px; text-align: left; }
 .form-group label { display: block; margin-bottom: 5px; color: var(--gold-light); }
-.form-group select, .form-group input { width: 100%; padding: 10px; background-color: var(--dark); border: 1px solid var(--dark-mid); color: white; border-radius: 4px; }
+.form-group select, .form-group input { width: 100%; padding: 10px; background-color: var(--dark); border: 1px solid var(--gold-dim); color: white; border-radius: 4px; }
 
 .status-badge { padding: 5px 15px; border-radius: 20px; transition: all 0.3s ease; background: rgba(0,0,0,0.3); display: inline-block; }
 .status-badge.player-active { background: rgba(255, 255, 255, 0.15); color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
 
-button { background-color: var(--gold); color: var(--dark); border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; margin: 5px; }
+button { background-color: var(--gold); color: var(--dark); border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; margin: 5px; transition: all 0.2s ease; }
+button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 .exit-btn { background-color: var(--red); color: white; }
 
-/* Meleg mályvás sakkasztal stílusa */
-.board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); width: 100%; max-width: 440px; aspect-ratio: 1 / 1; margin: 0 auto 20px auto; border: 4px solid var(--dark-mid); position: relative; overflow: hidden; transition: all 0.3s ease; }
+.board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); width: 100%; max-width: 440px; aspect-ratio: 1 / 1; margin: 0 auto 20px auto; border: 4px solid var(--gold-dim); border-radius: 4px; position: relative; overflow: hidden; transition: all 0.3s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
 .square { display: flex; justify-content: center; align-items: center; font-size: 34px; cursor: pointer; user-select: none; position: relative; transition: background-color 0.2s ease; }
-.square.light { background-color: #141419; } 
+.square.light { background-color: #1a1a24; } 
 .square.dark { background-color: #5B2C6F; } 
 .square.selected { background-color: #C0392B !important; } 
 .square.highlight::after { content: ''; width: 14px; height: 14px; background-color: rgba(255, 255, 255, 0.4); border-radius: 50%; position: absolute; }
+.square.last-move { box-shadow: inset 0 0 0 3px rgba(201,168,76,0.5); }
 
-.white-piece { color: #E0E0E0; filter: drop-shadow(1px 1px 1px #000); transition: all 0.5s ease; } 
-.black-piece { color: var(--gold); filter: drop-shadow(1px 1px 1px #000); transition: all 0.5s ease; } 
+.white-piece { color: #E0E0E0; filter: drop-shadow(1px 1px 2px #000); transition: all 0.5s ease; } 
+.black-piece { color: var(--gold); filter: drop-shadow(1px 1px 2px #000); transition: all 0.5s ease; } 
 
-/* ANIMÁCIÓS ÉS ÚJ STÍLUSOK */
 .toast-notification {
     position: fixed;
     top: -100px;
@@ -168,6 +154,20 @@ button { background-color: var(--gold); color: var(--dark); border: none; paddin
 }
 .board.crashed .white-piece, .board.crashed .black-piece {
     animation: market-crash 1.2s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+}
+
+.game-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+}
+
+.control-buttons {
+    margin-top: 15px;
 }
 </style>
 {% endblock %}
