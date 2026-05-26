@@ -1247,16 +1247,29 @@
   //  SCRATCH GAME
   // ════════════════════════════════════════════════════════════════
   const SCRATCH_SYMBOLS = [
-    { sym: '💰', count: 3, value: 2000 },
-    { sym: '💎', count: 2, value: 5000 },
-    { sym: '🎩', count: 3, value: 1000 },
-    { sym: '🍒', count: 4, value: 500 },
-    { sym: '💀', count: 2, value: -1000 },
-    { sym: '⭐', count: 2, value: 0 },
+    { sym: '💰', value: 2000, weight: 3 },
+    { sym: '💎', value: 5000, weight: 2 },
+    { sym: '🎩', value: 1000, weight: 4 },
+    { sym: '🍒', value: 500, weight: 6 },
+    { sym: '💀', value: -1000, weight: 3 },
+    { sym: '⭐', value: 0, weight: 12 },
+    { sym: '🔸', value: 0, weight: 10 },
+    { sym: '🔹', value: 0, weight: 10 },
   ];
 
   const SC = (() => {
     let grid = [], scratched = 0, finished = false;
+
+    function getRandomSymbol() {
+      const totalWeight = SCRATCH_SYMBOLS.reduce((sum, s) => sum + s.weight, 0);
+      let random = Math.random() * totalWeight;
+      
+      for (const symbol of SCRATCH_SYMBOLS) {
+        random -= symbol.weight;
+        if (random <= 0) return symbol;
+      }
+      return SCRATCH_SYMBOLS[SCRATCH_SYMBOLS.length - 1];
+    }
 
     function newCard() {
       if (S.balance < 500) {
@@ -1272,15 +1285,10 @@
       applyDelta(-500);
 
       grid = [];
-      SCRATCH_SYMBOLS.forEach(s => {
-        for (let i = 0; i < s.count; i++) {
-          grid.push({ sym: s.sym, value: s.value });
-        }
-      });
-      while (grid.length < 16) {
-        grid.push({ sym: '⭐', value: 0 });
+      for (let i = 0; i < 16; i++) {
+        const symbol = getRandomSymbol();
+        grid.push({ sym: symbol.sym, value: symbol.value });
       }
-      grid.sort(() => Math.random() - 0.5);
 
       const gridEl = document.getElementById('sc-grid');
       gridEl.innerHTML = '';
