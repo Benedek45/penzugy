@@ -89,5 +89,12 @@
     { "term": "Szimbólum", "explanation": "Jelkép, ami meghatározza az eredményt. 3 egyforma = nyeremény." },
     { "term": "Kockázat", "explanation": "A befektetett pénz elvesztésének lehetősége. Itt 500 Ft-onként." },
     { "term": "Megtérülés", "explanation": "A befektetett pénzhez képest mennyit kapsz vissza. Általában kevesebbet." }
+  ],
+  "taxi": [
+    { "term": "Platformgazdaság", "explanation": "A munkaadód egy alkalmazás. Nincs főnök, csak algoritmus. És az algoritmus nem ad borravalót." },
+    { "term": "Surge pricing", "explanation": "Amikor a kereslet magas, az ár is magas. A sofőr kap belőle 25%-ot. A többit az alkalmazás." },
+    { "term": "Fuvardíj", "explanation": "Az utas által fizetett összeg. Ebből Te 80 Ft-ot látsz. Rejtett költségek léteznek." },
+    { "term": "Megélhetési bér", "explanation": "Annyi pénz, amiből meg lehet élni. Hallottál már róla. Soha nem találkoztál vele." },
+    { "term": "Önfoglalkoztatás", "explanation": "A saját főnököd vagy. A saját költségeid is. A saját felelősséged is. Gratulálunk." }
   ]
 }

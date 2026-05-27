@@ -409,6 +409,7 @@ const STOCKS_DEF = [
   { id:'SZR', e:'🎰', name:'Szerencse Casino Zrt.',                   p:155, v:0.06, k:'inverse',  liq:1200 },
   { id:'CSŐ', e:'💀', name:'Csőd Holdings és Felszámolási Kft.',     p:480, v:0.025, k:'falling',  liq:200  },
   { id:'ÁLO', e:'🚀', name:'Álom Tech Innovációs Nyrt.',              p:8,   v:0.045, k:'moon',    liq:150  },
+  { id:'OIL', e:'🛢️', name:'Kőolaj Finomítók Rt.',                   p:1000,v:0.035, k:'oil',     liq:500  },
 ];
 
 const NPC = {
@@ -418,6 +419,9 @@ const NPC = {
   buy:   ['"Bölcs döntés. Valószínűleg."', '"Az optimizmus szép dolog. Költséges, de szép."', '"Kellemes tranzakció. Az eladó nagyon örül."'],
   sell:  ['"Eladott. A veszteség realizálva."', '"Bölcsen megszabadult tőle. Vagy idő előtt."', '"Eladta. A piac folytatódik az Ön nélkül."'],
   prot:   ['"Összeomlást hárítottunk el. Kellemes befektetés volt."'],
+  oil:    ['"Az olajár megugrott. A taxisok sírnak."',
+           '"Geopolitikai feszültség. Mindig az."',
+           '"Az olaj az élet motorja. Egyre drágább motor."'],
 };
 const REASONS = [
   'Egy elemző tweetelt valamit.',
@@ -438,6 +442,7 @@ let crashRemSec = CRASH_SEC;  // counts in real seconds
 let lastTickTime = 0;
 let crashProt = false, crashProtTimer = null;
 let algoOn = false;
+let lastOilPatch = 1000;
 let insiderPend = null;   // { idx, dir }
 let pendUpg = null;
 const owned = { algo: false, regbribe: false };
@@ -465,6 +470,14 @@ function step(st) {
     case 'moon':
       if (Math.random() < 0.006) { pct = 9.0; sayNPC('moon'); }
       else pct = (Math.random()-0.53)*v;
+      break;
+    case 'oil':
+      if (Math.random() < 0.05) {
+        pct = (Math.random() * 0.22 + 0.08) * (Math.random() < 0.45 ? -1 : 1);
+        sayNPC('oil');
+      } else {
+        pct = (Math.random() - 0.49) * v;
+      }
       break;
   }
   st.prev = st.price;
@@ -817,6 +830,15 @@ function onTick() {
   if (insiderPend) { insiderPend = null; stocks.forEach((_,i)=>renderBadges(i)); }
 
   stocks.forEach(step);
+  // Sync OIL price to session stats for cross-game use
+  const oilSt = stocks.find(s => s.id === 'OIL');
+  if (oilSt) {
+    const op = Math.round(oilSt.price);
+    if (Math.abs(op - lastOilPatch) / lastOilPatch > 0.04) {
+      lastOilPatch = op;
+      GameAPI.patch({ stats: { ...S.stats, oil_price: op } }).catch(() => {});
+    }
+  }
   if (algoOn) doAlgo();
 
   // Crash countdown in real seconds
@@ -855,6 +877,10 @@ window.SM = {
     if (tickTimer)     clearInterval(tickTimer);
     if (crashProtTimer)clearTimeout(crashProtTimer);
     stocks.forEach(st=>{ if(st.shares>0){ S.balance+=Math.round(st.price*st.shares); st.shares=0; st.cost=0; } });
+    const oilStExit = stocks.find(s => s.id === 'OIL');
+    if (oilStExit) {
+      try { await GameAPI.patch({ stats: { ...S.stats, oil_price: Math.round(oilStExit.price) } }); } catch(e) {}
+    }
     await GameAPI.exit(Math.round(S.balance));
   },
 };
