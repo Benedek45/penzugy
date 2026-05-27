@@ -83,6 +83,11 @@
     { "term": "Várható érték", "explanation": "Átlagos nyeremény hosszú távon. A szerencsekeréken negatív." },
     { "term": "Valószínűség", "explanation": "Annak az esélye, hogy valami bekövetkezik. 0 és 1 közötti szám." }
   ],
+  "pachinko": [
+    { "term": "Valószínűség", "explanation": "A golyó minden sorban balra vagy jobbra megy — 50-50%. A középső zseb a legkisebb esélyű, de ott a nyerőgép." },
+    { "term": "Várható érték", "explanation": "Minden golyó 10 Ft-ba kerül. A legtöbb zseb kevesebbet fizet. A matek nem hazudik." },
+    { "term": "Láz", "explanation": "Amikor a rendszer átveszi az irányítást, és te csak nézed, ahogy a pénzed vagy nő, vagy nem. Addiktív." }
+  ],
   "scratch": [
     { "term": "Sorsjegy", "explanation": "Szerencsejáték, ahol kaparással derül ki az eredmény. Azonnali visszajelzés." },
     { "term": "Nyerési esély", "explanation": "Annak valószínűsége, hogy nyersz. A kaparós sorsjegyeknél általában alacsony." },
