@@ -21,6 +21,7 @@
                 <option value="easy">Könnyű (Részeg bróker - teljesen véletlenszerű lépések)</option>
                 <option value="medium" selected>Közepes (Gyakornok elemző - anyagi előnyre törekszik)</option>
                 <option value="hard">Nehéz (A tőke cápája - komoly pozíciókat is számol)</option>
+                <option value="ultra">Ultra (Stockfish - könyörtelen piaci motor)</option>
             </select>
         </div>
 
@@ -173,6 +174,8 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
 {% endblock %}
 
 {% block scripts %}
+<!-- chess.js provides full legal chess rules: castling, en passant, promotion, and draw detection. -->
+<script src="{{ url_for('static', filename='js/vendor/chess.min.js') }}"></script>
 <script>
 (function() {
     let state;
@@ -182,6 +185,10 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
     let playerTurn = true;
     let selectedSquare = null;
     let possibleMoves = [];
+    let chess;
+    let stockfishWorker = null;
+
+    const STOCKFISH_URL = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
 
     const adviceList = [
         "Gazdálkodni annyi, mint tudatos döntéseket hozni a szűkös erőforrások beosztásáról.",
@@ -236,37 +243,41 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
         "A hitelfelvétel nem ingyenpénz: a jövőbeli jövedelmedet költöd el előre, aminek komoly ára (kamata) van."
     ];
 
-    let board;
-    const initialBoard = [
-        ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-        ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-        ['', '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', ''],
-        ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-        ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-    ];
-
     const piecesSymbols = {
         'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
         'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙', '': ''
     };
 
-    const pieceValues = {
-        'p': 10, 'n': 30, 'b': 30, 'r': 50, 'q': 90, 'k': 9000,
-        'P': 10, 'N': 30, 'B': 30, 'R': 50, 'Q': 90, 'K': 9000
-    };
+    const pieceValues = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
 
     async function init() {
         state = await GameAPI.getState();
         document.getElementById('current-balance-display').textContent = state.balance;
-        resetBoardData();
+        if (typeof Chess === 'undefined') {
+            console.error('chess.js failed to load');
+            return;
+        }
+        resetChess();
         createVisualBoard();
     }
 
-    function resetBoardData() {
-        board = JSON.parse(JSON.stringify(initialBoard));
+    function resetChess() {
+        chess = new Chess();
+        selectedSquare = null;
+        possibleMoves = [];
+    }
+
+    function squareName(r, c) {
+        return 'abcdefgh'[c] + (8 - r);
+    }
+
+    function squareToCoords(square) {
+        return { r: 8 - parseInt(square[1], 10), c: 'abcdefgh'.indexOf(square[0]) };
+    }
+
+    function displayPiece(piece) {
+        if (!piece) return '';
+        return piecesSymbols[piece.color === 'w' ? piece.type.toUpperCase() : piece.type];
     }
 
     function updateTurnIndicator() {
@@ -286,16 +297,17 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
     function createVisualBoard() {
         const boardEl = document.getElementById('chess-board');
         boardEl.innerHTML = '';
+        const currentBoard = chess.board();
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 const square = document.createElement('div');
                 square.className = `square ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
                 square.dataset.row = r;
                 square.dataset.col = c;
-                const piece = board[r][c];
+                const piece = currentBoard[r][c];
                 if (piece) {
-                    square.textContent = piecesSymbols[piece];
-                    square.classList.add(piece === piece.toUpperCase() ? 'white-piece' : 'black-piece');
+                    square.textContent = displayPiece(piece);
+                    square.classList.add(piece.color === 'w' ? 'white-piece' : 'black-piece');
                 }
                 square.addEventListener('click', handleSquareClick);
                 boardEl.appendChild(square);
@@ -304,15 +316,16 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
     }
 
     window.startGame = function() {
+        if (typeof Chess === 'undefined') { showToast("A chess.js könyvtár nem töltött be."); return; }
         const inputBet = parseInt(document.getElementById('bet-amount').value);
-        if (inputBet > state.balance && state.balance > 0) { showToast("Nincs elegendő fedezeted a számládon!"); return; }
+        if (inputBet > state.balance) { showToast("Nincs elegendő fedezeted a számládon!"); return; }
         
         betAmount = inputBet;
         difficulty = document.getElementById('difficulty').value;
         gameActive = true;
         playerTurn = true;
         
-        resetBoardData();
+        resetChess();
         const boardEl = document.getElementById('chess-board');
         boardEl.className = "board";
 
@@ -327,29 +340,30 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
         if (!gameActive || !playerTurn) return;
         const r = parseInt(e.currentTarget.dataset.row);
         const c = parseInt(e.currentTarget.dataset.col);
-        const piece = board[r][c];
+        const square = squareName(r, c);
+        const piece = chess.get(square);
 
         if (selectedSquare) {
-            const isMoveLegal = possibleMoves.some(m => m.toR === r && m.toC === c);
-            if (isMoveLegal) {
-                executeMove(selectedSquare.r, selectedSquare.c, r, c);
+            const legalMove = possibleMoves.find(m => m.to === square);
+            if (legalMove) {
+                executeMove(legalMove, true);
                 selectedSquare = null;
                 clearHighlights();
                 if (gameActive) {
                     playerTurn = false;
                     updateTurnIndicator();
                     const thinkTime = 1500 + Math.random() * 1500;
-                    setTimeout(aiTurn, thinkTime);
+                    setTimeout(() => aiTurn(), thinkTime);
                 }
                 return;
             }
         }
 
-        if (piece && piece === piece.toUpperCase()) {
+        if (piece && piece.color === 'w') {
             clearHighlights();
-            selectedSquare = { r, c };
+            selectedSquare = square;
             e.currentTarget.classList.add('selected');
-            possibleMoves = getFilteredLegalMoves(r, c, board);
+            possibleMoves = chess.moves({ square, verbose: true });
             highlightMoves(possibleMoves);
         } else {
             selectedSquare = null;
@@ -380,70 +394,76 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
         }
     }
 
-    function executeMove(fromR, fromC, toR, toC) {
-        const piece = board[fromR][fromC];
-        const target = board[toR][toC];
-        
-        if (target !== '') {
-            const isWhiteTurn = (piece === piece.toUpperCase());
-            triggerCaptureEffect(toR, toC, isWhiteTurn);
-        }
-
-        board[toR][toC] = piece;
-        board[fromR][fromC] = '';
-        if (piece === 'P' && toR === 0) board[toR][toC] = 'Q';
-        if (piece === 'p' && toR === 7) board[toR][toC] = 'q';
-        createVisualBoard();
-
-        const nextTurnIsWhite = (piece !== piece.toUpperCase());
-        checkGameStatus(nextTurnIsWhite);
+    function choosePromotion(move, allowPrompt) {
+        if (!move.promotion) return move.promotion;
+        if (!allowPrompt) return move.promotion || 'q';
+        const choice = (prompt('', 'q') || 'q').toLowerCase();
+        return ['q', 'r', 'b', 'n'].includes(choice) ? choice : 'q';
     }
 
-    function aiTurn() {
+    function executeMove(move, allowPrompt = false) {
+        const promotion = choosePromotion(move, allowPrompt);
+        const result = chess.move({ from: move.from, to: move.to, promotion: promotion || 'q' });
+        if (!result) return;
+        createVisualBoard();
+        if (result.captured) {
+            const to = squareToCoords(result.to);
+            triggerCaptureEffect(to.r, to.c, result.color === 'w');
+        }
+
+        checkGameStatus();
+    }
+
+    async function aiTurn() {
         if (!gameActive) return;
         
         const advice = adviceList[Math.floor(Math.random() * adviceList.length)];
         document.getElementById('npc-hint').textContent = advice;
 
-        const aiMoves = getAllFilteredLegalMoves(board, false);
+        const aiMoves = chess.moves({ verbose: true });
         if (aiMoves.length === 0) {
-            if (isKingInCheck(board, false)) {
-                endGame(true, "Sakk-matt! Megnyerted a játszmát és a profitot!");
-            } else {
-                endGame('draw', "Patt helyzet! Nem maradt szabályos lépés. A tőzsdei meccs döntetlen lett.");
-            }
+            checkGameStatus();
             return;
         }
         
         let move;
-        if (difficulty === 'easy') move = aiMoves[Math.floor(Math.random() * aiMoves.length)];
-        else move = minimaxDecision(board, difficulty === 'medium' ? 2 : 3, false);
+        if (difficulty === 'easy') {
+            move = aiMoves[Math.floor(Math.random() * aiMoves.length)];
+        } else if (difficulty === 'ultra') {
+            move = await stockfishMove();
+            if (!move) move = minimaxDecision(4);
+        } else {
+            move = minimaxDecision(difficulty === 'medium' ? 2 : 3);
+        }
         
         if (!move) move = aiMoves[Math.floor(Math.random() * aiMoves.length)];
-        executeMove(move.fromR, move.fromC, move.toR, move.toC);
+        executeMove(move);
+        if (!gameActive) return;
         
         playerTurn = true;
         updateTurnIndicator();
     }
 
-    function checkGameStatus(isWhiteTurn) {
-        const moves = getAllFilteredLegalMoves(board, isWhiteTurn);
-        if (moves.length === 0) {
-            if (isKingInCheck(board, isWhiteTurn)) {
-                if (isWhiteTurn) {
-                    endGame(false, "Sakk-matt! A gép nyert, elveszítetted a tétet.");
-                } else {
-                    endGame(true, "Sakk-matt! Megnyerted a játszmát és a profitot!");
-                }
-            } else {
-                endGame('draw', "Patt helyzet! Szabályos lépések híján a meccs döntetlen lett.");
-            }
+    function checkGameStatus() {
+        if (chess.in_checkmate()) {
+            endGame(chess.turn() === 'b', chess.turn() === 'b'
+                ? "Sakk-matt! Megnyerted a játszmát és a profitot!"
+                : "Sakk-matt! A gép nyert, elveszítetted a tétet.");
+        } else if (chess.in_stalemate()) {
+            endGame('draw', "Patt helyzet! Szabályos lépések híján a meccs döntetlen lett.");
+        } else if (chess.insufficient_material()) {
+            endGame('draw', "Patt helyzet! Szabályos lépések híján a meccs döntetlen lett.");
+        } else if (chess.in_threefold_repetition()) {
+            endGame('draw', "Patt helyzet! Szabályos lépések híján a meccs döntetlen lett.");
+        } else if (chess.in_draw()) {
+            endGame('draw', "Patt helyzet! Szabályos lépések híján a meccs döntetlen lett.");
         }
     }
 
     function highlightMoves(moves) {
         moves.forEach(m => {
-            const sq = document.querySelector(`[data-row="${m.toR}"][data-col="${m.toC}"]`);
+            const to = squareToCoords(m.to);
+            const sq = document.querySelector(`[data-row="${to.r}"][data-col="${to.c}"]`);
             if (sq) sq.classList.add('highlight');
         });
     }
@@ -452,82 +472,6 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
         document.querySelectorAll('.square').forEach(sq => {
             sq.classList.remove('selected', 'highlight');
         });
-    }
-
-    function getLegalMovesForPiece(r, c, b) {
-        const piece = b[r][c];
-        const isWhite = piece === piece.toUpperCase();
-        const type = piece.toLowerCase();
-        let moves = [];
-        const add = (tr, tc) => {
-            if (tr<0 || tr>7 || tc<0 || tc>7) return false;
-            if (!b[tr][tc]) { moves.push({fromR:r,fromC:c,toR:tr,toC:tc}); return true; }
-            if ((b[tr][tc] === b[tr][tc].toUpperCase()) !== isWhite) { moves.push({fromR:r,fromC:c,toR:tr,toC:tc}); }
-            return false;
-        };
-        if (type==='p') {
-            const d = isWhite ? -1 : 1;
-            if (r+d>=0 && r+d<=7 && !b[r+d][c]) {
-                moves.push({fromR:r,fromC:c,toR:r+d,toC:c});
-                if (r===(isWhite?6:1) && !b[r+2*d][c]) moves.push({fromR:r,fromC:c,toR:r+2*d,toC:c});
-            }
-            [-1,1].forEach(dc=>{
-                if (r+d>=0 && r+d<=7 && c+dc>=0 && c+dc<=7 && b[r+d][c+dc] && (b[r+d][c+dc]===b[r+d][c+dc].toUpperCase())!==isWhite)
-                    moves.push({fromR:r,fromC:c,toR:r+d,toC:c+dc});
-            });
-        } else if (type==='n') [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(o=>add(r+o[0],c+o[1]));
-        else if (type==='b') [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(d=>{let s=1; while(add(r+d[0]*s,c+d[1]*s)) s++;});
-        else if (type==='r') [[-1,0],[1,0],[0,-1],[0,1]].forEach(d=>{let s=1; while(add(r+d[0]*s,c+d[1]*s)) s++;});
-        else if (type==='q'||type==='k') {
-            const l = type==='k'?1:8;
-            [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]].forEach(d=>{let s=1; while(s<=l && add(r+d[0]*s,c+d[1]*s)) s++;});
-        }
-        return moves;
-    }
-
-    function getAllLegalMoves(b, isWhite) {
-        let m = [];
-        for(let r=0;r<8;r++) for(let c=0;c<8;c++)
-            if (b[r][c] && (b[r][c]===b[r][c].toUpperCase())===isWhite) m = m.concat(getLegalMovesForPiece(r,c,b));
-        return m;
-    }
-
-    function isKingInCheck(b, isWhite) {
-        let kingRow = -1, kingCol = -1;
-        const targetKing = isWhite ? 'K' : 'k';
-        
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                if (b[r][c] === targetKing) {
-                    kingRow = r; kingCol = c; break;
-                }
-            }
-            if (kingRow !== -1) break;
-        }
-        if (kingRow === -1) return false;
-
-        let opponentMoves = getAllLegalMoves(b, !isWhite);
-        return opponentMoves.some(m => m.toR === kingRow && m.toC === kingCol);
-    }
-
-    function getFilteredLegalMoves(r, c, b) {
-        const rawMoves = getLegalMovesForPiece(r, c, b);
-        const isWhite = b[r][c] === b[r][c].toUpperCase();
-        
-        return rawMoves.filter(m => {
-            const src = b[m.fromR][m.fromC], dst = b[m.toR][m.toC];
-            b[m.toR][m.toC] = src; b[m.fromR][m.fromC] = '';
-            const inCheck = isKingInCheck(b, isWhite);
-            b[m.fromR][m.fromC] = src; b[m.toR][m.toC] = dst;
-            return !inCheck;
-        });
-    }
-
-    function getAllFilteredLegalMoves(b, isWhite) {
-        let m = [];
-        for(let r=0;r<8;r++) for(let c=0;c<8;c++)
-            if (b[r][c] && (b[r][c]===b[r][c].toUpperCase())===isWhite) m = m.concat(getFilteredLegalMoves(r,c,b));
-        return m;
     }
 
     function flashSquare(r, c) {
@@ -539,60 +483,124 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
         }
     }
 
-    function minimaxDecision(b, depth, isWhite) {
-        const moves = getAllFilteredLegalMoves(b, isWhite);
-        if (moves.length === 0) return null;
-        let best = null, val = isWhite ? -100000 : 100000;
-        moves.sort(()=>Math.random()-0.5);
-        for (let m of moves) {
-            flashSquare(m.fromR, m.fromC);
-            flashSquare(m.toR, m.toC);
+    function shuffleMoves(moves) {
+        return moves
+            .map(m => ({ m, r: Math.random() }))
+            .sort((a, b) => a.r - b.r)
+            .map(x => x.m);
+    }
 
-            const src = b[m.fromR][m.fromC], dst = b[m.toR][m.toC];
-            b[m.toR][m.toC] = src; b[m.fromR][m.fromC] = '';
-            let v = minimaxValue(b, depth-1, -100000, 100000, !isWhite);
-            b[m.fromR][m.fromC] = src; b[m.toR][m.toC] = dst;
-            if (!isWhite) { if (v < val) { val = v; best = m; } }
+    function minimaxDecision(depth) {
+        const moves = shuffleMoves(chess.moves({ verbose: true }));
+        if (moves.length === 0) return null;
+        let best = null, val = chess.turn() === 'w' ? -Infinity : Infinity;
+        for (let m of moves) {
+            const from = squareToCoords(m.from), to = squareToCoords(m.to);
+            flashSquare(from.r, from.c);
+            flashSquare(to.r, to.c);
+
+            chess.move({ from: m.from, to: m.to, promotion: m.promotion || 'q' });
+            let v = minimaxValue(depth - 1, -Infinity, Infinity);
+            chess.undo();
+            if (chess.turn() === 'b') { if (v < val) { val = v; best = m; } }
             else { if (v > val) { val = v; best = m; } }
         }
         return best;
     }
 
-    function minimaxValue(b, depth, alpha, beta, isWhite) {
-        if (depth === 0) return evaluateBoard(b);
-        const moves = getAllFilteredLegalMoves(b, isWhite);
-        if (moves.length === 0) return evaluateBoard(b);
-        if (isWhite) {
-            let v = -100000;
+    function minimaxValue(depth, alpha, beta) {
+        if (chess.in_checkmate()) return chess.turn() === 'w' ? -999999 : 999999;
+        if (chess.in_draw()) return 0;
+        if (depth === 0) return evaluateBoard();
+        const moves = shuffleMoves(chess.moves({ verbose: true }));
+        if (chess.turn() === 'w') {
+            let v = -Infinity;
             for (let m of moves) {
-                const src = b[m.fromR][m.fromC], dst = b[m.toR][m.toC];
-                b[m.toR][m.toC] = src; b[m.fromR][m.fromC] = '';
-                v = Math.max(v, minimaxValue(b, depth-1, alpha, beta, false));
-                b[m.fromR][m.fromC] = src; b[m.toR][m.toC] = dst;
+                chess.move({ from: m.from, to: m.to, promotion: m.promotion || 'q' });
+                v = Math.max(v, minimaxValue(depth - 1, alpha, beta));
+                chess.undo();
                 alpha = Math.max(alpha, v); if (beta <= alpha) break;
             }
             return v;
         } else {
-            let v = 100000;
+            let v = Infinity;
             for (let m of moves) {
-                const src = b[m.fromR][m.fromC], dst = b[m.toR][m.toC];
-                b[m.toR][m.toC] = src; b[m.fromR][m.fromC] = '';
-                v = Math.min(v, minimaxValue(b, depth-1, alpha, beta, true));
-                b[m.fromR][m.fromC] = src; b[m.toR][m.toC] = dst;
+                chess.move({ from: m.from, to: m.to, promotion: m.promotion || 'q' });
+                v = Math.min(v, minimaxValue(depth - 1, alpha, beta));
+                chess.undo();
                 beta = Math.min(beta, v); if (beta <= alpha) break;
             }
             return v;
         }
     }
 
-    function evaluateBoard(b) {
+    function evaluateBoard() {
         let e = 0;
+        const currentBoard = chess.board();
         for(let r=0;r<8;r++) for(let c=0;c<8;c++)
-            if (b[r][c]) {
-                const isWhite = b[r][c]===b[r][c].toUpperCase();
-                e += (isWhite?1:-1) * pieceValues[b[r][c]];
+            if (currentBoard[r][c]) {
+                const piece = currentBoard[r][c];
+                const centerBonus = (3.5 - Math.abs(3.5 - r)) + (3.5 - Math.abs(3.5 - c));
+                e += (piece.color === 'w' ? 1 : -1) * (pieceValues[piece.type] + centerBonus);
             }
         return e;
+    }
+
+    async function ensureStockfish() {
+        if (stockfishWorker) return stockfishWorker;
+        const res = await fetch(STOCKFISH_URL);
+        if (!res.ok) throw new Error('Stockfish download failed');
+        const code = await res.text();
+        const url = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+        stockfishWorker = new Worker(url);
+        await waitForStockfish(stockfishWorker, 'uci', msg => msg === 'uciok');
+        await waitForStockfish(stockfishWorker, 'isready', msg => msg === 'readyok');
+        stockfishWorker.postMessage('ucinewgame');
+        return stockfishWorker;
+    }
+
+    function waitForStockfish(worker, command, predicate, timeoutMs = 5000) {
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => cleanup(() => reject(new Error('Stockfish timeout'))), timeoutMs);
+            function handler(event) {
+                const msg = String(event.data || '').trim();
+                if (predicate(msg)) cleanup(() => resolve(msg));
+            }
+            function cleanup(done) {
+                clearTimeout(timer);
+                worker.removeEventListener('message', handler);
+                done();
+            }
+            worker.addEventListener('message', handler);
+            worker.postMessage(command);
+        });
+    }
+
+    async function stockfishMove() {
+        try {
+            const worker = await ensureStockfish();
+            const best = await new Promise((resolve, reject) => {
+                const timer = setTimeout(() => cleanup(() => reject(new Error('Stockfish search timeout'))), 10000);
+                function handler(event) {
+                    const msg = String(event.data || '').trim();
+                    if (msg.startsWith('bestmove')) cleanup(() => resolve(msg.split(/\s+/)[1]));
+                }
+                function cleanup(done) {
+                    clearTimeout(timer);
+                    worker.removeEventListener('message', handler);
+                    done();
+                }
+                worker.addEventListener('message', handler);
+                worker.postMessage('position fen ' + chess.fen());
+                worker.postMessage('go depth 12');
+            });
+            if (!best || best === '(none)') return null;
+            const from = best.slice(0, 2), to = best.slice(2, 4), promotion = best.slice(4, 5) || undefined;
+            return chess.moves({ verbose: true }).find(m => m.from === from && m.to === to && (!m.promotion || m.promotion === promotion)) || null;
+        } catch (err) {
+            console.warn('Stockfish unavailable, falling back to local ultra search', err);
+            return null;
+        }
     }
 
     function showToast(message, duration = 3500) {
@@ -641,7 +649,7 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
         document.getElementById('play-panel').style.display = 'none';
         document.getElementById('setup-panel').style.display = 'block';
         
-        resetBoardData();
+        resetChess();
         createVisualBoard();
     }
 
