@@ -622,22 +622,22 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
         }
     };
 
-    // Átalakított játék végrehajtás: Nem lép ki, hanem visszaadja a menüt
     async function endGame(gameResult, message) {
         gameActive = false;
         document.getElementById('chess-board').classList.remove('ai-analyzing');
         
-        // Frissítjük a lokális egyenleget az eredmény alapján
-        if (gameResult === true) state.balance += betAmount;
-        else if (gameResult === false) state.balance -= betAmount;
+        let newBalance = state.balance;
+        if (gameResult === true) newBalance += betAmount;
+        else if (gameResult === false) newBalance -= betAmount;
+        if (newBalance < 0) newBalance = 0;
+        state.balance = newBalance;
 
-        // Kijelezzük a szép üzenetet
+        await GameAPI.patch({ balance: newBalance });
+
+        document.getElementById('current-balance-display').textContent = newBalance;
+
         await showToast(message, 4000); 
 
-        // Frissítjük a kijelzőt
-        document.getElementById('current-balance-display').textContent = state.balance;
-
-        // Visszaváltunk a kezdőmenüre a bezárás helyett
         document.getElementById('play-panel').style.display = 'none';
         document.getElementById('setup-panel').style.display = 'block';
         
