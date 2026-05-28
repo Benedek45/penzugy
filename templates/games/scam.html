@@ -437,6 +437,14 @@
   <section id="screen-lobby" class="scam-screen is-active">
     <h1 class="lobby-title">🎭 Szélhámosok Utcája</h1>
     <p class="lobby-subtitle">Üdvözöljük a pénzügyi átverések birodalmában!</p>
+    
+    <div class="win-chance-banner" style="max-width:500px;margin:0 auto 2rem auto;">
+      <div class="warning-icon">⚠️</div>
+      <div class="chance-text">
+        <strong>10% esélyed van nyerni minden játékban!</strong>
+        <div class="prize-info">A nyeremény mindig a tét 3-szorosa</div>
+      </div>
+    </div>
 
     <div class="street-container">
       <div class="street-path"></div>
@@ -546,14 +554,6 @@
       <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🏝️ Adóparadicsom</h2>
       <div class="balance-strip">💰 Egyenleg: <span id="off-balance">—</span> Ft</div>
 
-      <div class="win-chance-banner">
-        <div class="warning-icon">⚠️</div>
-        <div class="chance-text">
-          <strong>10% esélyed van nyerni!</strong>
-          <div class="prize-info">Nyeremény: 1500 Ft | Tét: 500 Ft</div>
-        </div>
-      </div>
-
       <div class="difficulty-selector" id="off-difficulty">
         <button class="diff-btn active" onclick="SC.off.setDiff('easy',this)">Könnyű</button>
         <button class="diff-btn" onclick="SC.off.setDiff('medium',this)">Közepes</button>
@@ -613,14 +613,6 @@
     <div class="game-ui">
       <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">💼 Kamu Befektetési Tanácsadó</h2>
       <div class="balance-strip">💰 Egyenleg: <span id="adv-balance">—</span> Ft</div>
-
-      <div class="win-chance-banner">
-        <div class="warning-icon">⚠️</div>
-        <div class="chance-text">
-          <strong>10% esélyed van nyerni!</strong>
-          <div class="prize-info">Nyeremény: 3000 Ft | Tét: 1000 Ft</div>
-        </div>
-      </div>
 
       <div class="difficulty-selector" id="adv-difficulty">
         <button class="diff-btn active" onclick="SC.adv.setDiff('easy',this)">Könnyű</button>
@@ -686,14 +678,6 @@
       <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">👮 Szerencsejáték Felügyelő</h2>
       <div class="balance-strip">💰 Egyenleg: <span id="ins-balance">—</span> Ft</div>
 
-      <div class="win-chance-banner">
-        <div class="warning-icon">⚠️</div>
-        <div class="chance-text">
-          <strong>10% esélyed van nyerni!</strong>
-          <div class="prize-info">Nyeremény: 3000 Ft | Tét: 1000 Ft</div>
-        </div>
-      </div>
-
       <div class="difficulty-selector" id="ins-difficulty">
         <button class="diff-btn active" onclick="SC.ins.setDiff('easy',this)">Könnyű</button>
         <button class="diff-btn" onclick="SC.ins.setDiff('medium',this)">Közepes</button>
@@ -757,14 +741,6 @@
     <div class="game-ui">
       <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🏥 Biztosítási Csaló</h2>
       <div class="balance-strip">💰 Egyenleg: <span id="insur-balance">—</span> Ft</div>
-
-      <div class="win-chance-banner">
-        <div class="warning-icon">⚠️</div>
-        <div class="chance-text">
-          <strong>10% esélyed van nyerni!</strong>
-          <div class="prize-info">Nyeremény: 900 Ft | Tét: 300 Ft</div>
-        </div>
-      </div>
 
       <div class="difficulty-selector" id="insur-difficulty">
         <button class="diff-btn active" onclick="SC.insur.setDiff('easy',this)">Könnyű</button>
@@ -836,14 +812,6 @@
       <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🧺 Pénzmosó Szalon</h2>
       <div class="balance-strip">💰 Egyenleg: <span id="laun-balance">—</span> Ft</div>
 
-      <div class="win-chance-banner">
-        <div class="warning-icon">⚠️</div>
-        <div class="chance-text">
-          <strong>10% esélyed van nyerni!</strong>
-          <div class="prize-info">Nyeremény: 2400 Ft | Tét: 800 Ft</div>
-        </div>
-      </div>
-
       <div class="difficulty-selector" id="laun-difficulty">
         <button class="diff-btn active" onclick="SC.laun.setDiff('easy',this)">Könnyű</button>
         <button class="diff-btn" onclick="SC.laun.setDiff('medium',this)">Közepes</button>
@@ -908,14 +876,6 @@
     <div class="game-ui">
       <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🏠 Ingatlan Spekuláns</h2>
       <div class="balance-strip">💰 Egyenleg: <span id="real-balance">—</span> Ft</div>
-
-      <div class="win-chance-banner">
-        <div class="warning-icon">⚠️</div>
-        <div class="chance-text">
-          <strong>10% esélyed van nyerni!</strong>
-          <div class="prize-info">Nyeremény: 6000 Ft | Tét: 2000 Ft</div>
-        </div>
-      </div>
 
       <div class="difficulty-selector" id="real-difficulty">
         <button class="diff-btn active" onclick="SC.real.setDiff('easy',this)">Könnyű</button>
@@ -998,14 +958,6 @@
     <div class="game-ui">
       <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🔺 Piramis Játék</h2>
       <div class="balance-strip">💰 Egyenleg: <span id="pyr-balance">—</span> Ft</div>
-
-      <div class="win-chance-banner">
-        <div class="warning-icon">⚠️</div>
-        <div class="chance-text">
-          <strong>10% esélyed van nyerni!</strong>
-          <div class="prize-info">Nyeremény: 4500 Ft | Tét: 1500 Ft</div>
-        </div>
-      </div>
 
       <div class="difficulty-selector" id="pyr-difficulty">
         <button class="diff-btn active" onclick="SC.pyr.setDiff('easy',this)">Könnyű</button>
