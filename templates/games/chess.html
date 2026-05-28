@@ -451,13 +451,13 @@ button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.
                 ? "Sakk-matt! Megnyerted a játszmát és a profitot!"
                 : "Sakk-matt! A gép nyert, elveszítetted a tétet.");
         } else if (chess.in_stalemate()) {
-            endGame('draw', "Patt helyzet! Szabályos lépések híján a meccs döntetlen lett.");
+            endGame('draw', "Patt helyzet! Nincs szabályos lépésed, de nem vagy sakkban. A meccs döntetlen.");
         } else if (chess.insufficient_material()) {
-            endGame('draw', "Patt helyzet! Szabályos lépések híján a meccs döntetlen lett.");
+            endGame('draw', "Döntetlen! Nincs elég anyag a sakk-matthoz (pl. csak királyok maradtak).");
         } else if (chess.in_threefold_repetition()) {
-            endGame('draw', "Patt helyzet! Szabályos lépések híján a meccs döntetlen lett.");
+            endGame('draw', "Döntetlen! Ugyanaz a pozíció háromszor megismétlődött.");
         } else if (chess.in_draw()) {
-            endGame('draw', "Patt helyzet! Szabályos lépések híján a meccs döntetlen lett.");
+            endGame('draw', "Döntetlen! 50 lépés történt ütés vagy gyaloglépés nélkül.");
         }
     }
 
