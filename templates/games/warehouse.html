@@ -784,6 +784,17 @@
     }
   };
 
+  // ── Number key controls (1–4) ────────────────────────────
+  var KEY_MAP = ['food', 'electronics', 'tools', 'chemicals'];
+  document.addEventListener('keydown', function(e) {
+    if (!gameActive) return;
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4) {
+      e.preventDefault();
+      sort(KEY_MAP[n - 1]);
+    }
+  });
+
   init();
 })();
 </script>
