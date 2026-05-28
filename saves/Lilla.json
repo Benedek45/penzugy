@@ -1,0 +1,13 @@
+{
+  "player_name": "Lilla",
+  "balance": 54328,
+  "debt": 0,
+  "stats": {
+    "biggest_loss": 10540,
+    "biggest_win": 18186,
+    "bribes_used": 0,
+    "games_played": 49,
+    "times_employed": 2
+  },
+  "saved_at": "2026-05-26T22:48:44.871457"
+}
