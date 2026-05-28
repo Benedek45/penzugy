@@ -441,7 +441,7 @@
     </div>
     <div id="bet-row">
       <label for="bet-input">Tét:</label>
-      <input type="number" id="bet-input" min="1" placeholder="Összeg" value="">
+      <input type="number" id="bet-input" min="1" max="30000" placeholder="Összeg" value="">
       <button class="btn btn-gold" id="start-btn" disabled>Indítás</button>
     </div>
     <div id="bet-error"></div>
@@ -650,10 +650,12 @@
   ═══════════════════════════════════════════ */
   function validateBet() {
     const bet = parseInt(betInput.value, 10);
-    const valid = selectedIdx >= 0 && !isNaN(bet) && bet >= 1 && bet <= state.balance;
+    const valid = selectedIdx >= 0 && !isNaN(bet) && bet >= 1 && bet <= 30000 && bet <= state.balance;
     startBtn.disabled = !valid;
     if (isNaN(bet) || bet < 1) {
       betError.textContent = '';
+    } else if (bet > 30000) {
+      betError.textContent = 'A tét nem lehet nagyobb 30 000 Ft-nál.';
     } else if (bet > state.balance) {
       betError.textContent = 'A tét nem lehet nagyobb az egyenlegednél.';
     } else {
