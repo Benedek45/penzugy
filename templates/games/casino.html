@@ -427,6 +427,88 @@
 .tip:hover .tip-text { display: block; }
 
 /* ═══════════════════════════════════════════════════
+   BLACKJACK RULES MODAL
+═══════════════════════════════════════════════════ */
+.bj-rules-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.bj-rules-modal {
+  background: linear-gradient(135deg, var(--dark-mid) 0%, var(--dark) 100%);
+  border: 2px solid var(--gold-dim);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px var(--shadow), 0 0 40px var(--shadow-gold);
+  position: relative;
+}
+.bj-rules-modal h3 {
+  font-family: var(--font-display);
+  color: var(--gold-light);
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  text-shadow: 0 2px 8px var(--shadow);
+}
+.bj-rules-content {
+  color: var(--cream);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+.bj-rules-content h4 {
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  margin-top: 1.2rem;
+  margin-bottom: 0.6rem;
+}
+.bj-rules-content ul {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+.bj-rules-content li {
+  margin-bottom: 0.5rem;
+}
+.bj-rules-content strong {
+  color: var(--gold-light);
+}
+.bj-rules-content .highlight {
+  background: rgba(201, 168, 76, 0.15);
+  padding: 0.8rem;
+  border-left: 3px solid var(--gold);
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+.bj-rules-close {
+  display: block;
+  margin: 1.5rem auto 0;
+  padding: 0.8rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  color: var(--dark);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(201, 168, 76, 0.3);
+}
+.bj-rules-close:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(201, 168, 76, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════
    CORRUPT DICE
 ═══════════════════════════════════════════════════ */
 .dice-art {
@@ -626,6 +708,66 @@
   <section id="screen-blackjack" class="casino-screen game-screen">
     <img src="{{ url_for('static', filename='assets/casino_black-jack.png') }}"
          alt="" class="game-bg" aria-hidden="true">
+
+    <!-- Blackjack Rules Modal -->
+    <div id="bj-rules-overlay" class="bj-rules-overlay">
+      <div class="bj-rules-modal">
+        <h3>🃏 Blackjack Szabályok</h3>
+        <div class="bj-rules-content">
+          <h4>🎯 A Cél</h4>
+          <p>Legyél közelebb <strong>21-hez</strong>, mint az osztó, de <strong>ne lépd túl</strong>!</p>
+          
+          <h4>🎴 Lapok Értéke</h4>
+          <ul>
+            <li><strong>Számos lapok (2-10):</strong> A rajtuk lévő szám</li>
+            <li><strong>Képes lapok (J, Q, K):</strong> 10 pont</li>
+            <li><strong>Ász (A):</strong> 1 vagy 11 pont (amelyik jobb neked)</li>
+          </ul>
+
+          <h4>🎮 A Játék Menete</h4>
+          <ol>
+            <li><strong>Válassz tétet:</strong> 100, 500 vagy 1000 Ft</li>
+            <li><strong>Osztás:</strong> Te és az osztó is kap 2-2 lapot</li>
+            <li><strong>Döntés:</strong>
+              <ul>
+                <li><strong>Húzás:</strong> Kérsz még egy lapot (kockázatos, ha már magas az össze!)</li>
+                <li><strong>Megáll:</strong> Nem kérsz több lapot (biztonságos, ha jó a kezed)</li>
+                <li><strong>Duplázás:</strong> Megduplázod a téted, de csak EGY lapot kaphatsz</li>
+              </ul>
+            </li>
+            <li><strong>Osztó lép:</strong> Az osztó addig húz, amíg el nem éri a 17-et</li>
+          </ol>
+
+          <h4>🏆 Nyerési Feltételek</h4>
+          <div class="highlight">
+            <p><strong>✅ Nyersz, ha:</strong></p>
+            <ul>
+              <li>Közelebb vagy 21-hez, mint az osztó</li>
+              <li>Az osztó túllépi a 21-et (kiéget), és te nem</li>
+              <li><strong>Blackjack!</strong> Az első két lapod Ász + 10-es (1.5× tét nyeremény!)</li>
+            </ul>
+          </div>
+
+          <div class="highlight">
+            <p><strong>❌ Veszítesz, ha:</strong></p>
+            <ul>
+              <li>Túlléped a 21-et (kiégsz)</li>
+              <li>Az osztó közelebb van 21-hez</li>
+              <li><strong>Döntetlen:</strong> Azonos pontszám → a ház nyer (házelőny!)</li>
+            </ul>
+          </div>
+
+          <h4>💡 Tippek</h4>
+          <ul>
+            <li>Ha 17 vagy több van a kezedben, általában érdemes megállni</li>
+            <li>Ha 11 vagy kevesebb van, mindig húzz!</li>
+            <li>A duplázás akkor éri meg, ha 9, 10 vagy 11 van a kezedben</li>
+            <li>Figyeld az osztó látható lapját - ha gyenge (2-6), érdemes óvatosabban játszani</li>
+          </ul>
+        </div>
+        <button class="bj-rules-close" onclick="CAS.bj.closeRules()">Értem, kezdjük! 🎲</button>
+      </div>
+    </div>
 
     <div class="game-ui">
       <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🃏 Blackjack</h2>
@@ -1103,7 +1245,11 @@
       await applyDelta(r.delta);
     }
 
-    return { init, reset, setBet, deal, hit, stand, dbl };
+    function closeRules() {
+      document.getElementById('bj-rules-overlay').style.display = 'none';
+    }
+
+    return { init, reset, setBet, deal, hit, stand, dbl, closeRules };
   })();
 
   // ════════════════════════════════════════════════════════════════
