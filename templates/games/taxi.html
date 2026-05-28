@@ -477,15 +477,15 @@
         if (apOn) apPath = buildPath(dropoffId);
       } else if (hasPassenger && loc.id === dropoffId) {
         const grossFare = 280;
-        const fare = Math.round(grossFare * 0.25);
-        earnings += fare;
+        const payout = Math.round(grossFare * 0.25);
+        earnings += payout;
         rides++;
         document.getElementById('tx-earnings').textContent = earnings;
         document.getElementById('tx-rides').textContent = rides;
-        GameAPI.patch({ balance: S.balance + fare }).then(ns => { S = ns; }).catch(() => {});
-        showNotify(`+${fare} Ft`, C.green);
+        GameAPI.patch({ balance: S.balance + payout }).then(ns => { S = ns; }).catch(() => {});
+        showNotify(`Tarifa: ${grossFare} Ft • Te kapsz: +${payout} Ft`, C.green);
         document.getElementById('tx-app-bubble').textContent =
-          rides === 3 ? 'Az app elveszi a 75%-ot mostantól. Surge pricing.' :
+          rides === 3 ? 'Az app a tarifa 75%-át leveszi. Te 25%-ot kapsz.' :
           QUOTES[Math.floor(Math.random() * QUOTES.length)];
         newMission();
         if (apOn) apPath = buildPath(pickupId);
@@ -771,7 +771,7 @@
     document.getElementById('tx-overlay-stats').innerHTML = `
       <p>Összkereset: <strong>${earnings} Ft</strong></p>
       <p>Teljesített utak: <strong>${rides}</strong></p>
-      <p><em>Az app a viteldíj 75%-át levonja.</em></p>
+      <p><em>Az app a tarifa 75%-át megtartja, te 25%-ot kapsz.</em></p>
     `;
     document.getElementById('tx-overlay').classList.remove('tx-hidden');
   }
