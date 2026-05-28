@@ -1,4 +1,4 @@
-# 🤖 Agent Guide — [PROJECT_NAME]
+# 🤖 Agent Guide — Pénz Plaza
 
 This file is for AI coding assistants. Read it fully before touching any file.
 
@@ -20,7 +20,6 @@ Stack: Python (Flask) backend + plain HTML/CSS/JS frontend. No framework.
 ├── AGENTS.md              ← you are here
 ├── app.py                 ← Flask server, all routes
 ├── requirements.txt       ← Python dependencies
-├── images.jpg             ← decorative image
 ├── data/
 │   └── hints.json         ← NPC financial term hints (term + explanation)
 ├── saves/                 ← player JSON save files (auto-created)
@@ -28,23 +27,27 @@ Stack: Python (Flask) backend + plain HTML/CSS/JS frontend. No framework.
 │   ├── css/
 │   │   └── style.css      ← shared styles, CSS variables, fonts
 │   ├── js/
-│   │   └── game.js        ← shared JS: GameAPI, EventBus, utilities
-│   └── assets/            ← images, sprites (PNG)
+│   │   ├── game.js        ← shared JS: GameAPI, EventBus, utilities
+│   │   └── vendor/
+│   │       └── chess.min.js  ← vendored chess.js (full legal chess rules)
+│   └── assets/            ← images, sprites (PNG, all with transparent bg)
 ├── templates/
 │   ├── base.html           ← base Jinja2 template (head, nav, scripts)
 │   ├── hub.html            ← main town map, clickable buildings
 │   ├── login.html          ← name entry / new game / load game
 │   └── games/              ← all game templates (GAMES + JOBS)
 │       ├── _template.html  ← copy this to add a new mini-game / job
-│       ├── casino.html
-│       ├── horse_race.html
-│       ├── stock_market.html
-│       ├── slots.html
-│       ├── chess.html
-│       ├── cashier.html     ← job
-│       ├── warehouse.html   ← job
-│       ├── taxi.html        ← job
-│       └── cook.html        ← job
+│       ├── casino.html      ← lobby + slots / blackjack / corrupt dice
+│       ├── horse_race.html  ← bet on 4 horses, animated SVG runners + jockey
+│       ├── stock_market.html← 6-stock ticker, liquidity/slippage, upgrades, OIL→taxi link
+│       ├── slots.html       ← lobby + quiz / bingo / wheel / scratch subgames
+│       ├── chess.html       ← chess with chess.js rules; easy/medium/hard/ultra (Stockfish CDN)
+│       ├── pachinko.html    ← pachinko ball-drop game
+│       ├── scam.html        ← Szélhámosok Utcája: 7 scam-themed subgames lobby
+│       ├── cashier.html     ← job: conveyor-belt item scanning, 90s shift
+│       ├── warehouse.html   ← job: box sorting by category/shelf, number-key shortcuts
+│       ├── taxi.html        ← job: canvas WASD road game, fuel gauge, OIL price link, autopilot
+│       └── cook.html        ← job: recipe sequence game, number-key ingredient shortcuts
 ```
 
 ---
@@ -59,11 +62,13 @@ session = {
     "balance":     int,   # current money (can go negative = debt)
     "debt":        int,   # total outstanding debt
     "stats": {
-        "games_played":  int,
-        "bribes_used":   int,
-        "times_employed": int,
-        "biggest_win":   int,
-        "biggest_loss":  int,
+        "games_played":    int,
+        "bribes_used":     int,
+        "times_employed":  int,
+        "biggest_win":     int,
+        "biggest_loss":    int,
+        "oil_price":       int,   # synced from stock market OIL stock → read by taxi
+        "autopilot_unlocked": bool,  # one-time 8000 Ft taxi autopilot purchase
     }
 }
 ```
@@ -108,8 +113,8 @@ await GameAPI.exit(newBalance);
 // Optionally pass stat updates:
 await GameAPI.exit(newBalance, { bribes_used: state.stats.bribes_used + 1 });
 
-// Patch state mid-game without exiting (e.g. update debt)
-await GameAPI.patch({ debt: newDebt });
+// Patch state mid-game without exiting (e.g. update balance after a round)
+S = await GameAPI.patch({ balance: S.balance + delta });
 
 // Get a hint for this game (uses current page URL to infer game name)
 const hint = await GameAPI.getHint();
@@ -126,27 +131,26 @@ EventBus.emit('balance:update', { balance: 500 });
 ## GAMES vs JOBS
 
 `app.py` maintains two separate lists:
-- `GAMES` — `/game/<name>` routes, player spends money, debt interest applies
+```python
+GAMES = ["casino", "horse_race", "stock_market", "slots", "chess", "pachinko", "scam"]
+JOBS  = ["cashier", "warehouse", "taxi", "cook"]
+```
+
+- `GAMES` — `/game/<name>` routes, player spends money, **debt interest applies on entry**
 - `JOBS` — `/job/<name>` routes, player earns money, no debt interest
 
 ## How to Add a Mini-Game
 
 1. Copy `templates/games/_template.html` → `templates/games/yourname.html`
-2. Add the name to `GAMES` list in `app.py`:
-   ```python
-   GAMES = ["casino", "horse_race", "stock_market", "slots", "chess", "yourname"]
-   ```
-3. Add a building button in `hub.html` (follow the existing pattern).
+2. Add the name to `GAMES` list in `app.py`.
+3. Add a building button in `hub.html` (follow the existing `.map-hotspot` pattern).
 4. Add hints in `data/hints.json` under the key `"yourname"`.
 5. Done. Don't touch anyone else's files.
 
 ## How to Add a Job
 
 1. Copy `templates/games/_template.html` → `templates/games/yourjob.html`
-2. Add the name to `JOBS` list in `app.py`:
-   ```python
-   JOBS = ["cashier", "warehouse", "taxi", "cook", "yourjob"]
-   ```
+2. Add the name to `JOBS` list in `app.py`.
 3. Add a job card in `hub.html` (follow the `.job-card` pattern).
 4. Done. No hints needed, no debt interest applied.
 
@@ -186,18 +190,67 @@ init();
 
 ---
 
+## Multi-Screen Lobby Games
+
+Several games are **multi-screen apps** rendered as a single HTML file:
+
+### casino.html
+- Lobby with 3 hotspots over `casino_lobby.png` → Slots, Blackjack, Corrupt Dice
+- Public API: `window.CAS` — `CAS.sl`, `CAS.bj`, `CAS.dc`, `CAS.enter(game)`, `CAS.showLobby()`, `CAS.exitCasino()`
+- Blackjack: uses separate `roundBet` (not `bet`) so double-down never leaks into next hand
+
+### slots.html
+- Lobby with 4 buttons → Quiz, Bingo, Wheel, Scratch subgames
+- Public API: `window.SL`
+
+### scam.html — Szélhámosok Utcája
+- Dark street lobby with 7 clickable game cards:
+  1. 🏝️ **Adóparadicsom** (offshore) — location picker, transaction animation, NAV audit risk
+  2. 💼 **Kamu Befektetési Tanácsadó** — advise 5 clients, earn fees, 90% chance of complaint
+  3. 👮 **Szerencsejáték Felügyelő** — inspect 5 casinos, guess violation level
+  4. 🏥 **Biztosítási Csaló** — file insurance claim, usually rejected with absurd reasons
+  5. 🧺 **Pénzmosó Szalon** — 5-step laundering process, random police catches
+  6. 🏠 **Ingatlan Spekuláns** — buy property, random market events, almost always bad
+  7. 🔺 **Piramis Játék** — auto-runs rounds recruiting members, always collapses
+- Public API: `window.SC` — `SC.off`, `SC.adv`, `SC.ins`, `SC.insur`, `SC.laun`, `SC.real`, `SC.pyr`, `SC.enter(game)`, `SC.showLobby()`, `SC.exitScam()`
+- Lobby stats panel tracks totalGames, totalWins, totalLosses, totalBalance across all 7 subgames
+- All subgames use `applyDelta(delta)` which calls `GameAPI.patch` and `refreshBalances()`
+- `hints.json` key `"scam"` has 10 scam-themed hints (biztosítási csalás, korrupció, etc.)
+
+---
+
+## Cross-Game State: OIL Price
+
+- `stock_market.html` has an OIL stock (`id:'OIL'`, p:1000). When OIL price moves >4%, it writes `stats.oil_price` via `GameAPI.patch`.
+- `taxi.html` reads `S.stats.oil_price` on init and on taxi game start to set `oilPrice`. Fuel tank price = `Math.round(120 * oilPrice / 1000)`. This creates a real gameplay link between the two games.
+
+---
+
+## Chess Notes
+
+- `chess.html` loads `static/js/vendor/chess.min.js` (vendored chess.js) for full legal move generation: castling, en passant, promotion, checkmate, stalemate, threefold repetition, 50-move rule, insufficient material.
+- Difficulty: easy (random), medium (minimax depth-2), hard (minimax depth-3), **ultra** (Stockfish.js from CDN as Web Worker, local minimax fallback if load fails).
+- chess.js is justified as it provides correct rule handling that would be very error-prone to reimplement manually.
+
+---
+
+## Taxi Job Notes
+
+- Canvas-based WASD road game; logical canvas W=700, H=420, rendered at 1.5× scale.
+- Roads: H1 (y 65-115), H2 (y 285-335), V1 (x 60-110), V2 (x 315-365), V3 (x 565-615). `onRoad(x,y)` enforces road collision.
+- Autopilot: one-time 8000 Ft purchase, stored in `stats.autopilot_unlocked`. BFS over 6 named intersections.
+- Fuel: starts at 100, consumed at `moved * 0.007` px/frame. Gas station at ~(460, 90), auto-refuels when near. Tank cost = `Math.round(120 * oilPrice / 1000)`.
+- Fare: flat 280 Ft per delivery. The "app takes 75%" is cosmetic NPC joke only; player receives full 280 Ft.
+- Speed: `const SPEED = 1.2` px/frame.
+
+---
+
 ## Debt Rules
 
 - If `balance < 0` after any game, Flask auto-sets `debt += abs(balance)`, `balance = 0`
 - The hub shows a "Fizess vissza" (Pay back) button when `debt > 0`
 - Debt accrues 10% interest every time the player enters a new game (applied server-side in `/game/<name>`)
 - Loan shark NPC appears (hub overlay) when `debt > 5000`
-
-Apply debt interest in `app.py` before rendering any game page:
-```python
-if session.get('debt', 0) > 0:
-    session['debt'] = int(session['debt'] * 1.10)
-```
 
 ---
 
@@ -206,14 +259,14 @@ if session.get('debt', 0) > 0:
 `data/hints.json` structure:
 ```json
 {
-  "horse_race": [
-    { "term": "Kockázat", "explanation": "Annak valószínűsége, hogy elveszíted a pénzed. Magas." },
-    { "term": "Várható érték", "explanation": "Átlagos nyereményed hosszú távon. Negatív." }
-  ],
+  "horse_race": [ { "term": "...", "explanation": "..." } ],
   "casino": [ ... ],
+  "scam":   [ ... ],
   "global": [ ... ]
 }
 ```
+
+Keys present: `global`, `horse_race`, `casino`, `stock_market`, `slots`, `chess`, `cashier`, `quiz`, `bingo`, `wheel`, `pachinko`, `scam`, `taxi` (from subagent).
 
 `GET /api/hint/<game>` picks randomly from `hints[game]` + `hints["global"]`.
 
@@ -221,13 +274,14 @@ if session.get('debt', 0) > 0:
 
 ## Coding Rules
 
-- **External JS libraries are allowed when justified** — prefer small, focused libraries and document why they are used
+- **External JS libraries are allowed when justified** — prefer small, focused libraries and document why they are used (see chess.js above)
 - **No inline styles** — use CSS classes from style.css or add new ones
 - **CSS variables only** — never hardcode colors, use `var(--gold)`, `var(--dark)` etc.
 - **Flask session only** for state — never write to saves/ during a game
 - **Guard every route** — redirect to `/login` if `player_name` not in session
 - **No global variable conflicts** — wrap game logic in an IIFE or module pattern
 - **Keep game files self-contained** — one HTML file per game, logic inside `{% block scripts %}`
+- **`[hidden] { display: none !important; }`** — always add this rule in game CSS to prevent button state leaks after `setAttribute('hidden','')`
 
 ---
 
@@ -236,16 +290,23 @@ if session.get('debt', 0) > 0:
 ```css
 --gold:        #C9A84C
 --gold-light:  #F0D080
+--gold-dim:    rgba(201,168,76,0.35)
 --dark:        #1A1A2E
 --dark-mid:    #2A2A4E
+--dark-light:  #3A3A5E
 --red:         #8B1A1A
+--red-light:   #ffcdd2
 --green:       #2E7D32
 --green-light: #4CAF50
 --cream:       #F5F0E8
+--cream-dark:  #c8b99a
 --shadow:      rgba(0,0,0,0.4)
+--shadow-gold: rgba(201,168,76,0.25)
 --font-display: 'Playfair Display', Georgia, serif
 --font-body:    'Crimson Text', Georgia, serif
 --font-mono:    'Courier New', monospace
+--radius:       8px
+--transition:   0.2s ease
 ```
 
 ---
