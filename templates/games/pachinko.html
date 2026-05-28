@@ -1,0 +1,890 @@
+{% extends "base.html" %}
+{% block title %}Pachinko — Pénz Plaza{% endblock %}
+
+{% block head %}
+<style>
+/* ═══════════════════════════════════════════════════
+   PACHINKO — layout
+═══════════════════════════════════════════════════ */
+#pachinko-container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ── Screen toggle ── */
+.pachinko-screen { display: none; }
+.pachinko-screen.is-active { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; }
+
+/* ── Setup screen ── */
+#setup-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 380px;
+}
+#setup-form label {
+  font-family: var(--font-display);
+  color: var(--cream);
+  font-size: 1.1rem;
+}
+#ball-input {
+  width: 100px;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+#max-info {
+  font-size: 0.85rem;
+  color: var(--cream-dark);
+  font-style: italic;
+}
+#setup-controls {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+#insufficient-msg {
+  color: var(--red-light);
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+/* ── Game screen ── */
+#board-wrapper {
+  position: relative;
+  background: var(--dark-mid);
+  border: 2px solid var(--gold-dim);
+  border-radius: 14px;
+  box-shadow: 0 0 24px var(--shadow-gold), inset 0 0 30px rgba(0,0,0,0.4);
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+#board-wrapper.fever-active {
+  border-color: var(--red);
+  box-shadow: 0 0 40px var(--red), 0 0 60px var(--shadow-gold);
+  animation: fever-pulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes fever-pulse {
+  from { box-shadow: 0 0 20px var(--red), 0 0 30px var(--shadow-gold); }
+  to   { box-shadow: 0 0 50px var(--red), 0 0 70px var(--gold-light); }
+}
+#board-canvas {
+  display: block;
+}
+#game-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 420px;
+  padding: 0 0.5rem;
+  gap: 0.5rem;
+}
+#game-balance {
+  font-family: var(--font-display);
+  color: var(--gold-light);
+  font-size: 1rem;
+  font-weight: 700;
+}
+#balls-remaining {
+  font-family: var(--font-display);
+  color: var(--cream);
+  font-size: 0.9rem;
+}
+#fever-display {
+  font-family: var(--font-display);
+  color: var(--red-light);
+  font-size: 1.1rem;
+  font-weight: 700;
+  animation: glow 1s ease-in-out infinite;
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+}
+#fever-display.show { display: flex; }
+#fever-timer {
+  font-size: 1.6rem;
+  color: var(--gold-light);
+  min-width: 2rem;
+  text-align: center;
+}
+#game-controls {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+}
+
+/* ── Slot machine overlay ── */
+#slot-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,10,20,0.88);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  animation: fade-in 0.2s ease;
+}
+#slot-overlay.show { display: flex; }
+#slot-box {
+  background: var(--dark-mid);
+  border: 2px solid var(--gold);
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  box-shadow: 0 0 60px var(--shadow-gold);
+  animation: slide-up 0.25s ease;
+}
+#slot-box h2 {
+  margin-bottom: 1rem;
+  color: var(--gold-light);
+}
+#slot-reels {
+  display: flex;
+  gap: 0.7rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+.slot-reel {
+  width: 72px;
+  height: 72px;
+  background: var(--dark);
+  border: 2px solid var(--gold-dim);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+  transition: border-color 0.3s;
+}
+.slot-reel.winning {
+  border-color: var(--gold-light);
+  box-shadow: 0 0 20px var(--shadow-gold), inset 0 0 8px var(--shadow-gold);
+}
+.slot-reel.spinning .slot-sym {
+  animation: reel-blur 0.08s linear infinite;
+}
+@keyframes reel-blur {
+  0%   { transform: translateY(0); opacity: 1; }
+  40%  { transform: translateY(-10px); opacity: 0.2; }
+  60%  { transform: translateY(10px); opacity: 0.2; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+#slot-result-msg {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  min-height: 2rem;
+  color: var(--cream);
+  margin-top: 0.5rem;
+}
+#slot-result-msg.win { color: var(--green-light); }
+#slot-result-msg.lose { color: var(--red-light); }
+
+/* ── Result screen ── */
+#result-box {
+  background: var(--dark-mid);
+  border: 2px solid var(--gold-dim);
+  border-radius: 14px;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  max-width: 420px;
+  box-shadow: 0 0 30px var(--shadow-gold);
+}
+#result-box h2 {
+  margin-bottom: 1rem;
+  color: var(--gold-light);
+}
+#result-summary {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  margin-bottom: 1.5rem;
+  color: var(--cream);
+}
+#result-summary span.hl { color: var(--gold-light); font-weight: 700; font-family: var(--font-display); }
+#result-summary span.loss { color: var(--red-light); }
+#result-summary span.profit { color: var(--green-light); }
+#result-controls {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="pachinko-container">
+
+  <!-- NPC hint — auto-populated by game.js -->
+  <div class="npc-hint" id="npc-hint">Betöltés...</div>
+
+  <!-- ═══════════ SETUP ═══════════ -->
+  <div id="screen-setup" class="pachinko-screen is-active">
+    <div id="setup-form">
+      <div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.2rem;font-weight:700;margin-bottom:0.3rem;">
+        💰 Egyenleg: <span id="setup-balance">—</span>
+      </div>
+      <p style="color:var(--cream-dark);font-style:italic;">1 golyó = 10 érem</p>
+
+      <div id="setup-buy-area">
+        <label for="ball-input">Hány golyót veszel?</label>
+        <input type="number" id="ball-input" value="1" min="1">
+        <div id="max-info"></div>
+      </div>
+
+      <div id="insufficient-msg" style="display:none;">Nincs elég pénzed.</div>
+
+      <div id="setup-controls">
+        <button class="btn btn-gold" id="btn-start">Játék</button>
+        <button class="btn btn-dark" id="btn-setup-exit">Kilépés</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ GAME ═══════════ -->
+  <div id="screen-game" class="pachinko-screen">
+    <div id="board-wrapper">
+      <canvas id="board-canvas" width="420" height="560"></canvas>
+    </div>
+
+    <div id="game-info">
+      <span id="game-balance">💰 <span id="game-bal-val">—</span></span>
+      <span id="fever-display">
+        🔥 LÁZ: <span id="fever-timer">20</span>s
+      </span>
+      <span id="balls-remaining">Golyók: <span id="balls-rem-val">0</span></span>
+    </div>
+
+    <div id="game-controls">
+      <button class="btn btn-dark" id="btn-game-exit">Kilépés</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ SLOT OVERLAY ═══════════ -->
+  <div id="slot-overlay">
+    <div id="slot-box">
+      <h2>🎰 Középső zseb!</h2>
+      <div id="slot-reels">
+        <div class="slot-reel" id="reel-0"><span class="slot-sym">🍒</span></div>
+        <div class="slot-reel" id="reel-1"><span class="slot-sym">🍒</span></div>
+        <div class="slot-reel" id="reel-2"><span class="slot-sym">🍒</span></div>
+      </div>
+      <div id="slot-result-msg"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ RESULT ═══════════ -->
+  <div id="screen-result" class="pachinko-screen">
+    <div id="result-box">
+      <h2>🏁 Játék vége</h2>
+      <div id="result-summary"></div>
+      <div id="result-controls">
+        <button class="btn btn-gold" id="btn-again">Fogadj újra</button>
+        <button class="btn btn-dark" id="btn-result-exit">Kilépés</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+
+  /* ════════════════════════════════════════════════════════════
+     CONSTANTS
+  ════════════════════════════════════════════════════════════ */
+  const BALL_COST = 10;
+  const NUM_ROWS = 6;
+  const CANVAS_W = 420;
+  const CANVAS_H = 560;
+  const H_SPACING = 48;
+  const V_SPACING = 58;
+  const BOARD_TOP = 44;
+  const BALL_RADIUS = 7;
+  const PEG_RADIUS = 5;
+  const ANIM_DURATION = 2000;
+  const FEVER_ANIM_DURATION = 350;
+  const FEVER_DURATION = 20;
+  const FEVER_INTERVAL_MS = 500;
+
+  const ZONES = [
+    { label: '0',   payoutNorm: 0,              payoutFever: 0   },
+    { label: '×1',  payoutNorm: { type: 'balls', qty: 1 },       payoutFever: 10  },
+    { label: '×3',  payoutNorm: { type: 'balls', qty: 3 },       payoutFever: 30  },
+    { label: '🎰',  payoutNorm: { type: 'slot' },                payoutFever: 50  },
+    { label: '×3',  payoutNorm: { type: 'balls', qty: 3 },       payoutFever: 30  },
+    { label: '×1',  payoutNorm: { type: 'balls', qty: 1 },       payoutFever: 10  },
+    { label: '0',   payoutNorm: 0,              payoutFever: 0   },
+  ];
+
+  const SLOT_SYMS = ['7️⃣', '🚫', '🍒', '🪙'];
+
+  /* ════════════════════════════════════════════════════════════
+     STATE
+  ════════════════════════════════════════════════════════════ */
+  let state;
+  let canvas, ctx;
+  let purchasedBalls = 0;
+  let ballsRemaining = 0;
+  let totalEarned = 0;
+  let feverActive = false;
+  let feverTimeLeft = 0;
+  let feverIntervalId = null;
+  let feverTickId = null;
+  let isProcessing = false;
+  let animFrameId = null;
+  let feverBallAnimating = false;
+
+  /* ── Peg positions cache ── */
+  let pegs = [];
+
+  function buildPegs() {
+    pegs = [];
+    for (let r = 0; r < NUM_ROWS; r++) {
+      const row = [];
+      const n = r + 1;
+      for (let c = 0; c < n; c++) {
+        const x = CANVAS_W / 2 + (c - r / 2) * H_SPACING;
+        const y = BOARD_TOP + r * V_SPACING;
+        row.push({ x, y });
+      }
+      pegs.push(row);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     HELPERS
+  ════════════════════════════════════════════════════════════ */
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function showScreen(id) {
+    document.querySelectorAll('.pachinko-screen').forEach(el => el.classList.remove('is-active'));
+    const target = document.getElementById(id);
+    if (target) target.classList.add('is-active');
+  }
+
+  function updBalDisplay() {
+    const el = document.getElementById('game-bal-val');
+    if (el) el.textContent = state.balance.toLocaleString('hu-HU') + ' Ft';
+  }
+
+  function updBallsDisplay() {
+    document.getElementById('balls-rem-val').textContent = ballsRemaining;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     CANVAS DRAWING
+  ════════════════════════════════════════════════════════════ */
+  function drawBoard(highlightZone) {
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+    /* background */
+    ctx.fillStyle = '#0a0a18';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    /* side panels */
+    ctx.fillStyle = '#15152a';
+    ctx.fillRect(0, 0, 18, CANVAS_H);
+    ctx.fillRect(CANVAS_W - 18, 0, 18, CANVAS_H);
+
+    /* landing zones at the bottom */
+    const zoneW = (CANVAS_W - 36) / ZONES.length;
+    const zoneH = 44;
+    const zoneY = CANVAS_H - zoneH;
+
+    ZONES.forEach((z, i) => {
+      const x = 18 + i * zoneW;
+      ctx.fillStyle = highlightZone === i ? (feverActive ? '#C9A84C' : '#F0D080') : (
+        z.label === '0' ? '#3a1a1a' :
+        z.label === '×1' ? '#3a3220' :
+        z.label === '×3' ? '#1a3a1a' :
+        '#3a3220'
+      );
+      ctx.fillRect(x, zoneY, zoneW - 1, zoneH);
+
+      ctx.strokeStyle = 'rgba(201,168,76,0.2)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, zoneY, zoneW - 1, zoneH);
+
+      if (i === 3) {
+        ctx.fillStyle = highlightZone === 3 ? '#F0D080' : '#C9A84C';
+        ctx.font = 'bold 18px "Playfair Display", Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🎰', x + zoneW / 2, zoneY + zoneH / 2);
+      } else {
+        ctx.fillStyle = highlightZone === i ? '#1A1A2E' : '#d4c9b0';
+        ctx.font = 'bold 13px "Playfair Display", Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(z.label, x + zoneW / 2, zoneY + zoneH / 2);
+      }
+    });
+
+    /* divider lines between zones */
+    for (let i = 1; i < ZONES.length; i++) {
+      const x = 18 + i * zoneW;
+      ctx.strokeStyle = 'rgba(201,168,76,0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, zoneY);
+      ctx.lineTo(x, CANVAS_H);
+      ctx.stroke();
+    }
+
+    /* pegs */
+    pegs.forEach(row => {
+      row.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, PEG_RADIUS, 0, Math.PI * 2);
+
+        const grad = ctx.createRadialGradient(p.x - 1, p.y - 1, 0, p.x, p.y, PEG_RADIUS + 2);
+        grad.addColorStop(0, '#d4c9b0');
+        grad.addColorStop(1, '#7a6220');
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      });
+    });
+
+    /* subtle side rail decorations */
+    ctx.fillStyle = '#2A2A4E';
+    for (let r = 0; r < NUM_ROWS; r++) {
+      const y = BOARD_TOP + r * V_SPACING;
+      ctx.fillRect(18, y - 1, 6, 2);
+      ctx.fillRect(CANVAS_W - 24, y - 1, 6, 2);
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     BALL ANIMATION
+  ════════════════════════════════════════════════════════════ */
+  function computeBallPath(bounces) {
+    let cumRight = 0;
+    const waypoints = [];
+
+    /* start at top center */
+    waypoints.push({ x: CANVAS_W / 2, y: 8 });
+
+    for (let r = 0; r < NUM_ROWS; r++) {
+      cumRight += bounces[r] ? 1 : 0;
+      const x = CANVAS_W / 2 + (cumRight - r / 2) * H_SPACING;
+      const y = BOARD_TOP + r * V_SPACING;
+      waypoints.push({ x, y });
+    }
+
+    /* landing zone */
+    const zoneIdx = cumRight;
+    const zoneW = (CANVAS_W - 36) / ZONES.length;
+    const lx = 18 + zoneIdx * zoneW + zoneW / 2;
+    const ly = CANVAS_H - 22;
+    waypoints.push({ x: lx, y: ly });
+
+    return { waypoints, zoneIdx };
+  }
+
+  function animateBall(path, duration, onDone) {
+    if (animFrameId) cancelAnimationFrame(animFrameId);
+
+    const { waypoints, zoneIdx } = path;
+    const totalSegs = waypoints.length - 1;
+    const dur = duration || ANIM_DURATION;
+    const startTime = performance.now();
+
+    function drawShadow(x, y, radius, alpha) {
+      ctx.beginPath();
+      ctx.arc(x + 2, y + 3, radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0,0,0,${0.3 * alpha})`;
+      ctx.fill();
+    }
+
+    function drawBall(x, y, alpha) {
+      drawShadow(x, y, BALL_RADIUS, alpha);
+
+      const grad = ctx.createRadialGradient(x - 2, y - 2, 0, x, y, BALL_RADIUS + 1);
+      grad.addColorStop(0, '#F0D080');
+      grad.addColorStop(0.4, '#C9A84C');
+      grad.addColorStop(1, '#7a6220');
+      ctx.beginPath();
+      ctx.arc(x, y, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = alpha;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      /* highlight */
+      ctx.beginPath();
+      ctx.arc(x - 2, y - 2, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fill();
+    }
+
+    function tick(now) {
+      const elapsed = now - startTime;
+      const totalProgress = Math.min(elapsed / dur, 1);
+      const segIdx = Math.min(Math.floor(totalProgress * totalSegs), totalSegs - 1);
+      const segProgress = (totalProgress * totalSegs) - segIdx;
+
+      const p0 = waypoints[segIdx];
+      const p1 = waypoints[Math.min(segIdx + 1, totalSegs)];
+
+      const cx = p0.x + (p1.x - p0.x) * segProgress;
+      const cy = p0.y + (p1.y - p0.y) * segProgress;
+      const alpha = totalProgress < 0.97 ? 1 : Math.max(0, (1 - totalProgress) / 0.03);
+
+      drawBoard(-1);
+      drawBall(cx, cy, alpha);
+
+      if (totalProgress < 1) {
+        animFrameId = requestAnimationFrame(tick);
+      } else {
+        animFrameId = null;
+        if (onDone) onDone(zoneIdx);
+      }
+    }
+
+    animFrameId = requestAnimationFrame(tick);
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     SLOT MACHINE
+  ════════════════════════════════════════════════════════════ */
+  function pickSlotSymbols() {
+    return [0, 1, 2].map(() => Math.floor(Math.random() * SLOT_SYMS.length));
+  }
+
+  async function runSlots() {
+    if (slotSpinning) return;
+    slotSpinning = true;
+
+    const overlay = document.getElementById('slot-overlay');
+    overlay.classList.add('show');
+
+    const reels = [0, 1, 2].map(i => ({
+      el: document.getElementById('reel-' + i),
+      symEl: document.querySelector('#reel-' + i + ' .slot-sym'),
+    }));
+
+    const msgEl = document.getElementById('slot-result-msg');
+    msgEl.textContent = '';
+    msgEl.className = '';
+
+    reels.forEach(r => r.el.classList.add('spinning'));
+
+    const finals = pickSlotSymbols();
+
+    /* spin interval: rapidly cycle symbols */
+    const intervals = reels.map(r => setInterval(() => {
+      r.symEl.textContent = SLOT_SYMS[Math.floor(Math.random() * SLOT_SYMS.length)];
+    }, 70));
+
+    /* stop reels one by one */
+    const stopTimes = [1000, 1500, 2000];
+    for (let i = 0; i < 3; i++) {
+      await sleep(stopTimes[i] - (i > 0 ? stopTimes[i - 1] : 0));
+      clearInterval(intervals[i]);
+      reels[i].el.classList.remove('spinning');
+      reels[i].symEl.textContent = SLOT_SYMS[finals[i]];
+    }
+
+    /* evaluate */
+    const counts = {};
+    finals.forEach(s => { counts[s] = (counts[s] || 0) + 1; });
+    const maxCount = Math.max(...Object.values(counts));
+    const matchCount = maxCount;
+
+    let resultType = 'none';
+
+    if (matchCount === 3) {
+      resultType = 'fever';
+      msgEl.textContent = '🔥🔥🔥 JACKPOT — LÁZ MÓD! 🔥🔥🔥';
+      msgEl.className = 'win';
+      reels.forEach(r => r.el.classList.add('winning'));
+    } else if (matchCount === 2) {
+      resultType = 'bonus';
+      const matchedSym = Object.entries(counts).find(([, c]) => c === 2)[0];
+      msgEl.textContent = `✨ Két ${SLOT_SYMS[matchedSym]}! +5 golyó a sorhoz! ✨`;
+      msgEl.className = 'win';
+      reels.forEach(r => r.el.classList.add('winning'));
+    } else {
+      resultType = 'none';
+      msgEl.textContent = '❌ Nincs találat. Folytatódik a játék.';
+      msgEl.className = 'lose';
+    }
+
+    await sleep(1500);
+    overlay.classList.remove('show');
+    reels.forEach(r => r.el.classList.remove('winning', 'spinning'));
+    slotSpinning = false;
+
+    return resultType;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     FEVER MODE
+  ════════════════════════════════════════════════════════════ */
+  function startFever() {
+    feverActive = true;
+    feverTimeLeft = FEVER_DURATION;
+    feverBallAnimating = false;
+
+    document.getElementById('board-wrapper').classList.add('fever-active');
+    document.getElementById('fever-display').classList.add('show');
+    document.getElementById('fever-timer').textContent = feverTimeLeft;
+
+    /* countdown tick */
+    feverTickId = setInterval(() => {
+      feverTimeLeft -= 1;
+      document.getElementById('fever-timer').textContent = feverTimeLeft;
+      if (feverTimeLeft <= 0) endFever();
+    }, 1000);
+
+    /* auto-launch balls */
+    feverIntervalId = setInterval(() => {
+      if (feverActive) dropFeverBall();
+    }, FEVER_INTERVAL_MS);
+
+    /* immediately drop first ball */
+    dropFeverBall();
+  }
+
+  function dropFeverBall() {
+    if (!feverActive) return;
+    if (feverBallAnimating) return;
+    feverBallAnimating = true;
+
+    const bounces = [];
+    for (let i = 0; i < NUM_ROWS; i++) bounces.push(Math.random() < 0.5);
+    const path = computeBallPath(bounces);
+    const landingZone = path.zoneIdx;
+
+    animateBall(path, FEVER_ANIM_DURATION, (zoneIdx) => {
+      const payout = ZONES[zoneIdx].payoutFever;
+
+      if (zoneIdx === 3) {
+        /* center pocket during fever: coins + timer extension, no slot */
+        const extPayout = ZONES[3].payoutFever;
+        state.balance += extPayout;
+        totalEarned += extPayout;
+        feverTimeLeft += 2;
+        document.getElementById('fever-timer').textContent = feverTimeLeft;
+      } else {
+        state.balance += payout;
+        totalEarned += payout;
+      }
+
+      GameAPI.patch({ balance: state.balance });
+      updBalDisplay();
+      drawBoard(-1);
+      feverBallAnimating = false;
+    });
+  }
+
+  function endFever() {
+    feverActive = false;
+    if (feverIntervalId) { clearInterval(feverIntervalId); feverIntervalId = null; }
+    if (feverTickId) { clearInterval(feverTickId); feverTickId = null; }
+
+    document.getElementById('board-wrapper').classList.remove('fever-active');
+    document.getElementById('fever-display').classList.remove('show');
+
+    /* return to normal queue or show result */
+    if (ballsRemaining > 0) {
+      processQueue();
+    } else {
+      finishGame();
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     BALL QUEUE PROCESSING
+  ════════════════════════════════════════════════════════════ */
+  async function processQueue() {
+    if (isProcessing) return;
+    if (feverActive) return;
+    isProcessing = true;
+
+    while (ballsRemaining > 0 && !feverActive) {
+      /* generate bounces */
+      const bounces = [];
+      for (let i = 0; i < NUM_ROWS; i++) bounces.push(Math.random() < 0.5);
+      const path = computeBallPath(bounces);
+      const zoneIdx = path.zoneIdx;
+
+      /* wait for animation to finish */
+      await new Promise(resolve => {
+        animateBall(path, ANIM_DURATION, (zi) => {
+          resolve(zi);
+        });
+      });
+
+      /* resolve landing */
+      const zone = ZONES[zoneIdx];
+
+      if (zoneIdx === 3) {
+        /* center pocket → slot machine */
+        ballsRemaining -= 1;
+        const slotResult = await runSlots();
+        if (slotResult === 'fever') {
+          isProcessing = false;
+          startFever();
+          return;
+        } else if (slotResult === 'bonus') {
+          ballsRemaining += 5;
+        }
+      } else if (zone.payoutNorm === 0) {
+        /* dead zone */
+        ballsRemaining -= 1;
+      } else if (zone.payoutNorm.type === 'balls') {
+        const qty = zone.payoutNorm.qty;
+        ballsRemaining += (qty - 1);
+      }
+
+      updBallsDisplay();
+    }
+
+    isProcessing = false;
+
+    if (!feverActive) {
+      finishGame();
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     RESULT
+  ════════════════════════════════════════════════════════════ */
+  function finishGame() {
+    const spent = purchasedBalls * BALL_COST;
+    const profitClass = totalEarned >= spent ? 'profit' : 'loss';
+
+    const sumEl = document.getElementById('result-summary');
+    sumEl.innerHTML =
+      `Költöttél: <span class="hl">${spent.toLocaleString('hu-HU')} Ft</span><br>` +
+      `Nyertél: <span class="${profitClass}">${totalEarned.toLocaleString('hu-HU')} Ft</span><br>` +
+      `Egyenleg: <span class="hl">${state.balance.toLocaleString('hu-HU')} Ft</span>`;
+
+    showScreen('screen-result');
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     SETUP
+  ════════════════════════════════════════════════════════════ */
+  function renderSetup() {
+    const bal = state.balance;
+    document.getElementById('setup-balance').textContent = bal.toLocaleString('hu-HU') + ' Ft';
+
+    const buyArea = document.getElementById('setup-buy-area');
+    const insuffMsg = document.getElementById('insufficient-msg');
+    const btnStart = document.getElementById('btn-start');
+    const input = document.getElementById('ball-input');
+
+    if (bal < BALL_COST) {
+      buyArea.style.display = 'none';
+      insuffMsg.style.display = 'block';
+      btnStart.disabled = true;
+    } else {
+      buyArea.style.display = 'flex';
+      insuffMsg.style.display = 'none';
+      btnStart.disabled = false;
+      const maxBalls = Math.floor(bal / BALL_COST);
+      input.max = maxBalls;
+      input.value = Math.min(parseInt(input.value) || 1, maxBalls);
+      document.getElementById('max-info').textContent =
+        `Maximum ${maxBalls} golyó (${(maxBalls * BALL_COST).toLocaleString('hu-HU')} Ft)`;
+    }
+  }
+
+  async function confirmPurchase() {
+    const bal = state.balance;
+    if (bal < BALL_COST) return;
+
+    const input = document.getElementById('ball-input');
+    let count = parseInt(input.value) || 1;
+    const maxBalls = Math.floor(bal / BALL_COST);
+    count = Math.max(1, Math.min(count, maxBalls));
+    const cost = count * BALL_COST;
+
+    purchasedBalls = count;
+    ballsRemaining = count;
+    totalEarned = 0;
+    feverActive = false;
+
+    state.balance -= cost;
+    await GameAPI.patch({ balance: state.balance });
+
+    showScreen('screen-game');
+    updBalDisplay();
+    updBallsDisplay();
+    drawBoard(-1);
+
+    processQueue();
+  }
+
+  function resetToSetup() {
+    if (feverActive) {
+      feverActive = false;
+      if (feverIntervalId) { clearInterval(feverIntervalId); feverIntervalId = null; }
+      if (feverTickId) { clearInterval(feverTickId); feverTickId = null; }
+      document.getElementById('board-wrapper').classList.remove('fever-active');
+      document.getElementById('fever-display').classList.remove('show');
+    }
+    isProcessing = false;
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+    renderSetup();
+    showScreen('screen-setup');
+  }
+
+  async function exitGame() {
+    await GameAPI.exit(Math.max(0, state.balance));
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     INIT
+  ════════════════════════════════════════════════════════════ */
+  async function init() {
+    state = await GameAPI.getState();
+    canvas = document.getElementById('board-canvas');
+    ctx = canvas.getContext('2d');
+
+    buildPegs();
+    renderSetup();
+    drawBoard(-1);
+
+    /* button bindings */
+    document.getElementById('btn-start').addEventListener('click', confirmPurchase);
+    document.getElementById('btn-setup-exit').addEventListener('click', exitGame);
+    document.getElementById('btn-game-exit').addEventListener('click', exitGame);
+    document.getElementById('btn-again').addEventListener('click', resetToSetup);
+    document.getElementById('btn-result-exit').addEventListener('click', exitGame);
+
+    /* validate ball input */
+    document.getElementById('ball-input').addEventListener('change', function () {
+      const max = parseInt(this.max) || 1;
+      let v = parseInt(this.value) || 1;
+      if (v < 1) v = 1;
+      if (v > max) v = max;
+      this.value = v;
+    });
+  }
+
+  init();
+
+})();
+</script>
+{% endblock %}
