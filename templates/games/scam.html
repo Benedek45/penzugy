@@ -560,14 +560,46 @@
         <button class="diff-btn" onclick="SC.off.setDiff('hard',this)">Nehéz</button>
       </div>
 
-      <div style="text-align:center;margin-bottom:1rem;">
+      <div id="off-setup-area" style="text-align:center;margin-bottom:1rem;">
         <p style="color:var(--cream-dark);margin-bottom:1rem;">Válassz offshore helyszínt:</p>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;max-width:600px;">
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;max-width:600px;" id="off-locations">
           <button class="diff-btn" onclick="SC.off.selectLocation('Cayman-szigetek')">🏝️ Cayman-szigetek</button>
           <button class="diff-btn" onclick="SC.off.selectLocation('Panama')">🌴 Panama</button>
           <button class="diff-btn" onclick="SC.off.selectLocation('Svájc')">🏔️ Svájc</button>
           <button class="diff-btn" onclick="SC.off.selectLocation('Luxemburg')">🏰 Luxemburg</button>
           <button class="diff-btn" onclick="SC.off.selectLocation('Titkos sziget')">🗺️ Titkos sziget</button>
+        </div>
+      </div>
+
+      <div id="off-process-area" style="text-align:center;max-width:700px;margin-bottom:1rem;" hidden>
+        <p style="color:var(--gold-light);font-size:1.1rem;margin-bottom:1rem;" id="off-process-status">Tranzakció folyamatban...</p>
+        <div style="background:rgba(42,42,78,0.6);border:2px solid var(--gold-dim);border-radius:12px;padding:1.5rem;margin-bottom:1rem;">
+          <div style="display:flex;gap:0.5rem;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:1rem;">
+            <div id="off-step-1" style="opacity:0.3;transition:all 0.5s;">
+              <div style="font-size:2rem;">💰</div>
+              <div style="font-size:0.8rem;color:var(--cream-dark);">Indítás</div>
+            </div>
+            <div style="color:var(--gold);font-size:1.5rem;">→</div>
+            <div id="off-step-2" style="opacity:0.3;transition:all 0.5s;">
+              <div style="font-size:2rem;">🏦</div>
+              <div style="font-size:0.8rem;color:var(--cream-dark);">Bank</div>
+            </div>
+            <div style="color:var(--gold);font-size:1.5rem;">→</div>
+            <div id="off-step-3" style="opacity:0.3;transition:all 0.5s;">
+              <div style="font-size:2rem;">✈️</div>
+              <div style="font-size:0.8rem;color:var(--cream-dark);">Utazás</div>
+            </div>
+            <div style="color:var(--gold);font-size:1.5rem;">→</div>
+            <div id="off-step-4" style="opacity:0.3;transition:all 0.5s;">
+              <div style="font-size:2rem;">🏝️</div>
+              <div style="font-size:0.8rem;color:var(--cream-dark);">Cél</div>
+            </div>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:1rem;margin-top:1rem;">
+            <p style="color:var(--cream);font-size:0.9rem;line-height:1.6;" id="off-education-msg">
+              Tudtad? Az offshore számlák legálisak, de az adóelkerülés illegális...
+            </p>
+          </div>
         </div>
       </div>
 
@@ -1096,6 +1128,41 @@
       hard: { feeRange: [20, 30], auditChance: 0.30, freezeChance: 0.25 }
     };
 
+    const educationMessages = [
+      "Tudtad? Az offshore számlák legálisak, de az adóelkerülés illegális.",
+      "Az adóparadicsomok alacsony adókulcsokkal csábítják a befektetőket.",
+      "A Cayman-szigeteken nincs társasági adó, de a banktitok szigorú.",
+      "Panama híres a cégalapítási lehetőségeiről és a diszkrécióról.",
+      "Svájc banktitka legendás, de az EU nyomására egyre átláthatóbb.",
+      "Luxemburg az EU-n belüli adóoptimalizálás központja.",
+      "Az offshore cégek gyakran 'shell companies' - üres héjak.",
+      "A pénzmosás három szakasza: elhelyezés, rétegezés, integráció.",
+      "A NAV nemzetközi együttműködésben dolgozik az adóelkerülés ellen.",
+      "Az OECD feketelistán szereplő országok szankciókkal néznek szembe.",
+      "A kettős adóztatási egyezmények megakadályozzák a dupla adózást.",
+      "Az adótervezés legális, az adócsalás bűncselekmény.",
+      "Az offshore bankszámlák fenntartási költsége magas lehet.",
+      "A banki átutalások nyomon követhetők a SWIFT rendszeren keresztül.",
+      "A pénzügyi tranzakciók jelentési kötelezettség alá esnek.",
+      "Az adóhatóságok egyre fejlettebb adatbányászati módszereket használnak.",
+      "A globális minimumadó bevezetése csökkenti az adóparadicsomok vonzerejét.",
+      "Az offshore befektetések gyakran magas kockázattal járnak.",
+      "A pénzmosás elleni törvények (AML) szigorú ellenőrzést írnak elő.",
+      "A KYC (Know Your Customer) eljárás kötelező a bankoknál.",
+      "Az adóelkerülés évente több milliárd dollár kiesést okoz az államoknak.",
+      "A transzferárak manipulálása gyakori adóelkerülési módszer.",
+      "Az offshore trustok vagyonvédelmet nyújthatnak, de átláthatatlanok.",
+      "A nemzetközi szankciók érintik az offshore pénzügyi központokat.",
+      "Az adóparadicsomok gyakran kis szigetországok vagy hercegségek.",
+      "A pénzügyi titoktartás és az átláthatóság között feszültség van.",
+      "Az EU adóparadicsom-listája folyamatosan frissül.",
+      "A digitális valuták új kihívásokat jelentenek az adóhatóságoknak.",
+      "Az offshore cégek tulajdonosi struktúrája gyakran bonyolult.",
+      "A pénzügyi bűnözés elleni küzdelem nemzetközi összefogást igényel.",
+      "Az adóelkerülés morális kérdéseket is felvet.",
+      "A globális pénzügyi rendszer átláthatósága javulóban van."
+    ];
+
     function setDiff(d, btn) {
       diff = d;
       document.querySelectorAll('#off-difficulty .diff-btn').forEach(b => b.classList.remove('active'));
@@ -1103,13 +1170,19 @@
     }
 
     function selectLocation(loc) {
+      if (selectedLocation !== null) return; // Már választott, nem lehet változtatni
       selectedLocation = loc;
       document.getElementById('off-start-btn').disabled = false;
-      document.querySelectorAll('#screen-offshore .diff-btn').forEach(b => {
+      
+      // Letiltjuk az összes helyszín gombot
+      const locationBtns = document.querySelectorAll('#off-locations .diff-btn');
+      locationBtns.forEach(b => {
         if (b.textContent.includes(loc)) {
           b.classList.add('active');
-        } else if (!b.classList.contains('diff-btn')) {
-          b.classList.remove('active');
+          b.style.opacity = '1';
+        } else {
+          b.disabled = true;
+          b.style.opacity = '0.3';
         }
       });
     }
@@ -1127,6 +1200,8 @@
 
       document.getElementById('off-start-btn').disabled = true;
       document.getElementById('off-result').style.opacity = '0';
+      document.getElementById('off-setup-area').setAttribute('hidden', '');
+      document.getElementById('off-process-area').removeAttribute('hidden');
 
       await applyDelta(-500);
 
@@ -1137,7 +1212,20 @@
       offStats.transactions++;
       offStats.fees += fee;
 
-      await sleep(2000);
+      // Folyamat animáció lépésről lépésre
+      for (let step = 1; step <= 4; step++) {
+        document.getElementById(`off-step-${step}`).style.opacity = '1';
+        document.getElementById('off-process-status').textContent = `Lépés ${step}/4: ${getStepName(step)}...`;
+        
+        // Véletlenszerű tanító üzenet
+        const msg = educationMessages[Math.floor(Math.random() * educationMessages.length)];
+        document.getElementById('off-education-msg').textContent = msg;
+        
+        await sleep(1500);
+      }
+
+      document.getElementById('off-process-status').textContent = 'Tranzakció befejezve!';
+      await sleep(1000);
 
       if (rand < settings.freezeChance) {
         offStats.freezes++;
@@ -1172,8 +1260,29 @@
       updateStats();
       updateOffStats();
 
+      // Reset UI
       document.getElementById('off-start-btn').disabled = false;
+      document.getElementById('off-setup-area').removeAttribute('hidden');
+      document.getElementById('off-process-area').setAttribute('hidden', '');
+      
+      // Reset lépések
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`off-step-${i}`).style.opacity = '0.3';
+      }
+      
+      // Reset helyszín választás
       selectedLocation = null;
+      const locationBtns = document.querySelectorAll('#off-locations .diff-btn');
+      locationBtns.forEach(b => {
+        b.disabled = false;
+        b.style.opacity = '1';
+        b.classList.remove('active');
+      });
+    }
+
+    function getStepName(step) {
+      const names = ['Pénz előkészítése', 'Banki átutalás', 'Nemzetközi transzfer', 'Célállomás elérése'];
+      return names[step - 1];
     }
 
     function updateOffStats() {
@@ -1206,7 +1315,105 @@
       "Hova tegyem a feleségem örökségét?",
       "Milyen befektetés lenne jó a gyerekek egyetemére?",
       "Van 5 millió Ft-om, mit tanácsol?",
-      "Ingatlanba vagy részvénybe fektessek?"
+      "Ingatlanba vagy részvénybe fektessek?",
+      "Kriptovalutába érdemes most beszállni?",
+      "Milyen állampapírt vegyek 3 évre?",
+      "Érdemes aranyat venni most?",
+      "Hogyan diverzifikáljam a portfóliómat?",
+      "Mennyit tartsak készpénzben?",
+      "Érdemes külföldi részvényekbe fektetni?",
+      "Milyen befektetési alapot válasszak?",
+      "Ingatlanalap vagy részvényalap a jobb?",
+      "Hogyan védjem meg a pénzem az inflációtól?",
+      "Érdemes most lakást venni befektetésnek?",
+      "Milyen kockázati szintet válasszak?",
+      "Aktív vagy passzív alapkezelés a jobb?",
+      "Érdemes devizában tartani a megtakarítást?",
+      "Milyen adókedvezményeket használhatok ki?",
+      "Hogyan kezdjem el a befektetést 100 ezer Ft-tal?",
+      "Érdemes TBSZ számlát nyitni?",
+      "Milyen hosszú távú befektetést javasol?",
+      "Érdemes most részvényt venni?",
+      "Hogyan készüljek fel a nyugdíjra?",
+      "Milyen biztosítást kössek a befektetésemre?",
+      "Érdemes startupokba fektetni?",
+      "Milyen ETF-eket ajánl?",
+      "Hogyan értékeljem a befektetési alapokat?",
+      "Érdemes kötvényeket venni most?",
+      "Milyen hozamelvárásom legyen?",
+      "Hogyan kezeljem a befektetési kockázatot?",
+      "Érdemes ingatlant kiadni befektetésnek?",
+      "Milyen adózási szabályok vonatkoznak a befektetésekre?",
+      "Hogyan válasszak brókercéget?",
+      "Érdemes magánnyugdíjpénztárba lépni?",
+      "Milyen alternatív befektetéseket ismer?",
+      "Érdemes műtárgyakba fektetni?",
+      "Hogyan építsek fel egyensúlyozott portfóliót?",
+      "Milyen befektetés illik a konzervatív stratégiához?",
+      "Érdemes most beszállni a tech részvényekbe?",
+      "Hogyan kerüljem el a befektetési csalásokat?",
+      "Milyen hozamot érhetek el reálisan?",
+      "Érdemes zöld befektetéseket választani?",
+      "Hogyan rebalance-oljam a portfóliómat?",
+      "Milyen befektetés adóhatékony?",
+      "Érdemes peer-to-peer hitelezésbe fektetni?",
+      "Hogyan értékeljem a részvényeket?",
+      "Milyen makrogazdasági tényezőket figyeljek?",
+      "Érdemes most kötvényt venni?",
+      "Hogyan védjem a befektetésemet a volatilitástól?",
+      "Milyen befektetési stratégiát kövessek?",
+      "Érdemes osztalékos részvényeket venni?",
+      "Hogyan számoljam ki a megtérülési rátát?",
+      "Milyen befektetés likvid?",
+      "Érdemes venture capital alapba fektetni?",
+      "Hogyan diverzifikáljak szektorok között?",
+      "Milyen befektetés alkalmas rövid távra?",
+      "Érdemes forex kereskedésbe kezdeni?",
+      "Hogyan elemezzem a befektetési alapok teljesítményét?",
+      "Milyen befektetés inflációvédett?",
+      "Érdemes most aranyat venni?",
+      "Hogyan építsek passzív jövedelmet?",
+      "Milyen befektetés adómentes?",
+      "Érdemes ingatlanalapba fektetni?",
+      "Hogyan kezeljem a befektetési érzelmeimet?",
+      "Milyen befektetés alkalmas 10 évre?",
+      "Érdemes hedge fundba fektetni?",
+      "Hogyan válasszak befektetési tanácsadót?",
+      "Milyen befektetés hoz rendszeres jövedelmet?",
+      "Érdemes most technológiai részvényeket venni?",
+      "Hogyan számoljam a befektetési költségeket?",
+      "Milyen befektetés alkalmas kezdőknek?",
+      "Érdemes közösségi finanszírozásba fektetni?",
+      "Hogyan védjem a befektetésemet az adóktól?",
+      "Milyen befektetés etikus?",
+      "Érdemes most energetikai részvényeket venni?",
+      "Hogyan értékeljem a kötvényeket?",
+      "Milyen befektetés alkalmas 5 évre?",
+      "Érdemes magántőke alapba fektetni?",
+      "Hogyan kezeljem a befektetési veszteséget?",
+      "Milyen befektetés ad magas hozamot?",
+      "Érdemes most egészségügyi részvényeket venni?",
+      "Hogyan diverzifikáljak földrajzilag?",
+      "Milyen befektetés alacsony kockázatú?",
+      "Érdemes pénzügyi szektorba fektetni?",
+      "Hogyan építsek hosszú távú vagyont?",
+      "Milyen befektetés alkalmas 20 évre?",
+      "Érdemes fogyasztási cikkek részvényeibe fektetni?",
+      "Hogyan elemezzem a piaci trendeket?",
+      "Milyen befektetés fenntartható?",
+      "Érdemes most ipari részvényeket venni?",
+      "Hogyan számoljam a reálhozamot?",
+      "Milyen befektetés likvid és biztonságos?",
+      "Érdemes feltörekvő piaci részvényekbe fektetni?",
+      "Hogyan kezeljem a befektetési portfóliómat?",
+      "Milyen befektetés adóoptimalizált?",
+      "Érdemes most nyersanyagokba fektetni?",
+      "Hogyan válasszak befektetési időtávot?",
+      "Milyen befektetés passzív?",
+      "Érdemes infrastrukturális projektekbe fektetni?",
+      "Hogyan védjem a befektetésemet a recessziótól?",
+      "Milyen befektetés növekedési potenciállal bír?",
+      "Érdemes most mezőgazdasági befektetéseket választani?"
     ];
 
     function setDiff(d, btn) {
