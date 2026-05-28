@@ -1,4 +1,4 @@
-# 🤖 Agent Guide — Pénz Plaza
+# 🤖 Agent Guide — Capitalism At It's Finest
 
 This file is for AI coding assistants. Read it fully before touching any file.
 
@@ -9,6 +9,7 @@ This file is for AI coding assistants. Read it fully before touching any file.
 A joke financial education web game. Player starts with virtual money, gambles it at
 mini-games around a town hub, goes broke, gets a job, earns money back, repeats.
 Tone: absurdist satire of capitalism. Educational second, funny first.
+Project name: **Capitalism At It's Finest**
 
 Stack: Python (Flask) backend + plain HTML/CSS/JS frontend. No framework.
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{% block title %}[PROJECT_NAME]{% endblock %}</title>
+  <title>{% block title %}Capitalism At It's Finest{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/style.css"/>
   {% block head %}{% endblock %}
 </head>
@@ -11,7 +11,7 @@
 
 <!-- ── Navbar ────────────────────────────────────────────────────────── -->
 <nav id="navbar">
-  <a href="/" class="nav-title">💰 [PROJECT_NAME]</a>
+  <a href="/" class="nav-title">💰 Capitalism At It's Finest</a>
   <div class="nav-balance">
     <span id="nav-balance">{% if state %}{{ "{:,}".format(state.balance).replace(",", " ") }} Ft{% endif %}</span>
     <span id="nav-debt" class="debt"
