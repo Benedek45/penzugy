@@ -402,6 +402,16 @@ const CRASH_SEC = 180;   // seconds between crashes
 const HIST      = 20;
 const REBOUND_TICKS = 10;
 const REBOUND_MAX_BIAS = 0.03;
+const REBOUND_JITTER_MIN = 0.75;
+const REBOUND_JITTER_RANGE = 0.5;
+const REBOUND_KIND_MULT = {
+  volatile: 1.15,
+  stable: 0.80,
+  inverse: 0.75,
+  falling: 0.55,
+  moon: 1.25,
+  oil: 1.00,
+};
 
 // liq = liquidity (shares). price impact = qty / (2*liq) on avg price.
 // KOR is a big stable bank → very liquid. ÁLO is a tiny startup → very illiquid.
@@ -485,16 +495,8 @@ function step(st) {
   }
   if (reboundTicks > 0) {
     const decay = reboundTicks / REBOUND_TICKS;
-    const kindMult = {
-      volatile: 1.15,
-      stable: 0.80,
-      inverse: 0.75,
-      falling: 0.55,
-      moon: 1.25,
-      oil: 1.00,
-    };
-    const jitter = 0.75 + Math.random() * 0.5;
-    pct += REBOUND_MAX_BIAS * decay * (kindMult[st.kind] || 1) * jitter;
+    const jitter = REBOUND_JITTER_MIN + Math.random() * REBOUND_JITTER_RANGE;
+    pct += REBOUND_MAX_BIAS * decay * (REBOUND_KIND_MULT[st.kind] || 1) * jitter;
   }
   st.prev = st.price;
   st.price = Math.max(1, Math.round(st.price*(1+pct)*100)/100);
