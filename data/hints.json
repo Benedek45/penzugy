@@ -2,7 +2,7 @@
   "global": [
     { "term": "Kamat", "explanation": "Az adósság éves díja. A miénk 847%. Teljesen normális." },
     { "term": "Infláció", "explanation": "Minden évben kicsit kevesebbet ér a pénzed. Pont mint most." },
-    { "term": "Diverzifikáció", "explanation": "Ne tegyél minden tojást egy kosárba. Inkább veszítsd el szétszórva." },
+    { "term": "Diverzifikáció", "explanation": "Befektetéseid megosztása különböző eszközök között (részvények, kötvények, ingatlan). Csökkenti a kockázatot: ha egy befektetés rosszul teljesít, a többi ellensúlyozhatja." },
     { "term": "Likviditás", "explanation": "Mennyi pénzed van azonnal. Neked valószínűleg nulla." },
     { "term": "Adósság", "explanation": "A jövőbeli énedtől kölcsönzött pénz. Ő nem lesz boldog." },
     { "term": "Költségvetés", "explanation": "Terv a pénzedről. Általában a terv az, hogy nincs terv." },
