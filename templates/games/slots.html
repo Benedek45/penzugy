@@ -516,13 +516,95 @@
 }
 
 /* ═══════════════════════════════════════════════════
-   SCRATCH GAME
+   SCRATCH CARD
 ═══════════════════════════════════════════════════ */
 .scratch-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  padding: 1rem;
+}
+
+.scratch-rules {
+  background: rgba(42,42,78,0.4);
+  border: 2px solid var(--gold-dim);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1rem;
+  max-width: 500px;
+  width: 100%;
+}
+
+.rules-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.rule-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rule-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.03em;
+}
+
+.rule-text {
+  font-size: 0.85rem;
+  color: var(--cream);
+  line-height: 1.5;
+}
+
+.symbols-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.symbol-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.9rem;
+}
+
+.symbol {
+  font-size: 1.1rem;
+  min-width: 80px;
+}
+
+.value {
+  font-weight: 700;
+  min-width: 80px;
+}
+
+.value.win {
+  color: #4CAF50;
+}
+
+.value.lose {
+  color: #EF5350;
+}
+
+.rarity {
+  font-size: 0.75rem;
+  color: var(--gold-light);
+  font-style: italic;
+}
+
+.scratch-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  max-width: 400px;
+  width: 100%;
 }
 
 .scratch-grid {
@@ -745,9 +827,55 @@
       <div class="balance-strip">💰 Egyenleg: <span id="sc-balance">—</span> Ft</div>
 
       <div class="scratch-container">
-        <div style="text-align:center;color:var(--cream-dark);font-size:0.85rem;margin-bottom:0.5rem;">
-          Tét: <strong style="color:var(--gold);">500 Ft</strong> · Kapard le az összes mezőt! · 3 egyforma = nyeremény
+      <div class="scratch-rules">
+        <h3 style="color:var(--gold-light);font-family:var(--font-display);margin-bottom:0.8rem;text-align:center;">
+          📋 Játékszabályok
+        </h3>
+        
+        <div class="rules-grid">
+          <div class="rule-section">
+            <div class="rule-title">🎯 Cél</div>
+            <div class="rule-text">Kapard le mind a 16 mezőt! Ha 3 vagy több egyforma szimbólumot találsz, nyertél!</div>
+          </div>
+          
+          <div class="rule-section">
+            <div class="rule-title">💰 Nyeremények</div>
+            <div class="symbols-list">
+              <div class="symbol-row">
+                <span class="symbol">💎💎💎</span>
+                <span class="value win">+5000 Ft</span>
+                <span class="rarity">Jackpot!</span>
+              </div>
+              <div class="symbol-row">
+                <span class="symbol">💰💰💰</span>
+                <span class="value win">+2000 Ft</span>
+              </div>
+              <div class="symbol-row">
+                <span class="symbol">🎩🎩🎩</span>
+                <span class="value win">+1000 Ft</span>
+              </div>
+              <div class="symbol-row">
+                <span class="symbol">🍒🍒🍒</span>
+                <span class="value win">+500 Ft</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="rule-section">
+            <div class="rule-title">⚠️ Figyelem!</div>
+            <div class="symbols-list">
+              <div class="symbol-row">
+                <span class="symbol">💀💀💀</span>
+                <span class="value lose">-1000 Ft</span>
+                <span class="rarity">Büntetés!</span>
+              </div>
+            </div>
+            <div class="rule-text" style="margin-top:0.5rem;font-size:0.8rem;color:var(--cream-dark);">
+              ⭐🔸🔹 = Semleges (0 Ft)
+            </div>
+          </div>
         </div>
+      </div>
 
         <div class="scratch-grid" id="sc-grid"></div>
 
