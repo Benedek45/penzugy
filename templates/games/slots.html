@@ -1072,6 +1072,7 @@
     let diff = 'easy', currentQ = null, answered = false;
     const bets = { easy: 100, medium: 500, hard: 1000 };
     const winRanges = { easy: [100, 200], medium: [500, 1000], hard: [1000, 2000] };
+    const recentQuestions = [];
 
     function setDiff(d, btn) {
       diff = d;
@@ -1090,7 +1091,27 @@
       }
       answered = false;
       const pool = QUIZ_DATA[diff];
-      currentQ = pool[Math.floor(Math.random() * pool.length)];
+      
+      let availableIndices = [];
+      for (let i = 0; i < pool.length; i++) {
+        if (!recentQuestions.includes(i)) {
+          availableIndices.push(i);
+        }
+      }
+      
+      if (availableIndices.length === 0) {
+        recentQuestions.length = 0;
+        availableIndices = pool.map((_, i) => i);
+      }
+      
+      const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+      currentQ = pool[randomIndex];
+      
+      recentQuestions.push(randomIndex);
+      if (recentQuestions.length > 20) {
+        recentQuestions.shift();
+      }
+      
       document.getElementById('qz-question').textContent = currentQ.q;
       document.getElementById('qz-orb-wrap').setAttribute('hidden', '');
       document.getElementById('qz-result').style.opacity = '0';
