@@ -1110,7 +1110,7 @@
   const BJ = (() => {
     const SUITS  = ['♠','♥','♦','♣'];
     const VALUES = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-    let deck=[], pHand=[], dHand=[], bet=100, dealerUp=false, inPlay=false;
+    let deck=[], pHand=[], dHand=[], bet=100, roundBet=100, dealerUp=false, inPlay=false;
 
     function init() {
       setBanker('blackjack','idle');
@@ -1170,12 +1170,13 @@
 
     function deal() {
       if (S.balance < bet) { showResult('bj-result','Nincs elég egyenleged!','lose'); return; }
+      roundBet = bet;
       deck = mkDeck();
       pHand = [deck.pop(), deck.pop()];
       dHand = [deck.pop(), deck.pop()];
       dealerUp = false;
 
-      document.getElementById('bj-cur-bet').textContent = bet.toLocaleString('hu-HU');
+      document.getElementById('bj-cur-bet').textContent = roundBet.toLocaleString('hu-HU');
       inPlay = true;
       document.getElementById('bj-bet-phase').setAttribute('hidden','');
       document.getElementById('bj-play-phase').removeAttribute('hidden');
@@ -1212,9 +1213,11 @@
     }
 
     function dbl() {
-      if (S.balance < bet*2) { showResult('bj-result','Nincs elég a duplázáshoz!','lose'); return; }
-      bet *= 2;
-      document.getElementById('bj-cur-bet').textContent = bet.toLocaleString('hu-HU');
+      if (!inPlay || pHand.length !== 2) return;
+      if (S.balance < roundBet*2) { showResult('bj-result','Nincs elég a duplázáshoz!','lose'); return; }
+      roundBet *= 2;
+      document.getElementById('bj-dbl').disabled = true;
+      document.getElementById('bj-cur-bet').textContent = roundBet.toLocaleString('hu-HU');
       pHand.push(deck.pop());
       repaint();
       if (total(pHand) > 21) endGame('bust');
@@ -1228,14 +1231,14 @@
       document.getElementById('bj-new-round').removeAttribute('hidden');
 
       const results = {
-        bj:          { delta: Math.floor(bet*1.5), msg: `🎉 Blackjack! <b>+${Math.floor(bet*1.5)} Ft</b>`,  type:'win',  mood:'angry' },
-        win:         { delta: bet,  msg: `✅ Nyertél! <b>+${bet} Ft</b>`,                                   type:'win',  mood:'angry' },
-        dealer_bust: { delta: bet,  msg: `✅ Az osztó kiégett! <b>+${bet} Ft</b>`,                           type:'win',  mood:'angry' },
-        bust:        { delta:-bet,  msg: `💥 Kiégtél! <b>−${bet} Ft</b>`,                                   type:'lose', mood:'happy' },
-        dealer_wins: { delta:-bet,  msg: `❌ Az osztó nyert. <b>−${bet} Ft</b>`,                             type:'lose', mood:'happy' },
+        bj:          { delta: Math.floor(roundBet*1.5), msg: `🎉 Blackjack! <b>+${Math.floor(roundBet*1.5)} Ft</b>`,  type:'win',  mood:'angry' },
+        win:         { delta: roundBet,  msg: `✅ Nyertél! <b>+${roundBet} Ft</b>`,                                   type:'win',  mood:'angry' },
+        dealer_bust: { delta: roundBet,  msg: `✅ Az osztó kiégett! <b>+${roundBet} Ft</b>`,                           type:'win',  mood:'angry' },
+        bust:        { delta:-roundBet,  msg: `💥 Kiégtél! <b>−${roundBet} Ft</b>`,                                   type:'lose', mood:'happy' },
+        dealer_wins: { delta:-roundBet,  msg: `❌ Az osztó nyert. <b>−${roundBet} Ft</b>`,                             type:'lose', mood:'happy' },
         tie: {
-          delta: -bet,
-          msg: `🤝 Döntetlen — <span class="tip">a ház nyer<span class="tip-text">Házelőny: döntetlen esetén az osztó viszi a tétet. Halkan, de következetesen.</span></span>. <b>−${bet} Ft</b>`,
+          delta: -roundBet,
+          msg: `🤝 Döntetlen — <span class="tip">a ház nyer<span class="tip-text">Házelőny: döntetlen esetén az osztó viszi a tétet. Halkan, de következetesen.</span></span>. <b>−${roundBet} Ft</b>`,
           type:'lose', mood:'happy'
         },
       };
