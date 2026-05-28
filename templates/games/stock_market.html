@@ -400,6 +400,8 @@
 const TICK_MS   = 2500;
 const CRASH_SEC = 180;   // seconds between crashes
 const HIST      = 20;
+const REBOUND_TICKS = 10;
+const REBOUND_MAX_BIAS = 0.03;
 
 // liq = liquidity (shares). price impact = qty / (2*liq) on avg price.
 // KOR is a big stable bank → very liquid. ÁLO is a tiny startup → very illiquid.
@@ -441,6 +443,7 @@ let tickTimer = null;
 let crashRemSec = CRASH_SEC;  // counts in real seconds
 let lastTickTime = 0;
 let crashProt = false, crashProtTimer = null;
+let reboundTicks = 0;
 let algoOn = false;
 let lastOilPatch = 1000;
 let insiderPend = null;   // { idx, dir }
@@ -480,6 +483,19 @@ function step(st) {
       }
       break;
   }
+  if (reboundTicks > 0) {
+    const decay = reboundTicks / REBOUND_TICKS;
+    const kindMult = {
+      volatile: 1.15,
+      stable: 0.80,
+      inverse: 0.75,
+      falling: 0.55,
+      moon: 1.25,
+      oil: 1.00,
+    };
+    const jitter = 0.75 + Math.random() * 0.5;
+    pct += REBOUND_MAX_BIAS * decay * (kindMult[st.kind] || 1) * jitter;
+  }
   st.prev = st.price;
   st.price = Math.max(1, Math.round(st.price*(1+pct)*100)/100);
   st.hist.push(st.price);
@@ -494,6 +510,7 @@ function doCrash() {
     st.price = Math.max(1, Math.round(st.price*(1-pct/100)*100)/100);
     st.hist.push(st.price); if (st.hist.length > HIST) st.hist.shift();
   });
+  reboundTicks = REBOUND_TICKS;
   sayNPC('crash');
   showCrash(pct, false);
 }
@@ -830,6 +847,7 @@ function onTick() {
   if (insiderPend) { insiderPend = null; stocks.forEach((_,i)=>renderBadges(i)); }
 
   stocks.forEach(step);
+  if (reboundTicks > 0) reboundTicks--;
   // Sync OIL price to session stats for cross-game use
   const oilSt = stocks.find(s => s.id === 'OIL');
   if (oilSt) {
