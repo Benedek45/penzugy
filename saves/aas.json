@@ -1,13 +1,13 @@
 {
   "player_name": "aas",
-  "balance": 547512597583864,
+  "balance": 547512597632165,
   "debt": 0,
   "stats": {
     "biggest_loss": 51827366604277,
     "biggest_win": 547512597549894,
     "bribes_used": 0,
-    "games_played": 4,
+    "games_played": 7,
     "times_employed": 2
   },
-  "saved_at": "2026-05-25T00:47:55.626482"
+  "saved_at": "2026-05-28T15:43:42.787783"
 }
