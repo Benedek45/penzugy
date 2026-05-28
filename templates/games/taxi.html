@@ -476,7 +476,8 @@
         showNotify('🧍 Utas felvéve!', C.gold);
         if (apOn) apPath = buildPath(dropoffId);
       } else if (hasPassenger && loc.id === dropoffId) {
-        const fare = 280;  // flat fare — app "takes 75%" is NPC joke only
+        const grossFare = 280;
+        const fare = Math.round(grossFare * 0.25);
         earnings += fare;
         rides++;
         document.getElementById('tx-earnings').textContent = earnings;
@@ -770,7 +771,7 @@
     document.getElementById('tx-overlay-stats').innerHTML = `
       <p>Összkereset: <strong>${earnings} Ft</strong></p>
       <p>Teljesített utak: <strong>${rides}</strong></p>
-      <p><em>„Az app elveszi a 75%-ot." — de ez csak vicc.</em></p>
+      <p><em>Az app a viteldíj 75%-át levonja.</em></p>
     `;
     document.getElementById('tx-overlay').classList.remove('tx-hidden');
   }
