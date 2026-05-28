@@ -104,7 +104,7 @@ def logout():
 
 # ── game routes ────────────────────────────────────────────────────────────
 
-GAMES = ["casino", "horse_race", "stock_market", "slots", "chess", "pachinko"]
+GAMES = ["casino", "horse_race", "stock_market", "slots", "chess", "pachinko", "scam"]
 JOBS  = ["cashier", "warehouse", "taxi", "cook"]
 
 @app.route("/game/<name>")

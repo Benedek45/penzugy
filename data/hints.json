@@ -123,18 +123,16 @@
     { "term": "Várható érték", "explanation": "Minden golyó 10 Ft-ba kerül. A legtöbb zseb kevesebbet fizet. A matek nem hazudik." },
     { "term": "Láz", "explanation": "Amikor a rendszer átveszi az irányítást, és te csak nézed, ahogy a pénzed vagy nő, vagy nem. Addiktív." }
   ],
-  "scratch": [
-    { "term": "Sorsjegy", "explanation": "Szerencsejáték, ahol kaparással derül ki az eredmény. Azonnali visszajelzés." },
-    { "term": "Nyerési esély", "explanation": "Annak valószínűsége, hogy nyersz. A kaparós sorsjegyeknél általában alacsony." },
-    { "term": "Szimbólum", "explanation": "Jelkép, ami meghatározza az eredményt. 3 egyforma = nyeremény." },
-    { "term": "Kockázat", "explanation": "A befektetett pénz elvesztésének lehetősége. Itt 500 Ft-onként." },
-    { "term": "Megtérülés", "explanation": "A befektetett pénzhez képest mennyit kapsz vissza. Általában kevesebbet." }
-  ],
-  "taxi": [
-    { "term": "Platformgazdaság", "explanation": "A munkaadód egy alkalmazás. Nincs főnök, csak algoritmus. És az algoritmus nem ad borravalót." },
-    { "term": "Surge pricing", "explanation": "Amikor a kereslet magas, az ár is magas. A sofőr kap belőle 25%-ot. A többit az alkalmazás." },
-    { "term": "Fuvardíj", "explanation": "Az utas által fizetett összeg. Ebből Te 80 Ft-ot látsz. Rejtett költségek léteznek." },
-    { "term": "Megélhetési bér", "explanation": "Annyi pénz, amiből meg lehet élni. Hallottál már róla. Soha nem találkoztál vele." },
-    { "term": "Önfoglalkoztatás", "explanation": "A saját főnököd vagy. A saját költségeid is. A saját felelősséged is. Gratulálunk." }
+  "scam": [
+    { "term": "Biztosítási csalás", "explanation": "Amikor hamis kárigényt adsz be. Illegális, és úgysem sikerül." },
+    { "term": "Korrupció", "explanation": "Amikor a szabályokat rugalmasan értelmezik. Általában nem a te javadra." },
+    { "term": "Bürokrácia", "explanation": "Amikor az űrlapok kitöltése több idő, mint maga a probléma." },
+    { "term": "Adóelkerülés", "explanation": "Amikor 'kreatívan' értelmezed az adótörvényeket. A NAV nem szereti." },
+    { "term": "Pénzmosás", "explanation": "Amikor a piszkos pénzt tisztára mosod. Börtön jár érte." },
+    { "term": "Offshore számla", "explanation": "Adóparadicsomban nyitott bankszámla. Legális, de gyanús." },
+    { "term": "Piramis játék", "explanation": "MLM rendszer, ahol a tagok toborzásából származik a bevétel. Mindig összeomlik." },
+    { "term": "Ingatlan spekuláció", "explanation": "Ingatlanok vétele és eladása gyors nyereség reményében. Kockázatos." },
+    { "term": "Befektetési tanácsadó", "explanation": "Szakember, aki tanácsokat ad. Néha hasznos, néha nem." },
+    { "term": "Szerencsejáték felügyelet", "explanation": "Állami szerv, ami a kaszinókat ellenőrzi. Elvileg." }
   ]
 }

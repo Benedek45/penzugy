@@ -1,0 +1,1964 @@
+{% extends "base.html" %}
+{% block title %}Szélhámosok Utcája — Pénz Plaza{% endblock %}
+
+{% block head %}
+<style>
+/* ═══════════════════════════════════════════════════
+   SCAM STREET — shared wrapper
+═══════════════════════════════════════════════════ */
+#scam-app {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 3rem;
+}
+
+/* Screen toggle */
+.scam-screen          { display: none; }
+.scam-screen.is-active{ display: block; }
+
+/* ═══════════════════════════════════════════════════
+   LOBBY
+═══════════════════════════════════════════════════ */
+#screen-lobby {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 20px 64px var(--shadow), 0 0 40px var(--shadow-gold);
+  background: linear-gradient(135deg, #1a0a0a 0%, #2a1515 50%, #1a0a0a 100%);
+  min-height: 600px;
+  padding: 2rem;
+}
+
+.lobby-title {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  color: var(--gold-light);
+  text-shadow: 0 4px 16px rgba(0,0,0,0.8), 0 0 24px rgba(139,26,26,0.5);
+  margin-bottom: 2rem;
+  letter-spacing: 0.05em;
+}
+
+.lobby-subtitle {
+  text-align: center;
+  color: var(--cream-dark);
+  font-style: italic;
+  margin-bottom: 3rem;
+  font-size: 1rem;
+}
+
+/* Street layout */
+.street-container {
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.street-path {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  transform: translateX(-50%);
+  background: repeating-linear-gradient(
+    90deg,
+    #3a3520 0px,
+    #3a3520 8px,
+    #2a2515 8px,
+    #2a2515 16px
+  );
+  border-left: 3px solid #4a4530;
+  border-right: 3px solid #4a4530;
+  opacity: 0.6;
+  z-index: 0;
+}
+
+.games-grid {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.game-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.game-row:nth-child(even) {
+  justify-content: flex-end;
+}
+
+.game-card {
+  background: rgba(42,42,78,0.7);
+  border: 2px solid var(--gold-dim);
+  border-radius: 16px;
+  padding: 1.5rem;
+  width: 380px;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+  color: var(--cream);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(139,26,26,0.15), transparent 70%);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.game-card:hover::before,
+.game-card:focus-visible::before {
+  opacity: 1;
+}
+
+.game-card:hover,
+.game-card:focus-visible {
+  border-color: var(--red-light);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px var(--shadow), 0 0 24px rgba(139,26,26,0.4);
+  outline: none;
+}
+
+.game-icon {
+  font-size: 3rem;
+  margin-bottom: 0.8rem;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+}
+
+.game-name {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.03em;
+}
+
+.game-desc {
+  font-size: 0.9rem;
+  color: var(--cream-dark);
+  line-height: 1.5;
+  margin-bottom: 0.8rem;
+}
+
+.game-bet {
+  font-size: 0.85rem;
+  color: var(--red-light);
+  font-weight: 600;
+}
+
+/* Stats panel */
+.stats-panel {
+  position: fixed;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(26,10,10,0.95);
+  border: 2px solid var(--gold-dim);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 250px;
+  box-shadow: 0 8px 24px var(--shadow);
+  z-index: 100;
+}
+
+.stats-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--gold-light);
+  margin-bottom: 1rem;
+  text-align: center;
+  border-bottom: 1px solid var(--gold-dim);
+  padding-bottom: 0.5rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.stat-label {
+  color: var(--cream-dark);
+}
+
+.stat-value {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* Exit button */
+#lobby-exit-btn {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 4;
+}
+
+/* ═══════════════════════════════════════════════════
+   GAME SCREENS — shared skeleton
+═══════════════════════════════════════════════════ */
+.game-screen {
+  position: relative;
+  min-height: 72vh;
+  border-radius: 18px;
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 20px 64px var(--shadow), 0 0 40px var(--shadow-gold);
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--dark) 0%, var(--dark-mid) 100%);
+}
+
+.game-ui {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 5rem;
+  min-height: 72vh;
+}
+
+/* ── Shared UI atoms ── */
+.balance-strip {
+  background: rgba(10,8,24,0.75);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius);
+  padding: 0.35rem 1rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--gold-light);
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.win-chance-banner {
+  background: linear-gradient(135deg, rgba(255,152,0,0.2) 0%, rgba(255,87,34,0.2) 100%);
+  border: 2px solid #FF9800;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 500px;
+  width: 100%;
+}
+
+.warning-icon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+}
+
+.chance-text {
+  flex: 1;
+}
+
+.chance-text strong {
+  display: block;
+  font-size: 1.1rem;
+  color: #FFB74D;
+  margin-bottom: 0.3rem;
+}
+
+.prize-info {
+  font-size: 0.9rem;
+  color: var(--cream);
+}
+
+.difficulty-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.diff-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(42,42,78,0.6);
+  border: 2px solid var(--gold-dim);
+  border-radius: 8px;
+  color: var(--cream);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+}
+
+.diff-btn:hover {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.2);
+}
+
+.diff-btn.active {
+  background: var(--gold);
+  color: var(--dark);
+  font-weight: 700;
+  border-color: var(--gold-light);
+}
+
+.result-banner {
+  padding: 0.55rem 1.2rem;
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0.5rem 0;
+  min-height: 2.4rem;
+  transition: opacity 0.25s;
+}
+
+.result-banner.win  { background: rgba(46,125,50,0.88); color: #a5d6a7; border: 1px solid #388e3c; }
+.result-banner.lose { background: rgba(139,26,26,0.88); color: #ffcdd2; border: 1px solid #c62828; }
+.result-banner.info { background: rgba(42,42,78,0.88); color: var(--gold-light); border: 1px solid var(--gold-dim); }
+
+.back-row {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 3;
+}
+
+/* NPC */
+.npc-container {
+  position: absolute;
+  bottom: 1rem;
+  right: 1.5rem;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.npc-speech {
+  background: rgba(20,18,40,0.93);
+  border: 1px solid var(--gold-dim);
+  border-radius: 10px 10px 4px 10px;
+  padding: 0.5rem 0.85rem;
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  font-style: italic;
+  color: var(--cream);
+  max-width: min(240px, 30vw);
+  text-align: right;
+  margin-bottom: 0.3rem;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.npc-icon {
+  font-size: clamp(3rem, 6vw, 4.5rem);
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.7));
+}
+
+/* Game stats panel */
+.game-stats {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(10,8,24,0.85);
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 1rem;
+  width: 200px;
+  font-size: 0.85rem;
+}
+
+.game-stats h4 {
+  color: var(--gold-light);
+  margin-bottom: 0.8rem;
+  font-size: 0.95rem;
+}
+
+.game-stat-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  color: var(--cream-dark);
+}
+
+.game-stat-value {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+[hidden] { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="scam-app">
+
+  <!-- ══════════════════════ LOBBY ══════════════════════ -->
+  <section id="screen-lobby" class="scam-screen is-active">
+    <h1 class="lobby-title">🎭 Szélhámosok Utcája</h1>
+    <p class="lobby-subtitle">Üdvözöljük a pénzügyi átverések birodalmában!</p>
+
+    <div class="street-container">
+      <div class="street-path"></div>
+      
+      <div class="games-grid">
+        <!-- Row 1: Adóparadicsom -->
+        <div class="game-row">
+          <button class="game-card" onclick="SC.enter('offshore')">
+            <span class="game-icon">🏝️</span>
+            <div class="game-name">Adóparadicsom</div>
+            <div class="game-desc">Mentsd ki a pénzed offshore számlákra! (De vigyázz, a NAV mindig figyel...)</div>
+            <div class="game-bet">Tét: 500 Ft · Nyeremény: 1500 Ft</div>
+          </button>
+        </div>
+
+        <!-- Row 2: Kamu Tanácsadó -->
+        <div class="game-row">
+          <button class="game-card" onclick="SC.enter('advisor')">
+            <span class="game-icon">💼</span>
+            <div class="game-name">Kamu Befektetési Tanácsadó</div>
+            <div class="game-desc">Adj tanácsokat ügyfeleknek! (A tanácsaid mindig rosszak lesznek...)</div>
+            <div class="game-bet">Tét: 1000 Ft · Nyeremény: 3000 Ft</div>
+          </button>
+        </div>
+
+        <!-- Row 3: Felügyelő -->
+        <div class="game-row">
+          <button class="game-card" onclick="SC.enter('inspector')">
+            <span class="game-icon">👮</span>
+            <div class="game-name">Szerencsejáték Felügyelő</div>
+            <div class="game-desc">Ellenőrizz kaszinókat! (De a végén mindig te leszel a hibás...)</div>
+            <div class="game-bet">Tét: 1000 Ft · Nyeremény: 3000 Ft</div>
+          </button>
+        </div>
+
+        <!-- Row 4: Biztosítási Csaló -->
+        <div class="game-row">
+          <button class="game-card" onclick="SC.enter('insurance')">
+            <span class="game-icon">🏥</span>
+            <div class="game-name">Biztosítási Csaló</div>
+            <div class="game-desc">Adj be kárigényeket! (De mindig elutasítják valami abszurd indokkal...)</div>
+            <div class="game-bet">Tét: 300 Ft · Nyeremény: 900 Ft</div>
+          </button>
+        </div>
+
+        <!-- Row 5: Pénzmosó -->
+        <div class="game-row">
+          <button class="game-card" onclick="SC.enter('launder')">
+            <span class="game-icon">🧺</span>
+            <div class="game-name">Pénzmosó Szalon</div>
+            <div class="game-desc">Mosd tisztára a piszkos pénzed! (De a díjak mindig többet visznek el...)</div>
+            <div class="game-bet">Tét: 800 Ft · Nyeremény: 2400 Ft</div>
+          </button>
+        </div>
+
+        <!-- Row 6: Ingatlan -->
+        <div class="game-row">
+          <button class="game-card" onclick="SC.enter('realestate')">
+            <span class="game-icon">🏠</span>
+            <div class="game-name">Ingatlan Spekuláns</div>
+            <div class="game-desc">Vegyél és adj el ingatlanokat! (De a piac mindig összeomlik...)</div>
+            <div class="game-bet">Tét: 2000 Ft · Nyeremény: 6000 Ft</div>
+          </button>
+        </div>
+
+        <!-- Row 7: Piramis -->
+        <div class="game-row">
+          <button class="game-card" onclick="SC.enter('pyramid')">
+            <span class="game-icon">🔺</span>
+            <div class="game-name">Piramis Játék</div>
+            <div class="game-desc">Építsd a hálózatod! (De a piramis mindig összeomlik, amikor te vagy a tetején...)</div>
+            <div class="game-bet">Tét: 1500 Ft · Nyeremény: 4500 Ft</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats panel -->
+    <div class="stats-panel">
+      <div class="stats-title">📊 Összesített Statisztikák</div>
+      <div class="stat-item">
+        <span class="stat-label">Játszott:</span>
+        <span class="stat-value" id="total-games">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Nyert:</span>
+        <span class="stat-value" id="total-wins">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Veszített:</span>
+        <span class="stat-value" id="total-losses">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Egyenleg:</span>
+        <span class="stat-value" id="total-balance">0 Ft</span>
+      </div>
+    </div>
+
+    <div id="lobby-exit-btn">
+      <button class="btn btn-dark" onclick="SC.exitScam()">← Vissza a Plazára</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ OFFSHORE (Adóparadicsom) ══════════════════════ -->
+  <section id="screen-offshore" class="scam-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🏝️ Adóparadicsom</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="off-balance">—</span> Ft</div>
+
+      <div class="win-chance-banner">
+        <div class="warning-icon">⚠️</div>
+        <div class="chance-text">
+          <strong>10% esélyed van nyerni!</strong>
+          <div class="prize-info">Nyeremény: 1500 Ft | Tét: 500 Ft</div>
+        </div>
+      </div>
+
+      <div class="difficulty-selector" id="off-difficulty">
+        <button class="diff-btn active" onclick="SC.off.setDiff('easy',this)">Könnyű</button>
+        <button class="diff-btn" onclick="SC.off.setDiff('medium',this)">Közepes</button>
+        <button class="diff-btn" onclick="SC.off.setDiff('hard',this)">Nehéz</button>
+      </div>
+
+      <div style="text-align:center;margin-bottom:1rem;">
+        <p style="color:var(--cream-dark);margin-bottom:1rem;">Válassz offshore helyszínt:</p>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;max-width:600px;">
+          <button class="diff-btn" onclick="SC.off.selectLocation('Cayman-szigetek')">🏝️ Cayman-szigetek</button>
+          <button class="diff-btn" onclick="SC.off.selectLocation('Panama')">🌴 Panama</button>
+          <button class="diff-btn" onclick="SC.off.selectLocation('Svájc')">🏔️ Svájc</button>
+          <button class="diff-btn" onclick="SC.off.selectLocation('Luxemburg')">🏰 Luxemburg</button>
+          <button class="diff-btn" onclick="SC.off.selectLocation('Titkos sziget')">🗺️ Titkos sziget</button>
+        </div>
+      </div>
+
+      <button class="btn btn-gold" id="off-start-btn" onclick="SC.off.start()" disabled style="font-size:1.1rem;padding:0.7rem 2.5rem;">
+        Tranzakció indítása
+      </button>
+
+      <div class="result-banner info" id="off-result" style="opacity:0;min-width:300px;"> </div>
+
+      <div class="game-stats">
+        <h4>📊 Statisztikák</h4>
+        <div class="game-stat-item">
+          <span>Tranzakciók:</span>
+          <span class="game-stat-value" id="off-transactions">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Levont díjak:</span>
+          <span class="game-stat-value" id="off-fees">0 Ft</span>
+        </div>
+        <div class="game-stat-item">
+          <span>NAV ellenőrzés:</span>
+          <span class="game-stat-value" id="off-audits">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Zárolások:</span>
+          <span class="game-stat-value" id="off-freezes">0</span>
+        </div>
+      </div>
+
+      <div class="npc-container">
+        <div class="npc-speech" id="off-speech">Üdvözlöm! Diszkrét ügyintézés, garantáltan.</div>
+        <div class="npc-icon">🕴️</div>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SC.showLobby()">← Vissza az utcára</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ ADVISOR (Kamu Tanácsadó) ══════════════════════ -->
+  <section id="screen-advisor" class="scam-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">💼 Kamu Befektetési Tanácsadó</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="adv-balance">—</span> Ft</div>
+
+      <div class="win-chance-banner">
+        <div class="warning-icon">⚠️</div>
+        <div class="chance-text">
+          <strong>10% esélyed van nyerni!</strong>
+          <div class="prize-info">Nyeremény: 3000 Ft | Tét: 1000 Ft</div>
+        </div>
+      </div>
+
+      <div class="difficulty-selector" id="adv-difficulty">
+        <button class="diff-btn active" onclick="SC.adv.setDiff('easy',this)">Könnyű</button>
+        <button class="diff-btn" onclick="SC.adv.setDiff('medium',this)">Közepes</button>
+        <button class="diff-btn" onclick="SC.adv.setDiff('hard',this)">Nehéz</button>
+      </div>
+
+      <div id="adv-client-area" style="text-align:center;max-width:600px;margin-bottom:1rem;">
+        <p style="color:var(--cream-dark);margin-bottom:1rem;" id="adv-client-intro">Ügyfél #1 érkezik...</p>
+        <div style="background:rgba(42,42,78,0.6);border:2px solid var(--gold-dim);border-radius:12px;padding:1.5rem;margin-bottom:1rem;">
+          <p style="color:var(--cream);font-size:1.1rem;margin-bottom:1rem;" id="adv-client-question">
+            "Mibe fektessem a pénzem?"
+          </p>
+          <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
+            <button class="diff-btn" onclick="SC.adv.giveAdvice('részvény')">📈 Részvény</button>
+            <button class="diff-btn" onclick="SC.adv.giveAdvice('kötvény')">📊 Kötvény</button>
+            <button class="diff-btn" onclick="SC.adv.giveAdvice('ingatlan')">🏠 Ingatlan</button>
+          </div>
+        </div>
+        <p style="color:var(--cream-dark);font-size:0.9rem;" id="adv-progress">Ügyfél: 1/5</p>
+      </div>
+
+      <button class="btn btn-gold" id="adv-start-btn" onclick="SC.adv.start()" style="font-size:1.1rem;padding:0.7rem 2.5rem;">
+        Játék indítása
+      </button>
+
+      <div class="result-banner info" id="adv-result" style="opacity:0;min-width:300px;"> </div>
+
+      <div class="game-stats">
+        <h4>📊 Statisztikák</h4>
+        <div class="game-stat-item">
+          <span>Tanácsok:</span>
+          <span class="game-stat-value" id="adv-advice">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Felvett díj:</span>
+          <span class="game-stat-value" id="adv-fees">0 Ft</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Panaszok:</span>
+          <span class="game-stat-value" id="adv-complaints">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Átl. veszteség:</span>
+          <span class="game-stat-value" id="adv-avgloss">0 Ft</span>
+        </div>
+      </div>
+
+      <div class="npc-container">
+        <div class="npc-speech" id="adv-speech">Mit ajánl, tanácsadó úr?</div>
+        <div class="npc-icon">😠</div>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SC.showLobby()">← Vissza az utcára</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ INSPECTOR (Szerencsejáték Felügyelő) ══════════════════════ -->
+  <section id="screen-inspector" class="scam-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">👮 Szerencsejáték Felügyelő</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="ins-balance">—</span> Ft</div>
+
+      <div class="win-chance-banner">
+        <div class="warning-icon">⚠️</div>
+        <div class="chance-text">
+          <strong>10% esélyed van nyerni!</strong>
+          <div class="prize-info">Nyeremény: 3000 Ft | Tét: 1000 Ft</div>
+        </div>
+      </div>
+
+      <div class="difficulty-selector" id="ins-difficulty">
+        <button class="diff-btn active" onclick="SC.ins.setDiff('easy',this)">Könnyű</button>
+        <button class="diff-btn" onclick="SC.ins.setDiff('medium',this)">Közepes</button>
+        <button class="diff-btn" onclick="SC.ins.setDiff('hard',this)">Nehéz</button>
+      </div>
+
+      <div id="ins-casino-area" style="text-align:center;max-width:700px;margin-bottom:1rem;">
+        <p style="color:var(--cream-dark);margin-bottom:1rem;" id="ins-casino-name">Kaszinó: Aranyásó Kaszinó</p>
+        <div style="background:rgba(42,42,78,0.6);border:2px solid var(--gold-dim);border-radius:12px;padding:1.5rem;margin-bottom:1rem;">
+          <p style="color:var(--cream);font-size:1rem;margin-bottom:1rem;">
+            Döntsd el, milyen szabálytalanságot találtál:
+          </p>
+          <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
+            <button class="diff-btn" onclick="SC.ins.inspect('ok')">✅ Minden rendben</button>
+            <button class="diff-btn" onclick="SC.ins.inspect('minor')">⚠️ Kisebb szabálytalanság</button>
+            <button class="diff-btn" onclick="SC.ins.inspect('major')">🚨 Súlyos szabálytalanság</button>
+          </div>
+        </div>
+        <p style="color:var(--cream-dark);font-size:0.9rem;" id="ins-progress">Kaszinó: 1/5</p>
+      </div>
+
+      <button class="btn btn-gold" id="ins-start-btn" onclick="SC.ins.start()" style="font-size:1.1rem;padding:0.7rem 2.5rem;">
+        Ellenőrzés indítása
+      </button>
+
+      <div class="result-banner info" id="ins-result" style="opacity:0;min-width:300px;"> </div>
+
+      <div class="game-stats">
+        <h4>📊 Statisztikák</h4>
+        <div class="game-stat-item">
+          <span>Ellenőrzött:</span>
+          <span class="game-stat-value" id="ins-checked">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Helyes döntés:</span>
+          <span class="game-stat-value" id="ins-correct">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Hibás döntés:</span>
+          <span class="game-stat-value" id="ins-wrong">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Pontosság:</span>
+          <span class="game-stat-value" id="ins-accuracy">0%</span>
+        </div>
+      </div>
+
+      <div class="npc-container">
+        <div class="npc-speech" id="ins-speech">Nos, mit talált, ellenőr?</div>
+        <div class="npc-icon">👔</div>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SC.showLobby()">← Vissza az utcára</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ INSURANCE (Biztosítási Csaló) ══════════════════════ -->
+  <section id="screen-insurance" class="scam-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🏥 Biztosítási Csaló</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="insur-balance">—</span> Ft</div>
+
+      <div class="win-chance-banner">
+        <div class="warning-icon">⚠️</div>
+        <div class="chance-text">
+          <strong>10% esélyed van nyerni!</strong>
+          <div class="prize-info">Nyeremény: 900 Ft | Tét: 300 Ft</div>
+        </div>
+      </div>
+
+      <div class="difficulty-selector" id="insur-difficulty">
+        <button class="diff-btn active" onclick="SC.insur.setDiff('easy',this)">Könnyű</button>
+        <button class="diff-btn" onclick="SC.insur.setDiff('medium',this)">Közepes</button>
+        <button class="diff-btn" onclick="SC.insur.setDiff('hard',this)">Nehéz</button>
+      </div>
+
+      <div style="text-align:center;margin-bottom:1rem;">
+        <p style="color:var(--cream-dark);margin-bottom:1rem;">Válassz kár típust:</p>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;max-width:600px;margin-bottom:1rem;">
+          <button class="diff-btn" onclick="SC.insur.selectType('Autóbaleset')">🚗 Autóbaleset</button>
+          <button class="diff-btn" onclick="SC.insur.selectType('Lakáskárosodás')">🏠 Lakáskárosodás</button>
+          <button class="diff-btn" onclick="SC.insur.selectType('Orvosi számla')">🏥 Orvosi számla</button>
+          <button class="diff-btn" onclick="SC.insur.selectType('Lopás')">🔓 Lopás</button>
+          <button class="diff-btn" onclick="SC.insur.selectType('Természeti katasztrófa')">🌪️ Természeti katasztrófa</button>
+          <button class="diff-btn" onclick="SC.insur.selectType('Egyéb')">❓ Egyéb</button>
+        </div>
+
+        <div style="margin-bottom:1rem;">
+          <label style="color:var(--cream-dark);display:block;margin-bottom:0.5rem;">Kár összege:</label>
+          <input type="range" id="insur-amount" min="1000" max="50000" step="1000" value="10000" 
+                 style="width:300px;" oninput="document.getElementById('insur-amount-display').textContent = this.value">
+          <div style="color:var(--gold);font-size:1.2rem;font-weight:700;margin-top:0.5rem;">
+            <span id="insur-amount-display">10000</span> Ft
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-gold" id="insur-start-btn" onclick="SC.insur.start()" disabled style="font-size:1.1rem;padding:0.7rem 2.5rem;">
+        Kárigény beadása
+      </button>
+
+      <div class="result-banner info" id="insur-result" style="opacity:0;min-width:300px;"> </div>
+
+      <div class="game-stats">
+        <h4>📊 Statisztikák</h4>
+        <div class="game-stat-item">
+          <span>Kárigények:</span>
+          <span class="game-stat-value" id="insur-claims">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Elutasított:</span>
+          <span class="game-stat-value" id="insur-rejected">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Kifizetett:</span>
+          <span class="game-stat-value" id="insur-paid">0 Ft</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Átl. kárösszeg:</span>
+          <span class="game-stat-value" id="insur-avg">0 Ft</span>
+        </div>
+      </div>
+
+      <div class="npc-container">
+        <div class="npc-speech" id="insur-speech">Következő ügyfél, kérem...</div>
+        <div class="npc-icon">👨‍💼</div>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SC.showLobby()">← Vissza az utcára</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ LAUNDER (Pénzmosó Szalon) ══════════════════════ -->
+  <section id="screen-launder" class="scam-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🧺 Pénzmosó Szalon</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="laun-balance">—</span> Ft</div>
+
+      <div class="win-chance-banner">
+        <div class="warning-icon">⚠️</div>
+        <div class="chance-text">
+          <strong>10% esélyed van nyerni!</strong>
+          <div class="prize-info">Nyeremény: 2400 Ft | Tét: 800 Ft</div>
+        </div>
+      </div>
+
+      <div class="difficulty-selector" id="laun-difficulty">
+        <button class="diff-btn active" onclick="SC.laun.setDiff('easy',this)">Könnyű</button>
+        <button class="diff-btn" onclick="SC.laun.setDiff('medium',this)">Közepes</button>
+        <button class="diff-btn" onclick="SC.laun.setDiff('hard',this)">Nehéz</button>
+      </div>
+
+      <div id="laun-steps" style="text-align:center;max-width:700px;margin-bottom:1rem;">
+        <p style="color:var(--cream-dark);margin-bottom:1rem;">Pénzmosási folyamat:</p>
+        <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem;">
+          <div class="diff-btn" id="laun-step-1" style="opacity:0.5;">💵 Készpénz</div>
+          <div style="color:var(--gold);font-size:1.5rem;">→</div>
+          <div class="diff-btn" id="laun-step-2" style="opacity:0.5;">🏦 Bankszámla</div>
+          <div style="color:var(--gold);font-size:1.5rem;">→</div>
+          <div class="diff-btn" id="laun-step-3" style="opacity:0.5;">🏠 Ingatlan</div>
+          <div style="color:var(--gold);font-size:1.5rem;">→</div>
+          <div class="diff-btn" id="laun-step-4" style="opacity:0.5;">💼 Vállalkozás</div>
+          <div style="color:var(--gold);font-size:1.5rem;">→</div>
+          <div class="diff-btn" id="laun-step-5" style="opacity:0.5;">🏝️ Offshore</div>
+        </div>
+        <p style="color:var(--gold);font-size:1.1rem;font-weight:700;" id="laun-status">Kattints a "Mosás indítása" gombra!</p>
+      </div>
+
+      <button class="btn btn-gold" id="laun-start-btn" onclick="SC.laun.start()" style="font-size:1.1rem;padding:0.7rem 2.5rem;">
+        Mosás indítása
+      </button>
+
+      <div class="result-banner info" id="laun-result" style="opacity:0;min-width:300px;"> </div>
+
+      <div class="game-stats">
+        <h4>📊 Statisztikák</h4>
+        <div class="game-stat-item">
+          <span>Mosott összegek:</span>
+          <span class="game-stat-value" id="laun-washed">0 Ft</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Levont díjak:</span>
+          <span class="game-stat-value" id="laun-fees">0 Ft</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Ellenőrzések:</span>
+          <span class="game-stat-value" id="laun-checks">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Megmaradt:</span>
+          <span class="game-stat-value" id="laun-remaining">0%</span>
+        </div>
+      </div>
+
+      <div class="npc-container">
+        <div class="npc-speech" id="laun-speech">Üdv! Diszkrét ügyintézés, nem kérdezünk.</div>
+        <div class="npc-icon">🕶️</div>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SC.showLobby()">← Vissza az utcára</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ REALESTATE (Ingatlan Spekuláns) ══════════════════════ -->
+  <section id="screen-realestate" class="scam-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🏠 Ingatlan Spekuláns</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="real-balance">—</span> Ft</div>
+
+      <div class="win-chance-banner">
+        <div class="warning-icon">⚠️</div>
+        <div class="chance-text">
+          <strong>10% esélyed van nyerni!</strong>
+          <div class="prize-info">Nyeremény: 6000 Ft | Tét: 2000 Ft</div>
+        </div>
+      </div>
+
+      <div class="difficulty-selector" id="real-difficulty">
+        <button class="diff-btn active" onclick="SC.real.setDiff('easy',this)">Könnyű</button>
+        <button class="diff-btn" onclick="SC.real.setDiff('medium',this)">Közepes</button>
+        <button class="diff-btn" onclick="SC.real.setDiff('hard',this)">Nehéz</button>
+      </div>
+
+      <div id="real-properties" style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;max-width:800px;margin-bottom:1rem;">
+        <div style="background:rgba(42,42,78,0.6);border:2px solid var(--gold-dim);border-radius:12px;padding:1rem;width:220px;cursor:pointer;transition:all 0.3s;" 
+             onclick="SC.real.selectProperty(0)" class="real-prop">
+          <div style="font-size:2rem;text-align:center;margin-bottom:0.5rem;">🏢</div>
+          <div style="color:var(--gold-light);font-weight:700;text-align:center;margin-bottom:0.5rem;">Belvárosi lakás</div>
+          <div style="color:var(--cream-dark);font-size:0.85rem;text-align:center;">
+            Ár: <span style="color:var(--gold);">15000 Ft</span><br>
+            Méret: 45 m²<br>
+            Állapot: Felújítandó
+          </div>
+        </div>
+        <div style="background:rgba(42,42,78,0.6);border:2px solid var(--gold-dim);border-radius:12px;padding:1rem;width:220px;cursor:pointer;transition:all 0.3s;" 
+             onclick="SC.real.selectProperty(1)" class="real-prop">
+          <div style="font-size:2rem;text-align:center;margin-bottom:0.5rem;">🏡</div>
+          <div style="color:var(--gold-light);font-weight:700;text-align:center;margin-bottom:0.5rem;">Kertes ház</div>
+          <div style="color:var(--cream-dark);font-size:0.85rem;text-align:center;">
+            Ár: <span style="color:var(--gold);">25000 Ft</span><br>
+            Méret: 120 m²<br>
+            Állapot: Jó
+          </div>
+        </div>
+        <div style="background:rgba(42,42,78,0.6);border:2px solid var(--gold-dim);border-radius:12px;padding:1rem;width:220px;cursor:pointer;transition:all 0.3s;" 
+             onclick="SC.real.selectProperty(2)" class="real-prop">
+          <div style="font-size:2rem;text-align:center;margin-bottom:0.5rem;">🏬</div>
+          <div style="color:var(--gold-light);font-weight:700;text-align:center;margin-bottom:0.5rem;">Irodaház</div>
+          <div style="color:var(--cream-dark);font-size:0.85rem;text-align:center;">
+            Ár: <span style="color:var(--gold);">40000 Ft</span><br>
+            Méret: 200 m²<br>
+            Állapot: Kiváló
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-gold" id="real-start-btn" onclick="SC.real.start()" disabled style="font-size:1.1rem;padding:0.7rem 2.5rem;">
+        Ingatlan vásárlása
+      </button>
+
+      <div class="result-banner info" id="real-result" style="opacity:0;min-width:300px;"> </div>
+
+      <div class="game-stats">
+        <h4>📊 Statisztikák</h4>
+        <div class="game-stat-item">
+          <span>Vett/eladott:</span>
+          <span class="game-stat-value" id="real-trades">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Felújítás:</span>
+          <span class="game-stat-value" id="real-renov">0 Ft</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Piaci események:</span>
+          <span class="game-stat-value" id="real-events">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Átl. veszteség:</span>
+          <span class="game-stat-value" id="real-avgloss">0%</span>
+        </div>
+      </div>
+
+      <div class="npc-container">
+        <div class="npc-speech" id="real-speech">Üdv! Van egy KIHAGYHATATLAN ajánlatom!</div>
+        <div class="npc-icon">🤵</div>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SC.showLobby()">← Vissza az utcára</button>
+    </div>
+  </section>
+
+  <!-- ══════════════════════ PYRAMID (Piramis Játék) ══════════════════════ -->
+  <section id="screen-pyramid" class="scam-screen game-screen">
+    <div class="game-ui">
+      <h2 style="font-family:var(--font-display);color:var(--gold-light);margin-bottom:0.4rem;">🔺 Piramis Játék</h2>
+      <div class="balance-strip">💰 Egyenleg: <span id="pyr-balance">—</span> Ft</div>
+
+      <div class="win-chance-banner">
+        <div class="warning-icon">⚠️</div>
+        <div class="chance-text">
+          <strong>10% esélyed van nyerni!</strong>
+          <div class="prize-info">Nyeremény: 4500 Ft | Tét: 1500 Ft</div>
+        </div>
+      </div>
+
+      <div class="difficulty-selector" id="pyr-difficulty">
+        <button class="diff-btn active" onclick="SC.pyr.setDiff('easy',this)">Könnyű</button>
+        <button class="diff-btn" onclick="SC.pyr.setDiff('medium',this)">Közepes</button>
+        <button class="diff-btn" onclick="SC.pyr.setDiff('hard',this)">Nehéz</button>
+      </div>
+
+      <div id="pyr-network" style="text-align:center;max-width:700px;margin-bottom:1rem;">
+        <p style="color:var(--cream-dark);margin-bottom:1rem;">Hálózati struktúra:</p>
+        <div style="background:rgba(42,42,78,0.6);border:2px solid var(--gold-dim);border-radius:12px;padding:1.5rem;margin-bottom:1rem;min-height:200px;">
+          <div style="color:var(--gold);font-size:1.2rem;font-weight:700;margin-bottom:1rem;" id="pyr-level">Szint: 1</div>
+          <div style="display:flex;justify-content:center;gap:0.5rem;flex-wrap:wrap;" id="pyr-members">
+            <div style="background:var(--gold);color:var(--dark);padding:0.5rem 1rem;border-radius:8px;font-weight:700;">Te</div>
+          </div>
+        </div>
+        <p style="color:var(--gold);font-size:1.1rem;font-weight:700;" id="pyr-status">Kör: 1/10 · Tagok: 0 · Bevétel: 0 Ft</p>
+      </div>
+
+      <button class="btn btn-gold" id="pyr-start-btn" onclick="SC.pyr.start()" style="font-size:1.1rem;padding:0.7rem 2.5rem;">
+        Hálózat építése
+      </button>
+
+      <div class="result-banner info" id="pyr-result" style="opacity:0;min-width:300px;"> </div>
+
+      <div class="game-stats">
+        <h4>📊 Statisztikák</h4>
+        <div class="game-stat-item">
+          <span>Toborzott tagok:</span>
+          <span class="game-stat-value" id="pyr-recruited">0</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Összes bevétel:</span>
+          <span class="game-stat-value" id="pyr-income">0 Ft</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Összes levonás:</span>
+          <span class="game-stat-value" id="pyr-deductions">0 Ft</span>
+        </div>
+        <div class="game-stat-item">
+          <span>Körök összeomlásig:</span>
+          <span class="game-stat-value" id="pyr-rounds">0</span>
+        </div>
+      </div>
+
+      <div class="npc-container">
+        <div class="npc-speech" id="pyr-speech">Üdv a csapatban! A siker garantált!</div>
+        <div class="npc-icon">😄</div>
+      </div>
+    </div>
+
+    <div class="back-row">
+      <button class="btn btn-dark" onclick="SC.showLobby()">← Vissza az utcára</button>
+    </div>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+
+  let S = null;
+  let stats = {
+    totalGames: 0,
+    totalWins: 0,
+    totalLosses: 0,
+    totalBalance: 0
+  };
+
+  async function init() {
+    S = await GameAPI.getState();
+    refreshBalances();
+    updateStats();
+  }
+  init();
+
+  function refreshBalances() {
+    const b = S.balance;
+    ['off-balance'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = b.toLocaleString('hu-HU');
+    });
+  }
+
+  function updateStats() {
+    document.getElementById('total-games').textContent = stats.totalGames;
+    document.getElementById('total-wins').textContent = stats.totalWins;
+    document.getElementById('total-losses').textContent = stats.totalLosses;
+    document.getElementById('total-balance').textContent = stats.totalBalance.toLocaleString('hu-HU') + ' Ft';
+  }
+
+  const SCREENS = ['lobby','offshore','advisor','inspector','insurance','launder','realestate','pyramid'];
+
+  function showScreen(name) {
+    SCREENS.forEach(s => {
+      const el = document.getElementById('screen-' + s);
+      if (!el) return;
+      if (s === name) { el.classList.add('is-active'); el.removeAttribute('hidden'); }
+      else            { el.classList.remove('is-active'); el.setAttribute('hidden',''); }
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  ['offshore','advisor','inspector','insurance','launder','realestate','pyramid'].forEach(s => {
+    const el = document.getElementById('screen-' + s);
+    if (el) el.setAttribute('hidden','');
+  });
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function showResult(id, html, type) {
+    const el = document.getElementById(id);
+    el.innerHTML = html;
+    el.className = 'result-banner ' + type;
+    el.style.opacity = '1';
+  }
+
+  async function applyDelta(delta) {
+    S = await GameAPI.patch({ balance: S.balance + delta });
+    refreshBalances();
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  //  OFFSHORE (Adóparadicsom)
+  // ════════════════════════════════════════════════════════════════
+  const OFF = (() => {
+    let diff = 'easy';
+    let selectedLocation = null;
+    let offStats = { transactions: 0, fees: 0, audits: 0, freezes: 0 };
+
+    const diffSettings = {
+      easy: { feeRange: [10, 15], auditChance: 0.10, freezeChance: 0.05 },
+      medium: { feeRange: [15, 25], auditChance: 0.20, freezeChance: 0.15 },
+      hard: { feeRange: [20, 30], auditChance: 0.30, freezeChance: 0.25 }
+    };
+
+    function setDiff(d, btn) {
+      diff = d;
+      document.querySelectorAll('#off-difficulty .diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function selectLocation(loc) {
+      selectedLocation = loc;
+      document.getElementById('off-start-btn').disabled = false;
+      document.querySelectorAll('#screen-offshore .diff-btn').forEach(b => {
+        if (b.textContent.includes(loc)) {
+          b.classList.add('active');
+        } else if (!b.classList.contains('diff-btn')) {
+          b.classList.remove('active');
+        }
+      });
+    }
+
+    async function start() {
+      if (!selectedLocation) {
+        showResult('off-result', 'Válassz helyszínt!', 'info');
+        return;
+      }
+
+      if (S.balance < 500) {
+        showResult('off-result', 'Nincs elég egyenleged! (500 Ft kell)', 'lose');
+        return;
+      }
+
+      document.getElementById('off-start-btn').disabled = true;
+      document.getElementById('off-result').style.opacity = '0';
+
+      await applyDelta(-500);
+
+      const settings = diffSettings[diff];
+      const fee = Math.floor(Math.random() * (settings.feeRange[1] - settings.feeRange[0] + 1)) + settings.feeRange[0];
+      const rand = Math.random();
+
+      offStats.transactions++;
+      offStats.fees += fee;
+
+      await sleep(2000);
+
+      if (rand < settings.freezeChance) {
+        offStats.freezes++;
+        showResult('off-result', `🚫 Banki zárolás! A ${selectedLocation}-i számlád zárolva lett.`, 'lose');
+        document.getElementById('off-speech').textContent = 'Sajnálom, a számlája zárolva lett. Viszlát!';
+        stats.totalLosses++;
+        stats.totalBalance -= 500;
+      } else if (rand < settings.freezeChance + settings.auditChance) {
+        offStats.audits++;
+        const penalty = Math.floor(500 * 0.5);
+        await applyDelta(-penalty);
+        showResult('off-result', `🔍 NAV ellenőrzés! Bírság: ${penalty} Ft`, 'lose');
+        document.getElementById('off-speech').textContent = 'Nos... ez kellemetlen. A NAV tud róla.';
+        stats.totalLosses++;
+        stats.totalBalance -= (500 + penalty);
+      } else if (rand < 0.10 + settings.freezeChance + settings.auditChance) {
+        await applyDelta(1500);
+        showResult('off-result', `✅ Sikeres tranzakció! +1500 Ft`, 'win');
+        document.getElementById('off-speech').textContent = 'Nos... ez ritka. Gratulálok.';
+        stats.totalWins++;
+        stats.totalBalance += 1000;
+      } else {
+        const feeAmount = Math.floor(500 * fee / 100);
+        await applyDelta(-feeAmount);
+        showResult('off-result', `💸 Váratlan díjak: ${fee}% (${feeAmount} Ft)`, 'lose');
+        document.getElementById('off-speech').textContent = 'A díjat már levontuk. Következő?';
+        stats.totalLosses++;
+        stats.totalBalance -= (500 + feeAmount);
+      }
+
+      stats.totalGames++;
+      updateStats();
+      updateOffStats();
+
+      document.getElementById('off-start-btn').disabled = false;
+      selectedLocation = null;
+    }
+
+    function updateOffStats() {
+      document.getElementById('off-transactions').textContent = offStats.transactions;
+      document.getElementById('off-fees').textContent = offStats.fees.toLocaleString('hu-HU') + ' Ft';
+      document.getElementById('off-audits').textContent = offStats.audits;
+      document.getElementById('off-freezes').textContent = offStats.freezes;
+    }
+
+    return { setDiff, selectLocation, start };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  ADVISOR (Kamu Befektetési Tanácsadó)
+  // ════════════════════════════════════════════════════════════════
+  const ADV = (() => {
+    let diff = 'easy';
+    let advStats = { advice: 0, fees: 0, complaints: 0, totalLoss: 0 };
+    let currentClient = 0;
+    let gameActive = false;
+
+    const diffSettings = {
+      easy: { feeRange: [400, 500], penalty: 1000 },
+      medium: { feeRange: [300, 400], penalty: 1500 },
+      hard: { feeRange: [200, 300], penalty: 2000 }
+    };
+
+    const clientQuestions = [
+      "Mibe fektessem a nyugdíj-megtakarításomat?",
+      "Hova tegyem a feleségem örökségét?",
+      "Milyen befektetés lenne jó a gyerekek egyetemére?",
+      "Van 5 millió Ft-om, mit tanácsol?",
+      "Ingatlanba vagy részvénybe fektessek?"
+    ];
+
+    function setDiff(d, btn) {
+      diff = d;
+      document.querySelectorAll('#adv-difficulty .diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    async function start() {
+      if (S.balance < 1000) {
+        showResult('adv-result', 'Nincs elég egyenleged! (1000 Ft kell)', 'lose');
+        return;
+      }
+
+      await applyDelta(-1000);
+      gameActive = true;
+      currentClient = 0;
+      advStats = { advice: 0, fees: 0, complaints: 0, totalLoss: 0 };
+      
+      document.getElementById('adv-start-btn').disabled = true;
+      document.getElementById('adv-client-area').removeAttribute('hidden');
+      showClient();
+    }
+
+    function showClient() {
+      if (currentClient >= 5) {
+        endGame();
+        return;
+      }
+
+      document.getElementById('adv-client-intro').textContent = `Ügyfél #${currentClient + 1} érkezik...`;
+      document.getElementById('adv-client-question').textContent = `"${clientQuestions[currentClient]}"`;
+      document.getElementById('adv-progress').textContent = `Ügyfél: ${currentClient + 1}/5`;
+      document.getElementById('adv-speech').textContent = 'Mit ajánl, tanácsadó úr?';
+    }
+
+    async function giveAdvice(type) {
+      if (!gameActive) return;
+
+      const settings = diffSettings[diff];
+      const fee = Math.floor(Math.random() * (settings.feeRange[1] - settings.feeRange[0] + 1)) + settings.feeRange[0];
+      
+      advStats.advice++;
+      advStats.fees += fee;
+      
+      await applyDelta(fee);
+
+      const clientLoss = Math.floor(Math.random() * 1500) + 500;
+      advStats.totalLoss += clientLoss;
+
+      document.getElementById('adv-speech').textContent = 'Köszönöm, bízom önben!';
+      await sleep(1000);
+
+      currentClient++;
+      showClient();
+      updateAdvStats();
+    }
+
+    async function endGame() {
+      gameActive = false;
+      
+      const rand = Math.random();
+      
+      if (rand < 0.10) {
+        await applyDelta(3000);
+        showResult('adv-result', `🎉 Egy ügyfél nagyon elégedett! Bónusz: +3000 Ft`, 'win');
+        document.getElementById('adv-speech').textContent = 'Köszönöm! Ön a legjobb tanácsadó! Itt egy bónusz!';
+        stats.totalWins++;
+        stats.totalBalance += 2000;
+      } else {
+        const settings = diffSettings[diff];
+        await applyDelta(-settings.penalty);
+        advStats.complaints++;
+        showResult('adv-result', `😡 Ügyfél panasz! Bírság: -${settings.penalty} Ft`, 'lose');
+        document.getElementById('adv-speech').textContent = 'PERELNI FOGOK! A pénzem odalett!';
+        stats.totalLosses++;
+        stats.totalBalance -= (1000 + settings.penalty - advStats.fees);
+      }
+
+      stats.totalGames++;
+      updateStats();
+      updateAdvStats();
+
+      document.getElementById('adv-start-btn').disabled = false;
+      document.getElementById('adv-client-area').setAttribute('hidden', '');
+    }
+
+    function updateAdvStats() {
+      document.getElementById('adv-advice').textContent = advStats.advice;
+      document.getElementById('adv-fees').textContent = advStats.fees.toLocaleString('hu-HU') + ' Ft';
+      document.getElementById('adv-complaints').textContent = advStats.complaints;
+      const avgLoss = advStats.advice > 0 ? Math.floor(advStats.totalLoss / advStats.advice) : 0;
+      document.getElementById('adv-avgloss').textContent = avgLoss.toLocaleString('hu-HU') + ' Ft';
+    }
+
+    return { setDiff, start, giveAdvice };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  INSPECTOR (Szerencsejáték Felügyelő)
+  // ════════════════════════════════════════════════════════════════
+  const INS = (() => {
+    let diff = 'easy';
+    let insStats = { checked: 0, correct: 0, wrong: 0 };
+    let currentCasino = 0;
+    let gameActive = false;
+
+    const diffSettings = {
+      easy: { correctReward: 300, wrongPenalty: 400 },
+      medium: { correctReward: 200, wrongPenalty: 500 },
+      hard: { correctReward: 100, wrongPenalty: 600 }
+    };
+
+    const casinoNames = [
+      'Aranyásó Kaszinó',
+      'Szerencse Barlang',
+      'Pénzeső Palota',
+      'Kocka Paradicsom',
+      'Adóparadicsom'
+    ];
+
+    function setDiff(d, btn) {
+      diff = d;
+      document.querySelectorAll('#ins-difficulty .diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    async function start() {
+      if (S.balance < 1000) {
+        showResult('ins-result', 'Nincs elég egyenleged! (1000 Ft kell)', 'lose');
+        return;
+      }
+
+      await applyDelta(-1000);
+      gameActive = true;
+      currentCasino = 0;
+      insStats = { checked: 0, correct: 0, wrong: 0 };
+      
+      document.getElementById('ins-start-btn').disabled = true;
+      document.getElementById('ins-casino-area').removeAttribute('hidden');
+      showCasino();
+    }
+
+    function showCasino() {
+      if (currentCasino >= 5) {
+        endGame();
+        return;
+      }
+
+      document.getElementById('ins-casino-name').textContent = `Kaszinó: ${casinoNames[currentCasino]}`;
+      document.getElementById('ins-progress').textContent = `Kaszinó: ${currentCasino + 1}/5`;
+      document.getElementById('ins-speech').textContent = 'Nos, mit talált, ellenőr?';
+    }
+
+    async function inspect(decision) {
+      if (!gameActive) return;
+
+      const rand = Math.random();
+      let correctAnswer;
+      
+      if (rand < 0.4) correctAnswer = 'ok';
+      else if (rand < 0.8) correctAnswer = 'minor';
+      else correctAnswer = 'major';
+
+      const isCorrect = decision === correctAnswer;
+      const settings = diffSettings[diff];
+
+      insStats.checked++;
+
+      if (isCorrect) {
+        insStats.correct++;
+        await applyDelta(settings.correctReward);
+        document.getElementById('ins-speech').textContent = 'Elfogadható. De lehetne jobb is.';
+      } else {
+        insStats.wrong++;
+        await applyDelta(-settings.wrongPenalty);
+        document.getElementById('ins-speech').textContent = 'Ez nem elfogadható! Olvassa el újra a kézikönyvet!';
+      }
+
+      await sleep(1000);
+      currentCasino++;
+      showCasino();
+      updateInsStats();
+    }
+
+    async function endGame() {
+      gameActive = false;
+      
+      const rand = Math.random();
+      
+      if (rand < 0.10) {
+        await applyDelta(3000);
+        showResult('ins-result', `🎉 Kifogástalan jelentés! Bónusz: +3000 Ft`, 'win');
+        document.getElementById('ins-speech').textContent = 'Végre egy hozzáértő ellenőr! Bónusz: 3000 Ft.';
+        stats.totalWins++;
+        stats.totalBalance += 2000;
+      } else {
+        await applyDelta(-2000);
+        showResult('ins-result', `📋 Adminisztrációs hiba! Bírság: -2000 Ft`, 'lose');
+        document.getElementById('ins-speech').textContent = 'A jelentése tele van hibákkal. Bírság: 2000 Ft.';
+        stats.totalLosses++;
+        stats.totalBalance -= 3000;
+      }
+
+      stats.totalGames++;
+      updateStats();
+      updateInsStats();
+
+      document.getElementById('ins-start-btn').disabled = false;
+      document.getElementById('ins-casino-area').setAttribute('hidden', '');
+    }
+
+    function updateInsStats() {
+      document.getElementById('ins-checked').textContent = insStats.checked;
+      document.getElementById('ins-correct').textContent = insStats.correct;
+      document.getElementById('ins-wrong').textContent = insStats.wrong;
+      const accuracy = insStats.checked > 0 ? Math.floor((insStats.correct / insStats.checked) * 100) : 0;
+      document.getElementById('ins-accuracy').textContent = accuracy + '%';
+    }
+
+    return { setDiff, start, inspect };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  INSURANCE (Biztosítási Csaló)
+  // ════════════════════════════════════════════════════════════════
+  const INSUR = (() => {
+    let diff = 'easy';
+    let selectedType = null;
+    let insurStats = { claims: 0, rejected: 0, paid: 0, totalAmount: 0 };
+
+    const diffSettings = {
+      easy: { partialChance: 0.10, fullChance: 0.01 },
+      medium: { partialChance: 0.05, fullChance: 0.005 },
+      hard: { partialChance: 0.02, fullChance: 0.00 }
+    };
+
+    const rejectionReasons = [
+      'A kár nem elég súlyos',
+      'Túl súlyos a kár - gyanús',
+      'Nem volt megfelelő biztosítása erre a konkrét esetre',
+      'Kizáró ok: a kár hétfőn történt',
+      'Kizáró ok: a kár nem hétfőn történt',
+      'Az űrlap 3B mező hibásan lett kitöltve',
+      'A kárbejelentés túl szép - biztosan csalás',
+      'A szabályzat 47. paragrafus 3. bekezdése alapján elutasítva',
+      'A kár időpontja nem egyezik a holdfázissal',
+      'Túl sok kárigényt adott be ebben az évben'
+    ];
+
+    function setDiff(d, btn) {
+      diff = d;
+      document.querySelectorAll('#insur-difficulty .diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function selectType(type) {
+      selectedType = type;
+      document.getElementById('insur-start-btn').disabled = false;
+      document.querySelectorAll('#screen-insurance .diff-btn').forEach(b => {
+        if (b.textContent.includes(type)) {
+          b.classList.add('active');
+        } else if (!b.classList.contains('diff-btn')) {
+          b.classList.remove('active');
+        }
+      });
+    }
+
+    async function start() {
+      if (!selectedType) {
+        showResult('insur-result', 'Válassz kár típust!', 'info');
+        return;
+      }
+
+      if (S.balance < 300) {
+        showResult('insur-result', 'Nincs elég egyenleged! (300 Ft kell)', 'lose');
+        return;
+      }
+
+      document.getElementById('insur-start-btn').disabled = true;
+      document.getElementById('insur-result').style.opacity = '0';
+
+      await applyDelta(-300);
+
+      const amount = parseInt(document.getElementById('insur-amount').value);
+      const settings = diffSettings[diff];
+      const rand = Math.random();
+
+      insurStats.claims++;
+      insurStats.totalAmount += amount;
+
+      await sleep(2500);
+
+      if (rand < settings.fullChance) {
+        const payout = Math.floor(amount * 0.08);
+        await applyDelta(900);
+        insurStats.paid += 900;
+        showResult('insur-result', `✅ Teljes kifizetés! +900 Ft`, 'win');
+        document.getElementById('insur-speech').textContent = 'Nos... ez váratlan. Jóváhagyva. De ne szokja hozzá!';
+        stats.totalWins++;
+        stats.totalBalance += 600;
+      } else if (rand < settings.fullChance + settings.partialChance) {
+        const partial = Math.floor(amount * (Math.random() * 0.10 + 0.10));
+        await applyDelta(partial);
+        insurStats.paid += partial;
+        showResult('insur-result', `💰 Részleges kifizetés: +${partial} Ft`, 'info');
+        document.getElementById('insur-speech').textContent = 'Csak részben hagyjuk jóvá. Örüljön ennek is.';
+        stats.totalLosses++;
+        stats.totalBalance -= (300 - partial);
+      } else {
+        insurStats.rejected++;
+        const reason = rejectionReasons[Math.floor(Math.random() * rejectionReasons.length)];
+        showResult('insur-result', `❌ Elutasítva: ${reason}`, 'lose');
+        document.getElementById('insur-speech').textContent = `Sajnálom, de ${reason.toLowerCase()}.`;
+        stats.totalLosses++;
+        stats.totalBalance -= 300;
+      }
+
+      stats.totalGames++;
+      updateStats();
+      updateInsurStats();
+
+      document.getElementById('insur-start-btn').disabled = false;
+      selectedType = null;
+    }
+
+    function updateInsurStats() {
+      document.getElementById('insur-claims').textContent = insurStats.claims;
+      document.getElementById('insur-rejected').textContent = insurStats.rejected;
+      document.getElementById('insur-paid').textContent = insurStats.paid.toLocaleString('hu-HU') + ' Ft';
+      const avg = insurStats.claims > 0 ? Math.floor(insurStats.totalAmount / insurStats.claims) : 0;
+      document.getElementById('insur-avg').textContent = avg.toLocaleString('hu-HU') + ' Ft';
+    }
+
+    return { setDiff, selectType, start };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  LAUNDER (Pénzmosó Szalon)
+  // ════════════════════════════════════════════════════════════════
+  const LAUN = (() => {
+    let diff = 'easy';
+    let launStats = { washed: 0, fees: 0, checks: 0 };
+
+    const diffSettings = {
+      easy: { feeRange: [10, 15], checkChance: 0.10 },
+      medium: { feeRange: [15, 20], checkChance: 0.15 },
+      hard: { feeRange: [20, 25], checkChance: 0.20 }
+    };
+
+    const stepFees = [15, 20, 18, 25, 22];
+
+    function setDiff(d, btn) {
+      diff = d;
+      document.querySelectorAll('#laun-difficulty .diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    async function start() {
+      if (S.balance < 800) {
+        showResult('laun-result', 'Nincs elég egyenleged! (800 Ft kell)', 'lose');
+        return;
+      }
+
+      document.getElementById('laun-start-btn').disabled = true;
+      document.getElementById('laun-result').style.opacity = '0';
+
+      await applyDelta(-800);
+
+      const settings = diffSettings[diff];
+      let currentAmount = 800;
+      let totalFees = 0;
+      let caught = false;
+
+      for (let step = 1; step <= 5; step++) {
+        document.getElementById(`laun-step-${step}`).style.opacity = '1';
+        document.getElementById('laun-status').textContent = `Lépés ${step}/5 folyamatban...`;
+
+        const rand = Math.random();
+        
+        if (rand < settings.checkChance) {
+          caught = true;
+          launStats.checks++;
+          document.getElementById('laun-status').textContent = `🚨 Hatósági ellenőrzés a ${step}. lépésnél!`;
+          document.getElementById('laun-speech').textContent = 'Baj van. Menekülj!';
+          await sleep(1500);
+          break;
+        }
+
+        const feePercent = stepFees[step - 1];
+        const fee = Math.floor(currentAmount * feePercent / 100);
+        totalFees += fee;
+        currentAmount -= fee;
+
+        await sleep(800);
+      }
+
+      launStats.washed += 800;
+      launStats.fees += totalFees;
+
+      if (caught) {
+        const penalty = Math.floor(800 * 0.5);
+        await applyDelta(-penalty);
+        showResult('laun-result', `🚨 Lebukás! Bírság: -${penalty} Ft`, 'lose');
+        stats.totalLosses++;
+        stats.totalBalance -= (800 + penalty);
+      } else {
+        const rand = Math.random();
+        
+        if (rand < 0.10) {
+          await applyDelta(2400);
+          showResult('laun-result', `✅ Sikeres mosás! +2400 Ft`, 'win');
+          document.getElementById('laun-speech').textContent = 'Kész! A pénz tiszta. Gratulálok!';
+          stats.totalWins++;
+          stats.totalBalance += 1600;
+        } else {
+          const remaining = Math.floor(currentAmount * 0.2);
+          await applyDelta(remaining);
+          showResult('laun-result', `💸 Túl sok díj! Megmaradt: ${remaining} Ft (díjak: ${totalFees} Ft)`, 'lose');
+          document.getElementById('laun-speech').textContent = 'A díjak elvitték a legtöbbet. Isten hozta a pénzügyekben.';
+          stats.totalLosses++;
+          stats.totalBalance -= (800 - remaining);
+        }
+      }
+
+      stats.totalGames++;
+      updateStats();
+      updateLaunStats();
+
+      document.getElementById('laun-start-btn').disabled = false;
+      
+      for (let i = 1; i <= 5; i++) {
+        document.getElementById(`laun-step-${i}`).style.opacity = '0.5';
+      }
+    }
+
+    function updateLaunStats() {
+      document.getElementById('laun-washed').textContent = launStats.washed.toLocaleString('hu-HU') + ' Ft';
+      document.getElementById('laun-fees').textContent = launStats.fees.toLocaleString('hu-HU') + ' Ft';
+      document.getElementById('laun-checks').textContent = launStats.checks;
+      const remaining = launStats.washed > 0 ? Math.floor(((launStats.washed - launStats.fees) / launStats.washed) * 100) : 0;
+      document.getElementById('laun-remaining').textContent = remaining + '%';
+    }
+
+    return { setDiff, start };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  REALESTATE (Ingatlan Spekuláns)
+  // ════════════════════════════════════════════════════════════════
+  const REAL = (() => {
+    let diff = 'easy';
+    let selectedProperty = null;
+    let realStats = { trades: 0, renov: 0, events: 0, totalLoss: 0 };
+
+    const diffSettings = {
+      easy: { positiveChance: 0.20, sellLoss: 0.10 },
+      medium: { positiveChance: 0.10, sellLoss: 0.20 },
+      hard: { positiveChance: 0.05, sellLoss: 0.30 }
+    };
+
+    const properties = [
+      { name: 'Belvárosi lakás', price: 15000 },
+      { name: 'Kertes ház', price: 25000 },
+      { name: 'Irodaház', price: 40000 }
+    ];
+
+    const events = [
+      { name: 'Felújítási költség', chance: 0.30, effect: -0.30 },
+      { name: 'Piaci összeomlás', chance: 0.20, effect: -0.50 },
+      { name: 'Környékfejlesztés', chance: 0.10, effect: 0.30 },
+      { name: 'Adóemelés', chance: 0.25, effect: -0.20 },
+      { name: 'Vízszivárgás', chance: 0.15, effect: -0.15 }
+    ];
+
+    function setDiff(d, btn) {
+      diff = d;
+      document.querySelectorAll('#real-difficulty .diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function selectProperty(idx) {
+      selectedProperty = idx;
+      document.getElementById('real-start-btn').disabled = false;
+      document.querySelectorAll('.real-prop').forEach((p, i) => {
+        if (i === idx) {
+          p.style.borderColor = 'var(--gold)';
+          p.style.boxShadow = '0 0 20px var(--shadow-gold)';
+        } else {
+          p.style.borderColor = 'var(--gold-dim)';
+          p.style.boxShadow = 'none';
+        }
+      });
+    }
+
+    async function start() {
+      if (selectedProperty === null) {
+        showResult('real-result', 'Válassz ingatlant!', 'info');
+        return;
+      }
+
+      const prop = properties[selectedProperty];
+
+      if (S.balance < 2000) {
+        showResult('real-result', 'Nincs elég egyenleged! (2000 Ft kell)', 'lose');
+        return;
+      }
+
+      document.getElementById('real-start-btn').disabled = true;
+      document.getElementById('real-result').style.opacity = '0';
+
+      await applyDelta(-2000);
+
+      const settings = diffSettings[diff];
+      let currentValue = prop.price;
+      let eventCount = 0;
+
+      document.getElementById('real-speech').textContent = 'Gratulálok! Ez a legjobb döntése!';
+      await sleep(1000);
+
+      for (const event of events) {
+        if (Math.random() < event.chance) {
+          eventCount++;
+          realStats.events++;
+          const change = Math.floor(currentValue * event.effect);
+          currentValue += change;
+          
+          if (event.effect < 0) {
+            realStats.renov += Math.abs(change);
+          }
+          
+          document.getElementById('real-status') && (document.getElementById('real-status').textContent = `${event.name}: ${change > 0 ? '+' : ''}${change} Ft`);
+          await sleep(800);
+        }
+      }
+
+      const sellPrice = Math.floor(currentValue * (1 - settings.sellLoss));
+      const profit = sellPrice - prop.price;
+
+      realStats.trades++;
+      realStats.totalLoss += Math.abs(profit);
+
+      const rand = Math.random();
+
+      if (rand < 0.10) {
+        await applyDelta(6000);
+        showResult('real-result', `🎉 Nyereséges üzlet! +6000 Ft`, 'win');
+        document.getElementById('real-speech').textContent = 'Fantasztikus befektetés volt! Gratulálok!';
+        stats.totalWins++;
+        stats.totalBalance += 4000;
+      } else {
+        await applyDelta(sellPrice);
+        const loss = 2000 - sellPrice;
+        showResult('real-result', `📉 Veszteséges üzlet! Eladás: ${sellPrice} Ft (veszteség: ${loss} Ft)`, 'lose');
+        document.getElementById('real-speech').textContent = 'Nos... a piac most éppen... nehéz helyzetben van.';
+        stats.totalLosses++;
+        stats.totalBalance -= loss;
+      }
+
+      stats.totalGames++;
+      updateStats();
+      updateRealStats();
+
+      document.getElementById('real-start-btn').disabled = false;
+      selectedProperty = null;
+      document.querySelectorAll('.real-prop').forEach(p => {
+        p.style.borderColor = 'var(--gold-dim)';
+        p.style.boxShadow = 'none';
+      });
+    }
+
+    function updateRealStats() {
+      document.getElementById('real-trades').textContent = realStats.trades;
+      document.getElementById('real-renov').textContent = realStats.renov.toLocaleString('hu-HU') + ' Ft';
+      document.getElementById('real-events').textContent = realStats.events;
+      const avgLoss = realStats.trades > 0 ? Math.floor((realStats.totalLoss / realStats.trades / 2000) * 100) : 0;
+      document.getElementById('real-avgloss').textContent = avgLoss + '%';
+    }
+
+    return { setDiff, selectProperty, start };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  PYRAMID (Piramis Játék)
+  // ════════════════════════════════════════════════════════════════
+  const PYR = (() => {
+    let diff = 'easy';
+    let pyrStats = { recruited: 0, income: 0, deductions: 0, rounds: 0 };
+    let currentRound = 0;
+    let totalMembers = 0;
+    let gameActive = false;
+
+    const diffSettings = {
+      easy: { recruitRange: [2, 3], deductionPercent: 0.30, collapseRounds: [8, 10] },
+      medium: { recruitRange: [1, 2], deductionPercent: 0.40, collapseRounds: [6, 8] },
+      hard: { recruitRange: [0, 1], deductionPercent: 0.50, collapseRounds: [5, 6] }
+    };
+
+    function setDiff(d, btn) {
+      diff = d;
+      document.querySelectorAll('#pyr-difficulty .diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    async function start() {
+      if (S.balance < 1500) {
+        showResult('pyr-result', 'Nincs elég egyenleged! (1500 Ft kell)', 'lose');
+        return;
+      }
+
+      await applyDelta(-1500);
+      gameActive = true;
+      currentRound = 0;
+      totalMembers = 0;
+      pyrStats = { recruited: 0, income: 0, deductions: 0, rounds: 0 };
+
+      document.getElementById('pyr-start-btn').disabled = true;
+      document.getElementById('pyr-result').style.opacity = '0';
+
+      document.getElementById('pyr-speech').textContent = 'Építsd a hálózatod!';
+      
+      await runRounds();
+    }
+
+    async function runRounds() {
+      const settings = diffSettings[diff];
+      const collapseRound = Math.floor(Math.random() * (settings.collapseRounds[1] - settings.collapseRounds[0] + 1)) + settings.collapseRounds[0];
+
+      while (currentRound < collapseRound && gameActive) {
+        currentRound++;
+        pyrStats.rounds = currentRound;
+
+        const newRecruits = Math.floor(Math.random() * (settings.recruitRange[1] - settings.recruitRange[0] + 1)) + settings.recruitRange[0];
+        totalMembers += newRecruits;
+        pyrStats.recruited += newRecruits;
+
+        const income = newRecruits * (Math.floor(Math.random() * 150) + 50);
+        pyrStats.income += income;
+
+        const deduction = Math.floor(income * settings.deductionPercent);
+        pyrStats.deductions += deduction;
+
+        const netIncome = income - deduction - 800;
+
+        await applyDelta(netIncome);
+
+        document.getElementById('pyr-level').textContent = `Szint: ${Math.floor(currentRound / 2) + 1}`;
+        document.getElementById('pyr-status').textContent = `Kör: ${currentRound}/${collapseRound} · Tagok: ${totalMembers} · Bevétel: ${income} Ft`;
+
+        updateNetworkVisual();
+        updatePyrStats();
+
+        await sleep(1000);
+      }
+
+      endGame();
+    }
+
+    function updateNetworkVisual() {
+      const membersDiv = document.getElementById('pyr-members');
+      membersDiv.innerHTML = '<div style="background:var(--gold);color:var(--dark);padding:0.5rem 1rem;border-radius:8px;font-weight:700;">Te</div>';
+      
+      const displayCount = Math.min(totalMembers, 20);
+      for (let i = 0; i < displayCount; i++) {
+        const memberDiv = document.createElement('div');
+        memberDiv.style.cssText = 'background:rgba(201,168,76,0.3);color:var(--cream);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.8rem;';
+        memberDiv.textContent = `👤`;
+        membersDiv.appendChild(memberDiv);
+      }
+      
+      if (totalMembers > 20) {
+        const moreDiv = document.createElement('div');
+        moreDiv.style.cssText = 'color:var(--cream-dark);padding:0.3rem;font-size:0.8rem;';
+        moreDiv.textContent = `+${totalMembers - 20} fő`;
+        membersDiv.appendChild(moreDiv);
+      }
+    }
+
+    async function endGame() {
+      gameActive = false;
+
+      const rand = Math.random();
+
+      if (rand < 0.10) {
+        await applyDelta(4500);
+        showResult('pyr-result', `🎉 Időben kiszálltál! +4500 Ft`, 'win');
+        document.getElementById('pyr-speech').textContent = 'Okos döntés volt időben kiszállni! Gratulálok!';
+        stats.totalWins++;
+        stats.totalBalance += 3000;
+      } else {
+        showResult('pyr-result', `💥 A piramis összeomlott! Mindent elveszítettél.`, 'lose');
+        document.getElementById('pyr-speech').textContent = 'Nos... ez váratlan volt. De ne aggódj, kezdjük újra!';
+        stats.totalLosses++;
+        stats.totalBalance -= 1500;
+      }
+
+      stats.totalGames++;
+      updateStats();
+      updatePyrStats();
+
+      document.getElementById('pyr-start-btn').disabled = false;
+    }
+
+    function updatePyrStats() {
+      document.getElementById('pyr-recruited').textContent = pyrStats.recruited;
+      document.getElementById('pyr-income').textContent = pyrStats.income.toLocaleString('hu-HU') + ' Ft';
+      document.getElementById('pyr-deductions').textContent = pyrStats.deductions.toLocaleString('hu-HU') + ' Ft';
+      document.getElementById('pyr-rounds').textContent = pyrStats.rounds;
+    }
+
+    return { setDiff, start };
+  })();
+
+  // ════════════════════════════════════════════════════════════════
+  //  Public API
+  // ════════════════════════════════════════════════════════════════
+  window.SC = {
+    off: { setDiff: OFF.setDiff, selectLocation: OFF.selectLocation, start: OFF.start },
+    adv: { setDiff: ADV.setDiff, start: ADV.start, giveAdvice: ADV.giveAdvice },
+    ins: { setDiff: INS.setDiff, start: INS.start, inspect: INS.inspect },
+    insur: { setDiff: INSUR.setDiff, selectType: INSUR.selectType, start: INSUR.start },
+    laun: { setDiff: LAUN.setDiff, start: LAUN.start },
+    real: { setDiff: REAL.setDiff, selectProperty: REAL.selectProperty, start: REAL.start },
+    pyr: { setDiff: PYR.setDiff, start: PYR.start },
+
+    enter(game) {
+      showScreen(game);
+    },
+    showLobby() {
+      showScreen('lobby');
+    },
+    async exitScam() {
+      await GameAPI.exit(S.balance);
+    },
+  };
+
+})();
+</script>
+{% endblock %}
