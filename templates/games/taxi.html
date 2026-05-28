@@ -476,14 +476,14 @@
         showNotify('🧍 Utas felvéve!', C.gold);
         if (apOn) apPath = buildPath(dropoffId);
       } else if (hasPassenger && loc.id === dropoffId) {
-        const fare = 280;
-        const payout = Math.round(fare * 0.25);
+        const grossFare = 280;
+        const payout = Math.round(grossFare * 0.25);
         earnings += payout;
         rides++;
         document.getElementById('tx-earnings').textContent = earnings;
         document.getElementById('tx-rides').textContent = rides;
         GameAPI.patch({ balance: S.balance + payout }).then(ns => { S = ns; }).catch(() => {});
-        showNotify(`Tarifa: ${fare} Ft • Te kapsz: +${payout} Ft`, C.green);
+        showNotify(`Tarifa: ${grossFare} Ft • Te kapsz: +${payout} Ft`, C.green);
         document.getElementById('tx-app-bubble').textContent =
           rides === 3 ? 'Az app a tarifa 75%-át leveszi. Te 25%-ot kapsz.' :
           QUOTES[Math.floor(Math.random() * QUOTES.length)];
