@@ -722,9 +722,12 @@
       </div>
 
       <div id="ins-casino-area" style="text-align:center;max-width:700px;margin-bottom:1rem;">
-        <p style="color:var(--cream-dark);margin-bottom:1rem;" id="ins-casino-name">Kaszinó: Aranyásó Kaszinó</p>
+        <p style="color:var(--cream-dark);margin-bottom:0.5rem;" id="ins-casino-name">Kaszinó: Aranyásó Kaszinó</p>
         <div style="background:rgba(42,42,78,0.6);border:2px solid var(--gold-dim);border-radius:12px;padding:1.5rem;margin-bottom:1rem;">
-          <p style="color:var(--cream);font-size:1rem;margin-bottom:1rem;">
+          <p style="color:var(--cream);font-size:0.9rem;font-style:italic;line-height:1.55;margin-bottom:1rem;" id="ins-casino-clue">
+            Indítsd el az ellenőrzést a részletek megtekintéséhez.
+          </p>
+          <p style="color:var(--cream-dark);font-size:0.9rem;margin-bottom:0.75rem;">
             Döntsd el, milyen szabálytalanságot találtál:
           </p>
           <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
@@ -785,28 +788,23 @@
         <button class="diff-btn" onclick="SC.insur.setDiff('hard',this)">Nehéz</button>
       </div>
 
-      <div style="text-align:center;margin-bottom:1rem;">
-        <p style="color:var(--cream-dark);margin-bottom:1rem;">Válassz kár típust:</p>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;max-width:600px;margin-bottom:1rem;">
-          <button class="diff-btn" onclick="SC.insur.selectType('Autóbaleset')">🚗 Autóbaleset</button>
-          <button class="diff-btn" onclick="SC.insur.selectType('Lakáskárosodás')">🏠 Lakáskárosodás</button>
-          <button class="diff-btn" onclick="SC.insur.selectType('Orvosi számla')">🏥 Orvosi számla</button>
-          <button class="diff-btn" onclick="SC.insur.selectType('Lopás')">🔓 Lopás</button>
-          <button class="diff-btn" onclick="SC.insur.selectType('Természeti katasztrófa')">🌪️ Természeti katasztrófa</button>
-          <button class="diff-btn" onclick="SC.insur.selectType('Egyéb')">❓ Egyéb</button>
+      <div id="insur-incident-area" style="text-align:center;max-width:650px;margin-bottom:1rem;" hidden>
+        <p style="color:var(--cream-dark);margin-bottom:0.5rem;" id="insur-progress">Kárigény: 1/5</p>
+        <div style="background:rgba(42,42,78,0.6);border:2px solid var(--gold-dim);border-radius:12px;padding:1.5rem;margin-bottom:1rem;">
+          <p style="color:var(--gold-light);font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;" id="insur-incident-title">🚗 Autóbaleset</p>
+          <p style="color:var(--cream);font-size:0.9rem;line-height:1.5;margin-bottom:0.75rem;" id="insur-incident-desc">—</p>
+          <p style="color:var(--cream-dark);font-size:0.85rem;">Valódi kár: <span style="color:var(--gold);" id="insur-real-damage">—</span> Ft</p>
         </div>
-
-        <div style="margin-bottom:1rem;">
-          <label style="color:var(--cream-dark);display:block;margin-bottom:0.5rem;">Kár összege:</label>
-          <input type="range" id="insur-amount" min="1000" max="50000" step="1000" value="10000"
-                 style="width:300px;" oninput="document.getElementById('insur-amount-display').textContent = this.value">
-          <div style="color:var(--gold);font-size:1.2rem;font-weight:700;margin-top:0.5rem;">
-            <span id="insur-amount-display">10000</span> Ft
-          </div>
+        <p style="color:var(--cream-dark);font-size:0.9rem;margin-bottom:0.75rem;">Mennyit kérsz a biztosítótól?</p>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;">
+          <button class="diff-btn" onclick="SC.insur.chooseFraud(0)">😇 Valós összeget</button>
+          <button class="diff-btn" onclick="SC.insur.chooseFraud(1)">😏 +50% ráadás</button>
+          <button class="diff-btn" onclick="SC.insur.chooseFraud(2)">😈 +200% felnagyítva</button>
+          <button class="diff-btn" onclick="SC.insur.chooseFraud(3)">🤡 +900% arcátlan</button>
         </div>
       </div>
 
-      <button class="btn btn-gold" id="insur-start-btn" onclick="SC.insur.start()" disabled style="font-size:1.1rem;padding:0.7rem 2.5rem;">
+      <button class="btn btn-gold" id="insur-start-btn" onclick="SC.insur.start()" style="font-size:1.1rem;padding:0.7rem 2.5rem;">
         Kárigény beadása
       </button>
 
@@ -827,7 +825,7 @@
           <span class="game-stat-value" id="insur-paid">0 Ft</span>
         </div>
         <div class="game-stat-item">
-          <span>Átl. kárösszeg:</span>
+          <span>Bírságok:</span>
           <span class="game-stat-value" id="insur-avg">0 Ft</span>
         </div>
       </div>
@@ -869,6 +867,15 @@
           <div class="diff-btn" id="laun-step-5" style="opacity:0.5;">🏝️ Offshore</div>
         </div>
         <p style="color:var(--gold);font-size:1.1rem;font-weight:700;" id="laun-status">Kattints a "Mosás indítása" gombra!</p>
+
+        <div id="laun-choice-area" hidden style="margin-top:0.75rem;">
+          <p style="color:var(--gold-light);font-size:0.9rem;margin-bottom:0.5rem;" id="laun-choice-prompt">Válassz módszert:</p>
+          <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:0.5rem;">
+            <button class="diff-btn" id="laun-opt-a" onclick="SC.laun.chooseStep(0)" style="max-width:260px;white-space:normal;text-align:left;">A opció</button>
+            <button class="diff-btn" id="laun-opt-b" onclick="SC.laun.chooseStep(1)" style="max-width:260px;white-space:normal;text-align:left;">B opció</button>
+          </div>
+          <p style="color:var(--cream-dark);font-size:0.8rem;font-style:italic;" id="laun-edu-msg"></p>
+        </div>
       </div>
 
       <button class="btn btn-gold" id="laun-start-btn" onclick="SC.laun.start()" style="font-size:1.1rem;padding:0.7rem 2.5rem;">
@@ -953,6 +960,18 @@
         </div>
       </div>
 
+      <div id="real-live-area" hidden style="text-align:center;max-width:700px;margin-bottom:1rem;width:100%;">
+        <p style="color:var(--gold-light);font-size:1.05rem;font-weight:700;margin-bottom:0.5rem;" id="real-status"></p>
+        <div style="background:rgba(42,42,78,0.6);border:2px solid var(--gold-dim);border-radius:12px;padding:1.5rem;margin-bottom:1rem;">
+          <p style="color:var(--cream);font-size:0.95rem;line-height:1.5;margin-bottom:0.75rem;" id="real-event-desc">Várakozás az eseményre...</p>
+          <p style="color:var(--cream-dark);font-size:0.85rem;">Aktuális érték: <span id="real-current-value" style="color:var(--gold);font-weight:700;">—</span> Ft</p>
+        </div>
+        <div id="real-action-row" hidden style="display:flex;gap:1rem;justify-content:center;">
+          <button class="diff-btn" onclick="SC.real.holdOrSell('hold')" style="padding:0.6rem 1.5rem;">📈 Tartom</button>
+          <button class="diff-btn" onclick="SC.real.holdOrSell('sell')" style="padding:0.6rem 1.5rem;border-color:var(--gold);color:var(--gold);">💰 Eladom!</button>
+        </div>
+      </div>
+
       <button class="btn btn-gold" id="real-start-btn" onclick="SC.real.start()" disabled style="font-size:1.1rem;padding:0.7rem 2.5rem;">
         Ingatlan vásárlása
       </button>
@@ -1011,6 +1030,21 @@
           </div>
         </div>
         <p style="color:var(--gold);font-size:1.1rem;font-weight:700;" id="pyr-status">Kör: 1/10 · Tagok: 0 · Bevétel: 0 Ft</p>
+      </div>
+
+      <div id="pyr-suspicion-area" hidden style="text-align:center;max-width:600px;margin-bottom:0.75rem;width:100%;">
+        <p style="color:var(--cream-dark);font-size:0.85rem;margin-bottom:0.3rem;">Gyanú szint:</p>
+        <div style="background:rgba(0,0,0,0.4);border-radius:8px;height:14px;overflow:hidden;max-width:400px;margin:0 auto 0.4rem;">
+          <div id="pyr-suspicion-fill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green-light),#ff9800,var(--red));transition:width 0.5s;"></div>
+        </div>
+        <p style="color:var(--gold-light);font-weight:700;font-size:0.9rem;" id="pyr-suspicion-label">0%</p>
+      </div>
+
+      <div id="pyr-round-choices" hidden style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:1rem;">
+        <button class="diff-btn" onclick="SC.pyr.recruit('slow')">🐢 Óvatos (+1-2 tag)</button>
+        <button class="diff-btn" onclick="SC.pyr.recruit('normal')">🔄 Normál (+2-4 tag)</button>
+        <button class="diff-btn" onclick="SC.pyr.recruit('fast')">🔥 Agresszív (+4-8 tag)</button>
+        <button class="diff-btn" id="pyr-bail-btn" onclick="SC.pyr.bail()" style="border-color:var(--red-light);color:var(--red-light);" hidden>💨 Kiszállás</button>
       </div>
 
       <button class="btn btn-gold" id="pyr-start-btn" onclick="SC.pyr.start()" style="font-size:1.1rem;padding:0.7rem 2.5rem;">
@@ -1112,6 +1146,15 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
   function showResult(id, html, type) {
     const el = document.getElementById(id);
     el.innerHTML = html;
@@ -1132,11 +1175,16 @@
     let selectedLocation = null;
     let offStats = { transactions: 0, fees: 0, audits: 0, freezes: 0 };
 
-    const diffSettings = {
-      easy: { feeRange: [10, 15], auditChance: 0.10, freezeChance: 0.05 },
-      medium: { feeRange: [15, 25], auditChance: 0.20, freezeChance: 0.15 },
-      hard: { feeRange: [20, 30], auditChance: 0.30, freezeChance: 0.25 }
+    // Each location has its own risk profile — choice matters
+    const locationProfiles = {
+      'Cayman-szigetek': { feeRange: [8,12],  auditChance: 0.05, freezeChance: 0.02, note: 'Klasszikus, de drága és figyelt.' },
+      'Panama':          { feeRange: [12,18], auditChance: 0.14, freezeChance: 0.07, note: 'Közepes kockázat, sok vállalkozó használja.' },
+      'Svájc':           { feeRange: [15,20], auditChance: 0.22, freezeChance: 0.04, note: 'Szigorú banktitok, de az EU nyomást gyakorol.' },
+      'Luxemburg':       { feeRange: [10,14], auditChance: 0.08, freezeChance: 0.02, note: 'EU-n belüli adóoptimalizálás fővárosa.' },
+      'Titkos sziget':   { feeRange: [4,8],   auditChance: 0.38, freezeChance: 0.30, note: 'Alacsony díj, de a NAV már tudja a nevét.' },
     };
+    // Difficulty multiplies the risk (not fee)
+    const diffMod = { easy: 0.65, medium: 1.0, hard: 1.5 };
 
     const educationMessages = [
       "Tudtad? Az offshore számlák legálisak, de az adóelkerülés illegális.",
@@ -1215,12 +1263,17 @@
 
       await applyDelta(-500);
 
-      const settings = diffSettings[diff];
-      const fee = Math.floor(Math.random() * (settings.feeRange[1] - settings.feeRange[0] + 1)) + settings.feeRange[0];
+      const loc = locationProfiles[selectedLocation];
+      const mod = diffMod[diff];
+      const feeRange = loc.feeRange;
+      const auditChance = Math.min(0.85, loc.auditChance * mod);
+      const freezeChance = Math.min(0.80, loc.freezeChance * mod);
+      const fee = feeRange[0] + Math.floor(Math.random() * (feeRange[1] - feeRange[0] + 1));
       const rand = Math.random();
 
       offStats.transactions++;
       offStats.fees += fee;
+      document.getElementById('off-speech').textContent = loc.note;
 
       // Folyamat animáció lépésről lépésre
       for (let step = 1; step <= 4; step++) {
@@ -1237,13 +1290,13 @@
       document.getElementById('off-process-status').textContent = 'Tranzakció befejezve!';
       await sleep(1000);
 
-      if (rand < settings.freezeChance) {
+      if (rand < freezeChance) {
         offStats.freezes++;
         showResult('off-result', `🚫 Banki zárolás! A ${selectedLocation}-i számlád zárolva lett.`, 'lose');
         document.getElementById('off-speech').textContent = 'Sajnálom, a számlája zárolva lett. Viszlát!';
         stats.totalLosses++;
         stats.totalBalance -= 500;
-      } else if (rand < settings.freezeChance + settings.auditChance) {
+      } else if (rand < freezeChance + auditChance) {
         offStats.audits++;
         const penalty = Math.floor(500 * 0.5);
         await applyDelta(-penalty);
@@ -1251,7 +1304,7 @@
         document.getElementById('off-speech').textContent = 'Nos... ez kellemetlen. A NAV tud róla.';
         stats.totalLosses++;
         stats.totalBalance -= (500 + penalty);
-      } else if (rand < 0.10 + settings.freezeChance + settings.auditChance) {
+      } else if (rand < 0.10 + freezeChance + auditChance) {
         await applyDelta(1500);
         showResult('off-result', `✅ Sikeres tranzakció! +1500 Ft`, 'win');
         document.getElementById('off-speech').textContent = 'Nos... ez ritka. Gratulálok.';
@@ -1313,11 +1366,21 @@
     let advStats = { advice: 0, fees: 0, complaints: 0, totalLoss: 0 };
     let currentClient = 0;
     let gameActive = false;
+    let sessionQuestions = [];  // 5 random {question, type} per game
 
+    // Client types — each has a "best" advice category
+    const clientTypes = [
+      { label: '🛡️ Kockázatkerülő',   best: 'kötvény',  desc: 'Biztonságot keres, nem szereti a kockázatot.' },
+      { label: '📈 Hozamkereső',       best: 'részvény', desc: 'Magas hozamot akar, kockázatot vállal.' },
+      { label: '🏠 Ingatlanbarát',     best: 'ingatlan', desc: 'Csak az ingatlanban bízik.' },
+    ];
+
+    // Matching advice = honest (low fee, no complaint)
+    // Mismatching = greedy (high fee, 75% complaint chance)
     const diffSettings = {
-      easy: { feeRange: [400, 500], penalty: 1000 },
-      medium: { feeRange: [300, 400], penalty: 1500 },
-      hard: { feeRange: [200, 300], penalty: 2000 }
+      easy:   { matchFee: 200, mismatchFee: 480, complaintPenalty: 500 },
+      medium: { matchFee: 150, mismatchFee: 420, complaintPenalty: 800 },
+      hard:   { matchFee: 100, mismatchFee: 360, complaintPenalty: 1200 },
     };
 
     const clientQuestions = [
@@ -1443,40 +1506,49 @@
       currentClient = 0;
       advStats = { advice: 0, fees: 0, complaints: 0, totalLoss: 0 };
 
+      // Pick 5 random questions + assign a random client type to each
+      const indices = shuffle([...Array(clientQuestions.length).keys()]).slice(0, 5);
+      sessionQuestions = indices.map(i => ({
+        question: clientQuestions[i],
+        type: clientTypes[Math.floor(Math.random() * clientTypes.length)],
+      }));
+
       document.getElementById('adv-start-btn').disabled = true;
       document.getElementById('adv-client-area').removeAttribute('hidden');
       showClient();
     }
 
     function showClient() {
-      if (currentClient >= 5) {
-        endGame();
-        return;
-      }
-
-      document.getElementById('adv-client-intro').textContent = `Ügyfél #${currentClient + 1} érkezik...`;
-      document.getElementById('adv-client-question').textContent = `"${clientQuestions[currentClient]}"`;
+      if (currentClient >= 5) { endGame(); return; }
+      const q = sessionQuestions[currentClient];
+      document.getElementById('adv-client-intro').textContent =
+        `Ügyfél #${currentClient + 1}: ${q.type.label} — ${q.type.desc}`;
+      document.getElementById('adv-client-question').textContent = `"${q.question}"`;
       document.getElementById('adv-progress').textContent = `Ügyfél: ${currentClient + 1}/5`;
       document.getElementById('adv-speech').textContent = 'Mit ajánl, tanácsadó úr?';
     }
 
     async function giveAdvice(type) {
       if (!gameActive) return;
-
+      const q = sessionQuestions[currentClient];
       const settings = diffSettings[diff];
-      const fee = Math.floor(Math.random() * (settings.feeRange[1] - settings.feeRange[0] + 1)) + settings.feeRange[0];
+      const isMatch = (type === q.type.best);
+      const fee = isMatch ? settings.matchFee : settings.mismatchFee;
+      const willComplain = !isMatch && (Math.random() < 0.75);
 
       advStats.advice++;
       advStats.fees += fee;
-
       await applyDelta(fee);
 
-      const clientLoss = Math.floor(Math.random() * 1500) + 500;
-      advStats.totalLoss += clientLoss;
-
-      document.getElementById('adv-speech').textContent = 'Köszönöm, bízom önben!';
+      if (willComplain) {
+        advStats.complaints++;
+        document.getElementById('adv-speech').textContent = 'Ez tönkretett! Panaszt teszek!';
+      } else if (isMatch) {
+        document.getElementById('adv-speech').textContent = 'Pontosan ezt kerestem! Köszönöm.';
+      } else {
+        document.getElementById('adv-speech').textContent = 'Hm... rendben, megpróbálom...';
+      }
       await sleep(1000);
-
       currentClient++;
       showClient();
       updateAdvStats();
@@ -1484,29 +1556,30 @@
 
     async function endGame() {
       gameActive = false;
+      const settings = diffSettings[diff];
+      const totalPenalty = advStats.complaints * settings.complaintPenalty;
 
-      const rand = Math.random();
-
-      if (rand < 0.10) {
+      if (totalPenalty === 0 && Math.random() < 0.35) {
         await applyDelta(3000);
-        showResult('adv-result', `🎉 Egy ügyfél nagyon elégedett! Bónusz: +3000 Ft`, 'win');
-        document.getElementById('adv-speech').textContent = 'Köszönöm! Ön a legjobb tanácsadó! Itt egy bónusz!';
+        showResult('adv-result', `🎉 Minden ügyfél elégedett! Bónusz: +3000 Ft`, 'win');
+        document.getElementById('adv-speech').textContent = 'Fantasztikus! Mindenki boldog — ez ritka.';
         stats.totalWins++;
         stats.totalBalance += 2000;
-      } else {
-        const settings = diffSettings[diff];
-        await applyDelta(-settings.penalty);
-        advStats.complaints++;
-        showResult('adv-result', `😡 Ügyfél panasz! Bírság: -${settings.penalty} Ft`, 'lose');
-        document.getElementById('adv-speech').textContent = 'PERELNI FOGOK! A pénzem odalett!';
+      } else if (totalPenalty > 0) {
+        await applyDelta(-totalPenalty);
+        showResult('adv-result', `😡 ${advStats.complaints} panasz! Bírság: -${totalPenalty} Ft`, 'lose');
+        document.getElementById('adv-speech').textContent = `${advStats.complaints} ügyfél perel. Drága lesz.`;
         stats.totalLosses++;
-        stats.totalBalance -= (1000 + settings.penalty - advStats.fees);
+        stats.totalBalance -= totalPenalty;
+      } else {
+        showResult('adv-result', `✅ Senki sem panaszkodott. (Ezúttal.)`, 'info');
+        document.getElementById('adv-speech').textContent = 'Senki sem panaszkodott... még.';
+        stats.totalLosses++;
       }
 
       stats.totalGames++;
       updateStats();
       updateAdvStats();
-
       document.getElementById('adv-start-btn').disabled = false;
       document.getElementById('adv-client-area').setAttribute('hidden', '');
     }
@@ -1515,8 +1588,8 @@
       document.getElementById('adv-advice').textContent = advStats.advice;
       document.getElementById('adv-fees').textContent = advStats.fees.toLocaleString('hu-HU') + ' Ft';
       document.getElementById('adv-complaints').textContent = advStats.complaints;
-      const avgLoss = advStats.advice > 0 ? Math.floor(advStats.totalLoss / advStats.advice) : 0;
-      document.getElementById('adv-avgloss').textContent = avgLoss.toLocaleString('hu-HU') + ' Ft';
+      document.getElementById('adv-avgloss').textContent = advStats.complaints > 0
+        ? `${advStats.complaints} panasz` : 'Nincs';
     }
 
     return { setDiff, start, giveAdvice };
@@ -1530,20 +1603,43 @@
     let insStats = { checked: 0, correct: 0, wrong: 0 };
     let currentCasino = 0;
     let gameActive = false;
+    let scenariosForGame = [];
 
     const diffSettings = {
-      easy: { correctReward: 300, wrongPenalty: 400 },
-      medium: { correctReward: 200, wrongPenalty: 500 },
-      hard: { correctReward: 100, wrongPenalty: 600 }
+      easy:   { correctReward: 250, wrongPenalty: 100 },
+      medium: { correctReward: 200, wrongPenalty: 150 },
+      hard:   { correctReward: 150, wrongPenalty: 250 }
     };
 
-    const casinoNames = [
-      'Aranyásó Kaszinó',
-      'Szerencse Barlang',
-      'Pénzeső Palota',
-      'Kocka Paradicsom',
-      'Adóparadicsom'
+    // Each scenario has a clue visible to the player and a predetermined correct answer.
+    const scenarios = [
+      { name: 'Aranyásó Kaszinó',      clue: 'A croupier udvarias volt, minden forgalmi napló stimmel, a pénztárak le vannak zárva.',                                  correct: 'ok' },
+      { name: 'Szerencse Barlang',      clue: 'A nyerőgépek kifizetési arányai 12%-kal alacsonyabbak az engedélyezettnél.',                                            correct: 'minor' },
+      { name: 'Pénzeső Palota',         clue: 'A kassza 45 000 Ft-tal kevesebb mint a napi forgalmi napló szerint kellene. A tulajdonos idegesen viselkedik.',          correct: 'major' },
+      { name: 'Kocka Paradicsom',       clue: 'Egy vendég szerint a krupié kártyát csúsztatott, de más nem látta, és a felvételen sem egyértelmű.',                    correct: 'minor' },
+      { name: 'Ász Palota',             clue: 'Minden dokumentum rendben, a biztonsági kamerák működnek, a személyzet engedélyei érvényesek.',                          correct: 'ok' },
+      { name: 'Rulett Birodalom',       clue: 'A rulett kerekek mechanikailag hibásak: az egyik szám 3× akkora valószínűséggel jön ki mint kellene.',                  correct: 'major' },
+      { name: 'Fekete Jack Klub',       clue: 'A bejárati kamerák egyike nem rögzít — technikai hiba, amit a mérnök már bejegyzett a naplóba.',                        correct: 'minor' },
+      { name: 'Szerencsekerék Szalon',  clue: 'A nyilvántartásban kisebb elírások vannak az összegek szövegezésében, de a számok mindenhol egyeznek.',                 correct: 'minor' },
+      { name: 'Milliomos Csarnok',      clue: 'A kifizetett nyereményekről szóló adózási bizonylatok 30%-a hiányzik az archívumból.',                                   correct: 'major' },
+      { name: 'Arany Kártya Club',      clue: 'A dokumentációt frissen nyomtatták — az iratok dátuma nem egyezik a kötelező pecséttel. Valaki módosított valamit.',     correct: 'major' },
+      { name: 'Vörös Ász Kaszinó',      clue: 'Minden rendben. A hangerő szabályzó 2 dB-lel meghaladja az előírást, de az üzemeltető bemutatja a kivételes engedélyt.', correct: 'ok' },
+      { name: 'Ábrahám Kaszinója',      clue: 'Az ügyeletes vezető nem rendelkezik érvényes hatósági engedéllyel — csak fénymásolatot tudott bemutatni.',              correct: 'minor' },
+      { name: 'Zsetonkirály Klub',      clue: 'A VIP szobában talált széf tartalma semmilyen nyilvántartásban nem szerepel — kb. 2 millió Ft készpénz.',                correct: 'major' },
+      { name: 'Fősodor Kaszinó',        clue: 'Az összes engedély érvényes, a személyzet átment a biztonsági ellenőrzésen, a forgalmi adatok pontosak.',                correct: 'ok' },
+      { name: 'Joker Palota',           clue: 'A játékgépek szoftvere 3 évvel régebbi mint a kötelező minimum; az üzemeltető szerint épp frissítik.',                  correct: 'minor' }
     ];
+
+    const LABELS = { ok: 'Minden rendben', minor: 'Kisebb szabálytalanság', major: 'Súlyos szabálytalanság' };
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
 
     function setDiff(d, btn) {
       diff = d;
@@ -1561,6 +1657,7 @@
       gameActive = true;
       currentCasino = 0;
       insStats = { checked: 0, correct: 0, wrong: 0 };
+      scenariosForGame = shuffle(scenarios).slice(0, 5);
 
       document.getElementById('ins-start-btn').disabled = true;
       document.getElementById('ins-casino-area').removeAttribute('hidden');
@@ -1572,8 +1669,9 @@
         endGame();
         return;
       }
-
-      document.getElementById('ins-casino-name').textContent = `Kaszinó: ${casinoNames[currentCasino]}`;
+      const sc = scenariosForGame[currentCasino];
+      document.getElementById('ins-casino-name').textContent = `Kaszinó: ${sc.name}`;
+      document.getElementById('ins-casino-clue').textContent = `🔍 Ellenőrzési lelet: ${sc.clue}`;
       document.getElementById('ins-progress').textContent = `Kaszinó: ${currentCasino + 1}/5`;
       document.getElementById('ins-speech').textContent = 'Nos, mit talált, ellenőr?';
     }
@@ -1581,13 +1679,8 @@
     async function inspect(decision) {
       if (!gameActive) return;
 
-      const rand = Math.random();
-      let correctAnswer;
-
-      if (rand < 0.4) correctAnswer = 'ok';
-      else if (rand < 0.8) correctAnswer = 'minor';
-      else correctAnswer = 'major';
-
+      const sc = scenariosForGame[currentCasino];
+      const correctAnswer = sc.correct;
       const isCorrect = decision === correctAnswer;
       const settings = diffSettings[diff];
 
@@ -1596,14 +1689,17 @@
       if (isCorrect) {
         insStats.correct++;
         await applyDelta(settings.correctReward);
-        document.getElementById('ins-speech').textContent = 'Elfogadható. De lehetne jobb is.';
+        showResult('ins-result', `✅ Helyes döntés! +${settings.correctReward} Ft`, 'win');
+        document.getElementById('ins-speech').textContent = `Helyes! Elfogadom a jelentést.`;
       } else {
         insStats.wrong++;
         await applyDelta(-settings.wrongPenalty);
-        document.getElementById('ins-speech').textContent = 'Ez nem elfogadható! Olvassa el újra a kézikönyvet!';
+        showResult('ins-result', `❌ Téves! Helyes: „${LABELS[correctAnswer]}" · -${settings.wrongPenalty} Ft`, 'lose');
+        document.getElementById('ins-speech').textContent = `Nem! A helyes válasz: ${LABELS[correctAnswer]}.`;
       }
 
-      await sleep(1000);
+      await sleep(1800);
+      document.getElementById('ins-result').style.opacity = '0';
       currentCasino++;
       showCasino();
       updateInsStats();
@@ -1652,26 +1748,44 @@
   // ════════════════════════════════════════════════════════════════
   const INSUR = (() => {
     let diff = 'easy';
-    let selectedType = null;
-    let insurStats = { claims: 0, rejected: 0, paid: 0, totalAmount: 0 };
+    let insurStats = { claims: 0, rejected: 0, paid: 0, penalties: 0 };
+    let currentClaim = 0;
+    let gameActive = false;
+    let sessionClaims = [];
 
-    const diffSettings = {
-      easy: { partialChance: 0.10, fullChance: 0.01 },
-      medium: { partialChance: 0.05, fullChance: 0.005 },
-      hard: { partialChance: 0.02, fullChance: 0.00 }
-    };
+    // Pool of real incidents with actual damage values
+    const incidents = [
+      { icon:'🚗', title:'Autóbaleset',           desc:'A kocsid megcsúszott a jeges úton. Kisebb karambol, a lökhárító betört.',          damage: 420 },
+      { icon:'🏠', title:'Lakásvízkár',           desc:'A szomszéd felülről elárasztotta a lakásodat. Festés és parketta csere kell.',      damage: 650 },
+      { icon:'📱', title:'Telefonlopás',           desc:'A buszra szállva eltűnt a telefonod a zsebedből. Tanúk nincsenek.',                 damage: 290 },
+      { icon:'🌩️', title:'Villámsújtotta kerítés', desc:'Vihar közben a villám tönkretette a kerítést és az udvari berendezést.',           damage: 510 },
+      { icon:'🔥', title:'Konyhában kis tűz',      desc:'A sütő túlhevült. A konyha egy része megrongálódott, szagelszívó menthetetlen.', damage: 730 },
+      { icon:'🚴', title:'Kerékpárlopás',          desc:'A láncos kerékpárodat ellopták a mélygarázsból. A lánc ottmaradt.',               damage: 260 },
+      { icon:'💻', title:'Laptop leesett',          desc:'A hordtáskából kiesett a laptop, a kijelzője és a zsanér törött.',                damage: 310 },
+      { icon:'🌊', title:'Pincevízkár',             desc:'A tavaszi áradás után a pince megáradt, a tárolt bútorok tönkrementek.',          damage: 880 },
+      { icon:'🐶', title:'Kutyaharapás',            desc:'A szomszéd kutyája megharapott — orvos, tetanusz oltás, gyógyszer.',             damage: 190 },
+      { icon:'🚪', title:'Betörési kísérlet',       desc:'Betörők próbálkoztak, ajtó és zár megrongálódott, de nem vittek el semmit.',     damage: 340 },
+      { icon:'🌪️', title:'Szélviharkár',           desc:'Erős szél leszakított egy faágat, ami a kocsid tetejére esett.',                 damage: 470 },
+      { icon:'🏊', title:'Úszómedence baleset',     desc:'Megcsúsztál a medence szélén — nyújtott csukló, sürgősségi kezelés szükséges.', damage: 220 },
+    ];
+
+    // fraudLevels: [label, multiplier, approveChance, penaltyChance]
+    // Difficulty scales detection rates
+    const fraudBase = [
+      [1,   0.60, 0.00],  // Valós
+      [1.5, 0.28, 0.05],  // +50%
+      [3,   0.09, 0.22],  // +200%
+      [10,  0.02, 0.55],  // +900%
+    ];
+    const diffDetectMult = { easy: 0.65, medium: 1.0, hard: 1.5 };
 
     const rejectionReasons = [
-      'A kár nem elég súlyos',
-      'Túl súlyos a kár - gyanús',
-      'Nem volt megfelelő biztosítása erre a konkrét esetre',
-      'Kizáró ok: a kár hétfőn történt',
-      'Kizáró ok: a kár nem hétfőn történt',
-      'Az űrlap 3B mező hibásan lett kitöltve',
-      'A kárbejelentés túl szép - biztosan csalás',
-      'A szabályzat 47. paragrafus 3. bekezdése alapján elutasítva',
-      'A kár időpontja nem egyezik a holdfázissal',
-      'Túl sok kárigényt adott be ebben az évben'
+      'A kár nem elég súlyos', 'Túl súlyos a kár — gyanús',
+      'Az 3B mező hibásan lett kitöltve', 'Kizáró ok: a kár hétfőn történt',
+      'Kizáró ok: a kár nem hétfőn történt', 'A kár időpontja nem egyezik a holdfázissal',
+      'Szabályzat 47§ 3. bek. alapján elutasítva', 'Túl sok kárigény ebben az évben',
+      'A biztosítás díja 3 mp-cel késett egyszer 2019-ben',
+      'Gyanúsan pontosan emlékszik a kár részleteire',
     ];
 
     function setDiff(d, btn) {
@@ -1680,85 +1794,104 @@
       btn.classList.add('active');
     }
 
-    function selectType(type) {
-      selectedType = type;
-      document.getElementById('insur-start-btn').disabled = false;
-      document.querySelectorAll('#screen-insurance .diff-btn').forEach(b => {
-        if (b.textContent.includes(type)) {
-          b.classList.add('active');
-        } else if (!b.classList.contains('diff-btn')) {
-          b.classList.remove('active');
-        }
-      });
-    }
-
     async function start() {
-      if (!selectedType) {
-        showResult('insur-result', 'Válassz kár típust!', 'info');
-        return;
-      }
-
       if (S.balance < 300) {
         showResult('insur-result', 'Nincs elég egyenleged! (300 Ft kell)', 'lose');
         return;
       }
+      await applyDelta(-300);
+      gameActive = true;
+      currentClaim = 0;
+      insurStats = { claims: 0, rejected: 0, paid: 0, penalties: 0 };
+      sessionClaims = shuffle(incidents).slice(0, 5);
 
       document.getElementById('insur-start-btn').disabled = true;
-      document.getElementById('insur-result').style.opacity = '0';
+      document.getElementById('insur-incident-area').removeAttribute('hidden');
+      showClaim();
+    }
 
-      await applyDelta(-300);
+    function showClaim() {
+      if (currentClaim >= 5) { endGame(); return; }
+      const c = sessionClaims[currentClaim];
+      document.getElementById('insur-progress').textContent = `Kárigény: ${currentClaim + 1}/5`;
+      document.getElementById('insur-incident-title').textContent = `${c.icon} ${c.title}`;
+      document.getElementById('insur-incident-desc').textContent = c.desc;
+      document.getElementById('insur-real-damage').textContent = c.damage.toLocaleString('hu-HU');
+    }
 
-      const amount = parseInt(document.getElementById('insur-amount').value);
-      const settings = diffSettings[diff];
-      const rand = Math.random();
+    async function chooseFraud(level) {
+      if (!gameActive) return;
+      const c = sessionClaims[currentClaim];
+      const mult = diffDetectMult[diff];
+      const [multiplier, baseApprove, basePenalty] = fraudBase[level];
+      const approveChance = baseApprove * (level === 0 ? 1 : (2 - mult * 0.5));  // difficulty affects fraud detection
+      const penaltyChance = Math.min(0.90, basePenalty * mult);
+      const claimAmount = Math.round(c.damage * multiplier);
 
       insurStats.claims++;
-      insurStats.totalAmount += amount;
+      const rand = Math.random();
 
-      await sleep(2500);
-
-      if (rand < settings.fullChance) {
-        const payout = Math.floor(amount * 0.08);
-        await applyDelta(900);
-        insurStats.paid += 900;
-        showResult('insur-result', `✅ Teljes kifizetés! +900 Ft`, 'win');
-        document.getElementById('insur-speech').textContent = 'Nos... ez váratlan. Jóváhagyva. De ne szokja hozzá!';
-        stats.totalWins++;
-        stats.totalBalance += 600;
-      } else if (rand < settings.fullChance + settings.partialChance) {
-        const partial = Math.floor(amount * (Math.random() * 0.10 + 0.10));
-        await applyDelta(partial);
-        insurStats.paid += partial;
-        showResult('insur-result', `💰 Részleges kifizetés: +${partial} Ft`, 'info');
-        document.getElementById('insur-speech').textContent = 'Csak részben hagyjuk jóvá. Örüljön ennek is.';
-        stats.totalLosses++;
-        stats.totalBalance -= (300 - partial);
+      if (rand < approveChance) {
+        insurStats.paid += claimAmount;
+        await applyDelta(claimAmount);
+        showResult('insur-result', `✅ Jóváhagyva! +${claimAmount} Ft`, 'win');
+        document.getElementById('insur-speech').textContent = 'Elfogadjuk. De ne szokjon rá erre.';
+      } else if (approveChance <= rand && rand < approveChance + penaltyChance) {
+        const penalty = Math.round(c.damage * 0.6);
+        insurStats.penalties += penalty;
+        await applyDelta(-penalty);
+        insurStats.rejected++;
+        const reason = rejectionReasons[Math.floor(Math.random() * rejectionReasons.length)];
+        showResult('insur-result', `🚨 Csalás gyanúja! Bírság: -${penalty} Ft · ${reason}`, 'lose');
+        document.getElementById('insur-speech').textContent = 'Nyomozást indítunk. Ezt nem úszza meg.';
       } else {
         insurStats.rejected++;
         const reason = rejectionReasons[Math.floor(Math.random() * rejectionReasons.length)];
         showResult('insur-result', `❌ Elutasítva: ${reason}`, 'lose');
-        document.getElementById('insur-speech').textContent = `Sajnálom, de ${reason.toLowerCase()}.`;
+        document.getElementById('insur-speech').textContent = 'Nem. Következő!';
+      }
+
+      await sleep(1900);
+      document.getElementById('insur-result').style.opacity = '0';
+      currentClaim++;
+      showClaim();
+      updateInsurStats();
+    }
+
+    async function endGame() {
+      gameActive = false;
+      if (insurStats.penalties > 0) {
+        const extra = 150;
+        await applyDelta(-extra);
+        showResult('insur-result', `📋 Nyomozás lezárult. Adminisztrációs díj: -${extra} Ft`, 'lose');
+        document.getElementById('insur-speech').textContent = 'Az akta megy az ügyészségre. Szép napot.';
+        stats.totalLosses++;
+      } else if (insurStats.paid > 300) {
+        showResult('insur-result', `💼 Összesítés: +${insurStats.paid} Ft kifizetés`, 'win');
+        document.getElementById('insur-speech').textContent = 'Ez ment. Legközelebb ne vigyük túlzásba.';
+        stats.totalWins++;
+        stats.totalBalance += (insurStats.paid - 300);
+      } else {
+        showResult('insur-result', `📋 Minden elutasítva. Próbálja újra!`, 'info');
+        document.getElementById('insur-speech').textContent = 'Következő ügyféllel talán jobban megy.';
         stats.totalLosses++;
         stats.totalBalance -= 300;
       }
-
       stats.totalGames++;
       updateStats();
       updateInsurStats();
-
       document.getElementById('insur-start-btn').disabled = false;
-      selectedType = null;
+      document.getElementById('insur-incident-area').setAttribute('hidden', '');
     }
 
     function updateInsurStats() {
       document.getElementById('insur-claims').textContent = insurStats.claims;
       document.getElementById('insur-rejected').textContent = insurStats.rejected;
       document.getElementById('insur-paid').textContent = insurStats.paid.toLocaleString('hu-HU') + ' Ft';
-      const avg = insurStats.claims > 0 ? Math.floor(insurStats.totalAmount / insurStats.claims) : 0;
-      document.getElementById('insur-avg').textContent = avg.toLocaleString('hu-HU') + ' Ft';
+      document.getElementById('insur-avg').textContent = insurStats.penalties.toLocaleString('hu-HU') + ' Ft';
     }
 
-    return { setDiff, selectType, start };
+    return { setDiff, start, chooseFraud };
   })();
 
   // ════════════════════════════════════════════════════════════════
@@ -1767,14 +1900,61 @@
   const LAUN = (() => {
     let diff = 'easy';
     let launStats = { washed: 0, fees: 0, checks: 0 };
+    let currentStep = 0;
+    let currentAmount = 0;
+    let cumulativeCatchRisk = 0;
+    let gameActive = false;
 
-    const diffSettings = {
-      easy: { feeRange: [10, 15], checkChance: 0.10 },
-      medium: { feeRange: [15, 20], checkChance: 0.15 },
-      hard: { feeRange: [20, 25], checkChance: 0.20 }
-    };
+    const diffCatchMult = { easy: 0.65, medium: 1.0, hard: 1.6 };
 
-    const stepFees = [15, 20, 18, 25, 22];
+    // Each step: 2 choices with fee% and catch-risk addition
+    const steps = [
+      {
+        name: '1. Elhelyezés', stepId: 1,
+        options: [
+          { label: '💳 10 × 80 Ft-os kis átutalás',  fee: 0.05, catchAdd: 0.02,
+            edu: 'Strukturálás (smurfing): kis összegekre osztja a pénzt — elkerüli az automatikus figyelést.' },
+          { label: '🏦 Egy 800 Ft-os átutalás',       fee: 0.00, catchAdd: 0.20,
+            edu: 'Egy nagy összeg egyszerre azonnal felkelti a bank AML rendszerének figyelmét.' },
+        ]
+      },
+      {
+        name: '2. Rétegezés I.', stepId: 2,
+        options: [
+          { label: '🌐 Offshore cégek hálózata',  fee: 0.12, catchAdd: 0.03,
+            edu: 'Offshore cégeken átvezetés megnehezíti a pénz eredetének visszakövetését.' },
+          { label: '₿ Kriptovaluta',               fee: 0.06, catchAdd: 0.11,
+            edu: 'Kriptovaluta álnevességet nyújt, de a blokklánc nyilvános — nem olyan anonim, mint hinnéd.' },
+        ]
+      },
+      {
+        name: '3. Rétegezés II.', stepId: 3,
+        options: [
+          { label: '🏢 Névleges vállalkozás alapítás', fee: 0.15, catchAdd: 0.02,
+            edu: 'A fiktív vállalkozás "forgalomként" tünteti fel a piszkos pénzt — klasszikus módszer.' },
+          { label: '🏠 Ingatlanvásárlás',               fee: 0.18, catchAdd: 0.01,
+            edu: 'Ingatlan értéke manipulálható felülszámlázással, de a földhivatal nyilvántartja.' },
+        ]
+      },
+      {
+        name: '4. Integráció', stepId: 4,
+        options: [
+          { label: '💎 Luxuscikkek (ékszer, autó)', fee: 0.10, catchAdd: 0.05,
+            edu: 'Luxuscikkek viszonteladása a pénzt fizikai értékké alakítja — de feltűnő életmódhoz vezet.' },
+          { label: '📈 Részvényvásárlás',            fee: 0.08, catchAdd: 0.08,
+            edu: 'Tőzsdei kereskedés profitnak álcázza a jövedelmet, de a brókerceégek KYC ellenőrzést végeznek.' },
+        ]
+      },
+      {
+        name: '5. Legalizálás', stepId: 5,
+        options: [
+          { label: '📝 Adóbevallásba bevezetés', fee: 0.15, catchAdd: 0.01,
+            edu: 'A legszofisztikáltabb módszer: a pénzt "üzleti bevételként" tüntetik fel adóbevallásban.' },
+          { label: '🤷 Semmi — hagyjuk úgy',    fee: 0.00, catchAdd: 0.32,
+            edu: 'Magyarázat nélküli gazdagodás az egyik legbiztosabb módja a lebukásnak.' },
+        ]
+      },
+    ];
 
     function setDiff(d, btn) {
       diff = d;
@@ -1787,117 +1967,168 @@
         showResult('laun-result', 'Nincs elég egyenleged! (800 Ft kell)', 'lose');
         return;
       }
-
-      document.getElementById('laun-start-btn').disabled = true;
-      document.getElementById('laun-result').style.opacity = '0';
-
       await applyDelta(-800);
+      currentAmount = 800;
+      currentStep = 0;
+      cumulativeCatchRisk = 0.02;  // base 2% per step
+      gameActive = true;
+      launStats = { washed: 0, fees: 0, checks: 0 };
 
-      const settings = diffSettings[diff];
-      let currentAmount = 800;
-      let totalFees = 0;
-      let caught = false;
+      document.getElementById('laun-start-btn').setAttribute('hidden', '');
+      document.getElementById('laun-result').style.opacity = '0';
+      for (let i = 1; i <= 5; i++) document.getElementById(`laun-step-${i}`).style.opacity = '0.5';
+      showStepChoice();
+    }
 
-      for (let step = 1; step <= 5; step++) {
-        document.getElementById(`laun-step-${step}`).style.opacity = '1';
-        document.getElementById('laun-status').textContent = `Lépés ${step}/5 folyamatban...`;
+    function showStepChoice() {
+      if (currentStep >= 5) { endGame(); return; }
+      const step = steps[currentStep];
+      const choiceArea = document.getElementById('laun-choice-area');
+      choiceArea.removeAttribute('hidden');
+      document.getElementById('laun-status').textContent =
+        `${step.name} — válassz módszert (marad: ${currentAmount} Ft)`;
+      document.getElementById('laun-choice-prompt').textContent = `${step.stepId}/5. lépés — ${step.name}:`;
+      document.getElementById('laun-opt-a').textContent = step.options[0].label;
+      document.getElementById('laun-opt-b').textContent = step.options[1].label;
+      document.getElementById('laun-edu-msg').textContent = '';
+    }
 
-        const rand = Math.random();
+    async function chooseStep(optIdx) {
+      if (!gameActive) return;
+      const step = steps[currentStep];
+      const opt = step.options[optIdx];
 
-        if (rand < settings.checkChance) {
-          caught = true;
-          launStats.checks++;
-          document.getElementById('laun-status').textContent = `🚨 Hatósági ellenőrzés a ${step}. lépésnél!`;
-          document.getElementById('laun-speech').textContent = 'Baj van. Menekülj!';
-          await sleep(1500);
-          break;
-        }
+      document.getElementById('laun-edu-msg').textContent = `📚 ${opt.edu}`;
+      document.getElementById('laun-choice-area').setAttribute('hidden', '');
+      document.getElementById(`laun-step-${step.stepId}`).style.opacity = '1';
+      document.getElementById('laun-status').textContent = `${step.name} folyamatban...`;
+      await sleep(900);
 
-        const feePercent = stepFees[step - 1];
-        const fee = Math.floor(currentAmount * feePercent / 100);
-        totalFees += fee;
-        currentAmount -= fee;
+      // Apply fee
+      const feeAmt = Math.floor(currentAmount * opt.fee);
+      currentAmount -= feeAmt;
+      launStats.fees += feeAmt;
 
-        await sleep(800);
+      // Accumulate and check catch
+      cumulativeCatchRisk += opt.catchAdd * diffCatchMult[diff];
+      if (Math.random() < cumulativeCatchRisk) {
+        launStats.checks++;
+        document.getElementById('laun-status').textContent =
+          `🚨 Hatósági ellenőrzés a(z) ${step.stepId}. lépésnél!`;
+        document.getElementById('laun-speech').textContent = 'Baj van. Mindenki szétszalad!';
+        await sleep(1200);
+        const penalty = Math.floor(800 * 0.45);
+        await applyDelta(-penalty);
+        showResult('laun-result', `🚨 Lebukás a(z) ${step.stepId}. lépésnél! Bírság: -${penalty} Ft`, 'lose');
+        gameActive = false;
+        stats.totalLosses++;
+        stats.totalGames++;
+        updateStats();
+        updateLaunStats();
+        document.getElementById('laun-start-btn').removeAttribute('hidden');
+        for (let i = 1; i <= 5; i++) document.getElementById(`laun-step-${i}`).style.opacity = '0.5';
+        return;
       }
 
-      launStats.washed += 800;
-      launStats.fees += totalFees;
+      document.getElementById('laun-status').textContent =
+        `${step.name} kész. Marad: ${currentAmount} Ft`;
+      launStats.washed += feeAmt;
+      currentStep++;
+      await sleep(600);
+      showStepChoice();
+      updateLaunStats();
+    }
 
-      if (caught) {
-        const penalty = Math.floor(800 * 0.5);
-        await applyDelta(-penalty);
-        showResult('laun-result', `🚨 Lebukás! Bírság: -${penalty} Ft`, 'lose');
-        stats.totalLosses++;
-        stats.totalBalance -= (800 + penalty);
+    async function endGame() {
+      gameActive = false;
+      document.getElementById('laun-choice-area').setAttribute('hidden', '');
+      await applyDelta(currentAmount);
+      const net = currentAmount - 800;
+
+      if (net >= 0) {
+        showResult('laun-result', `✅ Mosás kész! Visszakaptál: ${currentAmount} Ft (nettó: +${net} Ft)`, 'win');
+        document.getElementById('laun-speech').textContent = 'A pénz tiszta! Senki sem kérdez semmit.';
+        stats.totalWins++;
+        stats.totalBalance += net;
       } else {
-        const rand = Math.random();
-
-        if (rand < 0.10) {
-          await applyDelta(2400);
-          showResult('laun-result', `✅ Sikeres mosás! +2400 Ft`, 'win');
-          document.getElementById('laun-speech').textContent = 'Kész! A pénz tiszta. Gratulálok!';
-          stats.totalWins++;
-          stats.totalBalance += 1600;
-        } else {
-          const remaining = Math.floor(currentAmount * 0.2);
-          await applyDelta(remaining);
-          showResult('laun-result', `💸 Túl sok díj! Megmaradt: ${remaining} Ft (díjak: ${totalFees} Ft)`, 'lose');
-          document.getElementById('laun-speech').textContent = 'A díjak elvitték a legtöbbet. Isten hozta a pénzügyekben.';
-          stats.totalLosses++;
-          stats.totalBalance -= (800 - remaining);
-        }
+        showResult('laun-result', `💸 Mosás kész, de a díjak vitték el a hasznot. (${currentAmount} Ft maradt)`, 'lose');
+        document.getElementById('laun-speech').textContent = 'Tiszta a pénz, de alig maradt belőle valami.';
+        stats.totalLosses++;
+        stats.totalBalance += net;
       }
 
       stats.totalGames++;
       updateStats();
       updateLaunStats();
-
-      document.getElementById('laun-start-btn').disabled = false;
-
-      for (let i = 1; i <= 5; i++) {
-        document.getElementById(`laun-step-${i}`).style.opacity = '0.5';
-      }
+      document.getElementById('laun-start-btn').removeAttribute('hidden');
+      for (let i = 1; i <= 5; i++) document.getElementById(`laun-step-${i}`).style.opacity = '0.5';
     }
 
     function updateLaunStats() {
       document.getElementById('laun-washed').textContent = launStats.washed.toLocaleString('hu-HU') + ' Ft';
       document.getElementById('laun-fees').textContent = launStats.fees.toLocaleString('hu-HU') + ' Ft';
       document.getElementById('laun-checks').textContent = launStats.checks;
-      const remaining = launStats.washed > 0 ? Math.floor(((launStats.washed - launStats.fees) / launStats.washed) * 100) : 0;
-      document.getElementById('laun-remaining').textContent = remaining + '%';
+      const pct = currentAmount > 0 ? Math.floor((currentAmount / 800) * 100) : 0;
+      document.getElementById('laun-remaining').textContent = pct + '%';
     }
 
-    return { setDiff, start };
+    return { setDiff, start, chooseStep };
   })();
 
   // ════════════════════════════════════════════════════════════════
   //  REALESTATE (Ingatlan Spekuláns)
+  //  Hold or sell timing game — 5 rounds max, player decides each round
   // ════════════════════════════════════════════════════════════════
   const REAL = (() => {
     let diff = 'easy';
     let selectedProperty = null;
     let realStats = { trades: 0, renov: 0, events: 0, totalLoss: 0 };
+    let currentValue = 0;
+    let currentRound = 0;
+    let gameActive = false;
+    let waitingForDecision = false;
 
-    const diffSettings = {
-      easy: { positiveChance: 0.20, sellLoss: 0.10 },
-      medium: { positiveChance: 0.10, sellLoss: 0.20 },
-      hard: { positiveChance: 0.05, sellLoss: 0.30 }
+    // Properties differ in event pool volatility
+    const properties = [
+      { name: '🏢 Belvárosi lakás', price: 15000, vol: 'high',  hint: 'Sok esemény, nagy kilengések.' },
+      { name: '🏡 Kertes ház',      price: 25000, vol: 'mid',   hint: 'Mérsékelt volatilitás.' },
+      { name: '🏬 Irodaház',        price: 40000, vol: 'spike', hint: 'Ritka, de hatalmas változások.' },
+    ];
+
+    // Events grouped by property volatility type
+    // difficulty shifts bad:good ratio via sampling — on hard, only bad events visible
+    const eventPools = {
+      high: [
+        { desc:'🏗️ Szomszéd épít — forgalom megnőtt', pct:+0.14 },
+        { desc:'🚇 Metrómegálló tervezett a közelben', pct:+0.18 },
+        { desc:'💸 Felújítási igény: nyikorog a padló', pct:-0.12 },
+        { desc:'📉 Adóemelés az ingatlanokra',          pct:-0.09 },
+        { desc:'🌧️ Penész a falban — szanálás kell',    pct:-0.24 },
+        { desc:'🔥 Szomszéd tüze: rezsi felemelt',      pct:-0.15 },
+        { desc:'🎉 Turistai fesztiváltér a negyedben',  pct:+0.10 },
+      ],
+      mid: [
+        { desc:'🌳 Közelben parkot létesítettek',        pct:+0.09 },
+        { desc:'💧 Csőtörés a pincehelyiségben',         pct:-0.11 },
+        { desc:'📦 Nagyvállalat nyitott a szomszédban',  pct:+0.13 },
+        { desc:'🚗 Forgalomcsillapítás a közelben',      pct:-0.05 },
+        { desc:'🌪️ Vihar megrongálta a tetőt',           pct:-0.16 },
+        { desc:'✨ Ingatlanpiac rövid felpezsdülése',    pct:+0.08 },
+        { desc:'🏫 Iskola bezárt a negyedben',           pct:-0.07 },
+      ],
+      spike: [
+        { desc:'🏙️ Újváros bejelentés — árak rakétán', pct:+0.28 },
+        { desc:'☢️ Ipari szennyezés a területen',       pct:-0.40 },
+        { desc:'🏛️ Örökségvédelem alá vonták',          pct:-0.22 },
+        { desc:'💼 Multinacionális bérel a közelben',   pct:+0.24 },
+        { desc:'📰 Bűnügyi negyednek hírlik a sajtó',   pct:-0.32 },
+        { desc:'🌊 Árvízi veszélyes övezetbe sorolták', pct:-0.38 },
+        { desc:'🎰 Casino nyit 200 méterre',             pct:+0.20 },
+      ],
     };
 
-    const properties = [
-      { name: 'Belvárosi lakás', price: 15000 },
-      { name: 'Kertes ház', price: 25000 },
-      { name: 'Irodaház', price: 40000 }
-    ];
-
-    const events = [
-      { name: 'Felújítási költség', chance: 0.30, effect: -0.30 },
-      { name: 'Piaci összeomlás', chance: 0.20, effect: -0.50 },
-      { name: 'Környékfejlesztés', chance: 0.10, effect: 0.30 },
-      { name: 'Adóemelés', chance: 0.25, effect: -0.20 },
-      { name: 'Vízszivárgás', chance: 0.15, effect: -0.15 }
-    ];
+    // On hard difficulty, only take from first 4 (all negative) in each pool
+    const diffEventCount = { easy: 7, medium: 7, hard: 4 };
 
     function setDiff(d, btn) {
       diff = d;
@@ -1909,84 +2140,105 @@
       selectedProperty = idx;
       document.getElementById('real-start-btn').disabled = false;
       document.querySelectorAll('.real-prop').forEach((p, i) => {
-        if (i === idx) {
-          p.style.borderColor = 'var(--gold)';
-          p.style.boxShadow = '0 0 20px var(--shadow-gold)';
-        } else {
-          p.style.borderColor = 'var(--gold-dim)';
-          p.style.boxShadow = 'none';
-        }
+        p.style.borderColor = i === idx ? 'var(--gold)' : 'var(--gold-dim)';
+        p.style.boxShadow   = i === idx ? '0 0 20px var(--shadow-gold)' : 'none';
       });
     }
 
     async function start() {
-      if (selectedProperty === null) {
-        showResult('real-result', 'Válassz ingatlant!', 'info');
-        return;
-      }
-
-      const prop = properties[selectedProperty];
-
-      if (S.balance < 2000) {
-        showResult('real-result', 'Nincs elég egyenleged! (2000 Ft kell)', 'lose');
-        return;
-      }
-
-      document.getElementById('real-start-btn').disabled = true;
-      document.getElementById('real-result').style.opacity = '0';
+      if (selectedProperty === null) { showResult('real-result', 'Válassz ingatlant!', 'info'); return; }
+      if (S.balance < 2000) { showResult('real-result', 'Nincs elég egyenleged! (2000 Ft kell)', 'lose'); return; }
 
       await applyDelta(-2000);
+      currentValue = 2000;  // player's stake = 2000, value changes proportionally
+      currentRound = 0;
+      gameActive = true;
+      waitingForDecision = false;
 
-      const settings = diffSettings[diff];
-      let currentValue = prop.price;
-      let eventCount = 0;
-
-      document.getElementById('real-speech').textContent = 'Gratulálok! Ez a legjobb döntése!';
+      document.getElementById('real-start-btn').disabled = true;
+      document.getElementById('real-properties').setAttribute('hidden', '');
+      document.getElementById('real-live-area').removeAttribute('hidden');
+      document.getElementById('real-result').style.opacity = '0';
+      const prop = properties[selectedProperty];
+      document.getElementById('real-speech').textContent = `${prop.name} megvéve! Figyeld a piacot.`;
       await sleep(1000);
+      nextRound();
+    }
 
-      for (const event of events) {
-        if (Math.random() < event.chance) {
-          eventCount++;
-          realStats.events++;
-          const change = Math.floor(currentValue * event.effect);
-          currentValue += change;
+    async function nextRound() {
+      if (!gameActive) return;
+      currentRound++;
+      const prop = properties[selectedProperty];
+      const pool = eventPools[prop.vol].slice(0, diffEventCount[diff]);
+      const ev = pool[Math.floor(Math.random() * pool.length)];
+      const change = Math.round(currentValue * ev.pct);
+      currentValue = Math.max(0, currentValue + change);
+      realStats.events++;
+      if (change < 0) realStats.renov += Math.abs(change);
 
-          if (event.effect < 0) {
-            realStats.renov += Math.abs(change);
-          }
+      document.getElementById('real-status').textContent = `${currentRound}. kör / 5`;
+      document.getElementById('real-event-desc').textContent =
+        `${ev.desc}  (${ev.pct >= 0 ? '+' : ''}${Math.round(ev.pct * 100)}%)`;
+      document.getElementById('real-current-value').textContent = currentValue.toLocaleString('hu-HU');
 
-          document.getElementById('real-status') && (document.getElementById('real-status').textContent = `${event.name}: ${change > 0 ? '+' : ''}${change} Ft`);
-          await sleep(800);
-        }
+      if (currentValue <= 0) {
+        document.getElementById('real-action-row').setAttribute('hidden', '');
+        showResult('real-result', `💀 Az ingatlan értéktelenné vált! -2000 Ft`, 'lose');
+        document.getElementById('real-speech').textContent = 'Tökéletes katasztrófa. Gratulálok.';
+        await finishGame(-2000, false);
+        return;
       }
 
-      const sellPrice = Math.floor(currentValue * (1 - settings.sellLoss));
-      const profit = sellPrice - prop.price;
+      if (currentRound >= 5) {
+        document.getElementById('real-action-row').setAttribute('hidden', '');
+        document.getElementById('real-speech').textContent = '5. kör — kényszereladás!';
+        await sleep(800);
+        await doSell(true);
+        return;
+      }
 
-      realStats.trades++;
-      realStats.totalLoss += Math.abs(profit);
+      document.getElementById('real-action-row').removeAttribute('hidden');
+      document.getElementById('real-speech').textContent = 'Tartod, vagy eladod?';
+      waitingForDecision = true;
+    }
 
-      const rand = Math.random();
-
-      if (rand < 0.10) {
-        await applyDelta(6000);
-        showResult('real-result', `🎉 Nyereséges üzlet! +6000 Ft`, 'win');
-        document.getElementById('real-speech').textContent = 'Fantasztikus befektetés volt! Gratulálok!';
-        stats.totalWins++;
-        stats.totalBalance += 4000;
+    async function holdOrSell(choice) {
+      if (!waitingForDecision) return;
+      waitingForDecision = false;
+      document.getElementById('real-action-row').setAttribute('hidden', '');
+      if (choice === 'sell') {
+        await doSell(false);
       } else {
-        await applyDelta(sellPrice);
-        const loss = 2000 - sellPrice;
-        showResult('real-result', `📉 Veszteséges üzlet! Eladás: ${sellPrice} Ft (veszteség: ${loss} Ft)`, 'lose');
-        document.getElementById('real-speech').textContent = 'Nos... a piac most éppen... nehéz helyzetben van.';
-        stats.totalLosses++;
-        stats.totalBalance -= loss;
+        await sleep(400);
+        nextRound();
       }
+    }
 
+    async function doSell(forced) {
+      await applyDelta(currentValue);
+      const net = currentValue - 2000;
+      const type = net >= 0 ? 'win' : 'lose';
+      const tag = forced ? 'Kényszereladás' : 'Eladás';
+      showResult('real-result',
+        `${net >= 0 ? '✅' : '📉'} ${tag}: ${currentValue} Ft (nettó: ${net >= 0 ? '+' : ''}${net} Ft)`, type);
+      document.getElementById('real-speech').textContent = net >= 0
+        ? 'Okos döntés! Pontosan jókor adott el.'
+        : 'Sajnos a piac így döntött. Tipikus ingatlansztorik.';
+      await finishGame(net, net >= 0);
+    }
+
+    async function finishGame(net, isWin) {
+      gameActive = false;
+      realStats.trades++;
+      realStats.totalLoss += Math.abs(Math.min(0, net));
+      if (isWin) { stats.totalWins++; } else { stats.totalLosses++; }
+      stats.totalBalance += net;
       stats.totalGames++;
       updateStats();
       updateRealStats();
-
+      await sleep(1200);
+      document.getElementById('real-live-area').setAttribute('hidden', '');
+      document.getElementById('real-properties').removeAttribute('hidden');
       document.getElementById('real-start-btn').disabled = false;
       selectedProperty = null;
       document.querySelectorAll('.real-prop').forEach(p => {
@@ -2003,23 +2255,30 @@
       document.getElementById('real-avgloss').textContent = avgLoss + '%';
     }
 
-    return { setDiff, selectProperty, start };
+    return { setDiff, selectProperty, start, holdOrSell };
   })();
 
   // ════════════════════════════════════════════════════════════════
   //  PYRAMID (Piramis Játék)
+  //  Player picks recruitment speed each round; suspicion meter grows;
+  //  bail out early or watch the whole thing collapse.
   // ════════════════════════════════════════════════════════════════
   const PYR = (() => {
     let diff = 'easy';
     let pyrStats = { recruited: 0, income: 0, deductions: 0, rounds: 0 };
     let currentRound = 0;
     let totalMembers = 0;
+    let suspicion = 0;    // 0–100%
+    let accumulated = 0;  // net earnings this session
     let gameActive = false;
 
-    const diffSettings = {
-      easy: { recruitRange: [2, 3], deductionPercent: 0.30, collapseRounds: [8, 10] },
-      medium: { recruitRange: [1, 2], deductionPercent: 0.40, collapseRounds: [6, 8] },
-      hard: { recruitRange: [0, 1], deductionPercent: 0.50, collapseRounds: [5, 6] }
+    const diffSuspMult = { easy: 0.65, medium: 1.0, hard: 1.6 };
+
+    // Recruitment modes: range of new members, suspicion added, income per head
+    const modes = {
+      slow:   { range: [1,2], suspAdd: 5,  feePerHead: 160 },
+      normal: { range: [2,4], suspAdd: 14, feePerHead: 160 },
+      fast:   { range: [4,8], suspAdd: 28, feePerHead: 160 },
     };
 
     function setDiff(d, btn) {
@@ -2033,98 +2292,151 @@
         showResult('pyr-result', 'Nincs elég egyenleged! (1500 Ft kell)', 'lose');
         return;
       }
-
       await applyDelta(-1500);
       gameActive = true;
       currentRound = 0;
       totalMembers = 0;
+      suspicion = 0;
+      accumulated = 0;
       pyrStats = { recruited: 0, income: 0, deductions: 0, rounds: 0 };
 
-      document.getElementById('pyr-start-btn').disabled = true;
+      document.getElementById('pyr-start-btn').setAttribute('hidden', '');
       document.getElementById('pyr-result').style.opacity = '0';
-
-      document.getElementById('pyr-speech').textContent = 'Építsd a hálózatod!';
-
-      await runRounds();
+      document.getElementById('pyr-suspicion-area').removeAttribute('hidden');
+      document.getElementById('pyr-round-choices').removeAttribute('hidden');
+      document.getElementById('pyr-bail-btn').setAttribute('hidden', '');
+      updateSuspBar();
+      updateNetworkVisual();
+      document.getElementById('pyr-level').textContent = 'Szint: 1';
+      document.getElementById('pyr-status').textContent = 'Kit toborozzunk ma?';
+      document.getElementById('pyr-speech').textContent = 'Üdv a csapatban! Válassz stratégiát!';
     }
 
-    async function runRounds() {
-      const settings = diffSettings[diff];
-      const collapseRound = Math.floor(Math.random() * (settings.collapseRounds[1] - settings.collapseRounds[0] + 1)) + settings.collapseRounds[0];
+    async function recruit(mode) {
+      if (!gameActive) return;
+      const m = modes[mode];
+      const mult = diffSuspMult[diff];
+      currentRound++;
+      pyrStats.rounds = currentRound;
 
-      while (currentRound < collapseRound && gameActive) {
-        currentRound++;
-        pyrStats.rounds = currentRound;
+      const newRecruits = m.range[0] + Math.floor(Math.random() * (m.range[1] - m.range[0] + 1));
+      totalMembers += newRecruits;
+      pyrStats.recruited += newRecruits;
 
-        const newRecruits = Math.floor(Math.random() * (settings.recruitRange[1] - settings.recruitRange[0] + 1)) + settings.recruitRange[0];
-        totalMembers += newRecruits;
-        pyrStats.recruited += newRecruits;
+      const gross = newRecruits * m.feePerHead;
+      const deduction = Math.floor(gross * 0.30);
+      const net = gross - deduction;
+      pyrStats.income += gross;
+      pyrStats.deductions += deduction;
+      accumulated += net;
 
-        const income = newRecruits * (Math.floor(Math.random() * 150) + 50);
-        pyrStats.income += income;
+      await applyDelta(net);
 
-        const deduction = Math.floor(income * settings.deductionPercent);
-        pyrStats.deductions += deduction;
+      suspicion = Math.min(96, suspicion + m.suspAdd * mult);
+      updateSuspBar();
 
-        const netIncome = income - deduction - 800;
-
-        await applyDelta(netIncome);
-
-        document.getElementById('pyr-level').textContent = `Szint: ${Math.floor(currentRound / 2) + 1}`;
-        document.getElementById('pyr-status').textContent = `Kör: ${currentRound}/${collapseRound} · Tagok: ${totalMembers} · Bevétel: ${income} Ft`;
-
-        updateNetworkVisual();
-        updatePyrStats();
-
-        await sleep(1000);
+      // Bust check: P(bust) = suspicion / 250 per round
+      if (Math.random() < suspicion / 250) {
+        await handleBust();
+        return;
       }
 
-      endGame();
-    }
+      updateNetworkVisual();
+      updatePyrStats();
+      document.getElementById('pyr-level').textContent = `Szint: ${Math.floor(currentRound / 2) + 1}`;
+      document.getElementById('pyr-status').textContent =
+        `Kör: ${currentRound} · Tagok: ${totalMembers} · Felhalmozva: ${accumulated} Ft`;
+      document.getElementById('pyr-speech').textContent =
+        `+${newRecruits} tag, +${net} Ft. Gyanú: ${Math.round(suspicion)}%`;
 
-    function updateNetworkVisual() {
-      const membersDiv = document.getElementById('pyr-members');
-      membersDiv.innerHTML = '<div style="background:var(--gold);color:var(--dark);padding:0.5rem 1rem;border-radius:8px;font-weight:700;">Te</div>';
+      // Unlock bail after round 1
+      document.getElementById('pyr-bail-btn').removeAttribute('hidden');
 
-      const displayCount = Math.min(totalMembers, 20);
-      for (let i = 0; i < displayCount; i++) {
-        const memberDiv = document.createElement('div');
-        memberDiv.style.cssText = 'background:rgba(201,168,76,0.3);color:var(--cream);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.8rem;';
-        memberDiv.textContent = `👤`;
-        membersDiv.appendChild(memberDiv);
-      }
-
-      if (totalMembers > 20) {
-        const moreDiv = document.createElement('div');
-        moreDiv.style.cssText = 'color:var(--cream-dark);padding:0.3rem;font-size:0.8rem;';
-        moreDiv.textContent = `+${totalMembers - 20} fő`;
-        membersDiv.appendChild(moreDiv);
+      // Hard cap at 10 rounds
+      if (currentRound >= 10) {
+        document.getElementById('pyr-round-choices').setAttribute('hidden', '');
+        await sleep(400);
+        await handleCollapse();
       }
     }
 
-    async function endGame() {
+    async function bail() {
+      if (!gameActive || currentRound < 1) return;
       gameActive = false;
+      document.getElementById('pyr-round-choices').setAttribute('hidden', '');
+      document.getElementById('pyr-suspicion-area').setAttribute('hidden', '');
 
-      const rand = Math.random();
-
-      if (rand < 0.10) {
-        await applyDelta(4500);
-        showResult('pyr-result', `🎉 Időben kiszálltál! +4500 Ft`, 'win');
-        document.getElementById('pyr-speech').textContent = 'Okos döntés volt időben kiszállni! Gratulálok!';
-        stats.totalWins++;
-        stats.totalBalance += 3000;
-      } else {
-        showResult('pyr-result', `💥 A piramis összeomlott! Mindent elveszítettél.`, 'lose');
-        document.getElementById('pyr-speech').textContent = 'Nos... ez váratlan volt. De ne aggódj, kezdjük újra!';
+      // 30% chance the NAV was already watching
+      if (Math.random() < 0.30) {
+        const penalty = Math.floor(accumulated * 0.45);
+        await applyDelta(-penalty);
+        showResult('pyr-result', `👮 NAV rajtakapott kiszálláskor! Bírság: -${penalty} Ft`, 'lose');
+        document.getElementById('pyr-speech').textContent = 'Elkésett a kiszállás. Látták, hogy ment a pénz.';
         stats.totalLosses++;
-        stats.totalBalance -= 1500;
+        stats.totalBalance -= penalty;
+      } else {
+        showResult('pyr-result', `💨 Időben kiszálltál! Megtartottad a hasznot.`, 'win');
+        document.getElementById('pyr-speech').textContent = 'Okos döntés. A piramis nemsokára összeomlott nélküled.';
+        stats.totalWins++;
+        stats.totalBalance += accumulated;
       }
 
       stats.totalGames++;
       updateStats();
       updatePyrStats();
+      document.getElementById('pyr-start-btn').removeAttribute('hidden');
+    }
 
-      document.getElementById('pyr-start-btn').disabled = false;
+    async function handleBust() {
+      gameActive = false;
+      document.getElementById('pyr-round-choices').setAttribute('hidden', '');
+      document.getElementById('pyr-suspicion-area').setAttribute('hidden', '');
+      const penalty = Math.floor(accumulated * 0.35);
+      await applyDelta(-penalty);
+      showResult('pyr-result', `🚨 NAV razzia! Bírság: -${penalty} Ft (gyanú: ${Math.round(suspicion)}%)`, 'lose');
+      document.getElementById('pyr-speech').textContent = 'Megtaláltak. A bírság még a kisebb baj.';
+      stats.totalLosses++;
+      stats.totalBalance -= penalty;
+      stats.totalGames++;
+      updateStats();
+      updatePyrStats();
+      document.getElementById('pyr-start-btn').removeAttribute('hidden');
+    }
+
+    async function handleCollapse() {
+      gameActive = false;
+      document.getElementById('pyr-suspicion-area').setAttribute('hidden', '');
+      showResult('pyr-result', `💥 10. kör — a piramis összeomlott! Mindenki elveszített mindent.`, 'lose');
+      document.getElementById('pyr-speech').textContent = 'Előbb-utóbb mindenki rájön a trükkre.';
+      stats.totalLosses++;
+      stats.totalBalance -= 1500;
+      stats.totalGames++;
+      updateStats();
+      updatePyrStats();
+      document.getElementById('pyr-start-btn').removeAttribute('hidden');
+    }
+
+    function updateSuspBar() {
+      document.getElementById('pyr-suspicion-fill').style.width = suspicion + '%';
+      document.getElementById('pyr-suspicion-label').textContent = Math.round(suspicion) + '%';
+    }
+
+    function updateNetworkVisual() {
+      const div = document.getElementById('pyr-members');
+      div.innerHTML = '<div style="background:var(--gold);color:var(--dark);padding:0.5rem 1rem;border-radius:8px;font-weight:700;">Te</div>';
+      const show = Math.min(totalMembers, 20);
+      for (let i = 0; i < show; i++) {
+        const d = document.createElement('div');
+        d.style.cssText = 'background:rgba(201,168,76,0.3);color:var(--cream);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.8rem;';
+        d.textContent = '👤';
+        div.appendChild(d);
+      }
+      if (totalMembers > 20) {
+        const m = document.createElement('div');
+        m.style.cssText = 'color:var(--cream-dark);padding:0.3rem;font-size:0.8rem;';
+        m.textContent = `+${totalMembers - 20} fő`;
+        div.appendChild(m);
+      }
     }
 
     function updatePyrStats() {
@@ -2134,20 +2446,20 @@
       document.getElementById('pyr-rounds').textContent = pyrStats.rounds;
     }
 
-    return { setDiff, start };
+    return { setDiff, start, recruit, bail };
   })();
 
   // ════════════════════════════════════════════════════════════════
   //  Public API
   // ════════════════════════════════════════════════════════════════
   window.SC = {
-    off: { setDiff: OFF.setDiff, selectLocation: OFF.selectLocation, start: OFF.start },
-    adv: { setDiff: ADV.setDiff, start: ADV.start, giveAdvice: ADV.giveAdvice },
-    ins: { setDiff: INS.setDiff, start: INS.start, inspect: INS.inspect },
-    insur: { setDiff: INSUR.setDiff, selectType: INSUR.selectType, start: INSUR.start },
-    laun: { setDiff: LAUN.setDiff, start: LAUN.start },
-    real: { setDiff: REAL.setDiff, selectProperty: REAL.selectProperty, start: REAL.start },
-    pyr: { setDiff: PYR.setDiff, start: PYR.start },
+    off:   { setDiff: OFF.setDiff,   selectLocation: OFF.selectLocation, start: OFF.start },
+    adv:   { setDiff: ADV.setDiff,   start: ADV.start,   giveAdvice: ADV.giveAdvice },
+    ins:   { setDiff: INS.setDiff,   start: INS.start,   inspect:    INS.inspect },
+    insur: { setDiff: INSUR.setDiff, start: INSUR.start, chooseFraud: INSUR.chooseFraud },
+    laun:  { setDiff: LAUN.setDiff,  start: LAUN.start,  chooseStep:  LAUN.chooseStep },
+    real:  { setDiff: REAL.setDiff,  selectProperty: REAL.selectProperty, start: REAL.start, holdOrSell: REAL.holdOrSell },
+    pyr:   { setDiff: PYR.setDiff,   start: PYR.start,   recruit: PYR.recruit, bail: PYR.bail },
 
     enter(game) {
       showScreen(game);
