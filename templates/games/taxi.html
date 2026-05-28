@@ -1,15 +1,848 @@
 {% extends "base.html" %}
-{% block title %}taxi — Hamarosan{% endblock %}
+{% block title %}Taxisofőr – ÁrnyékTaxi{% endblock %}
+
 {% block content %}
-<div style="max-width:600px;margin:4rem auto;text-align:center;padding:0 1rem;">
-  <div style="font-size:4rem;margin-bottom:1rem;">🚧</div>
-  <h1 style="margin-bottom:0.5rem;">taxi</h1>
-  <p style="color:var(--cream-dark);font-style:italic;margin-bottom:2rem;">
-    Ez a mini-játék még fejlesztés alatt áll. Hamarosan!
-  </p>
-  <div class="npc-hint" id="npc-hint">Betöltés...</div>
-  <div style="margin-top:2rem;">
-    <a href="/" class="btn btn-gold">← Vissza a Plazára</a>
+<div id="tx-root">
+
+  <div id="tx-scene">
+    <canvas id="tx-canvas"></canvas>
+
+    <!-- HUD -->
+    <div id="tx-hud">
+      <span class="tx-hud-item">⏱ <span id="tx-timer">90</span>s</span>
+      <span class="tx-hud-item">💰 <span id="tx-earnings">0</span> Ft</span>
+      <span class="tx-hud-item">🚕 <span id="tx-rides">0</span> út</span>
+    </div>
+
+    <!-- Fuel bar -->
+    <div id="tx-fuel-hud">
+      <span id="tx-fuel-label">⛽</span>
+      <div id="tx-fuel-track">
+        <div id="tx-fuel-fill"></div>
+      </div>
+      <span id="tx-fuel-price"></span>
+    </div>
+
+    <!-- Mission panel -->
+    <div id="tx-mission">Indítsd el a műszakot</div>
+
+    <!-- Autopilot button -->
+    <div id="tx-autopilot-wrap">
+      <button id="tx-autopilot-btn" onclick="TX.toggleAutopilot()">🤖 Önvezető (8 000 Ft)</button>
+      <div id="tx-autopilot-status"></div>
+    </div>
+
+    <!-- App NPC -->
+    <div id="tx-app-npc">
+      <div id="tx-app-bubble">🚕 ÁrnyékTaxi</div>
+    </div>
+
+    <!-- Controls hint -->
+    <div id="tx-controls-hint">WASD / ↑↓←→</div>
+
+    <!-- Fare popup -->
+    <div id="tx-notify"></div>
+
+    <!-- NPC Hint -->
+    <div id="npc-hint">Betöltés...</div>
   </div>
+
+  <!-- Overlay -->
+  <div id="tx-overlay" class="tx-hidden">
+    <div id="tx-overlay-box">
+      <h2>🚕 Műszak vége!</h2>
+      <div id="tx-overlay-stats"></div>
+      <div id="tx-overlay-btns">
+        <button onclick="TX.start()">Még egy műszak</button>
+        <button id="tx-exit-btn" onclick="TX.exit()">← Vissza a városba</button>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<style>
+#tx-root {
+  max-width: min(1050px, 96vw);
+  margin: 1.2rem auto;
+  font-family: var(--font-body);
+  color: var(--cream);
+  user-select: none;
+}
+#tx-scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  border: 3px solid var(--gold-dim);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 8px 32px var(--shadow);
+  background: #0f0f1e;
+}
+#tx-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* HUD */
+#tx-hud {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 14px;
+  background: rgba(10,10,20,0.78);
+  border: 1px solid var(--gold-dim);
+  border-radius: 20px;
+  padding: 4px 14px;
+  z-index: 10;
+  pointer-events: none;
+}
+.tx-hud-item { font-family: var(--font-mono); font-size: 0.8rem; }
+#tx-timer { color: var(--gold); font-weight: bold; }
+#tx-timer.tx-warn { color: var(--red-light); animation: tx-blink 0.5s step-end infinite; }
+@keyframes tx-blink { 50% { opacity: 0; } }
+
+/* Fuel bar */
+#tx-fuel-hud {
+  position: absolute;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(10,10,20,0.78);
+  border: 1px solid var(--gold-dim);
+  border-radius: 20px;
+  padding: 3px 10px;
+  z-index: 10;
+  pointer-events: none;
+  font-size: 0.72rem;
+}
+#tx-fuel-label { font-size: 0.85rem; }
+#tx-fuel-track {
+  width: 80px; height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+#tx-fuel-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--green-light);
+  border-radius: 4px;
+  transition: width 0.1s, background 0.3s;
+}
+#tx-fuel-price { font-family: var(--font-mono); color: var(--gold-dim); font-size: 0.62rem; }
+
+/* Mission */
+#tx-mission {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10,10,20,0.88);
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px;
+  padding: 4px 14px;
+  font-size: 0.8rem;
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+#tx-mission.tx-pickup  { border-color: var(--gold); }
+#tx-mission.tx-dropoff { border-color: var(--green-light); }
+
+/* Autopilot */
+#tx-autopilot-wrap {
+  position: absolute;
+  bottom: 52px;
+  right: 8px;
+  z-index: 10;
+  text-align: right;
+}
+#tx-autopilot-btn {
+  background: var(--dark-mid);
+  color: var(--cream);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius);
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+#tx-autopilot-btn:hover { background: var(--dark-light); border-color: var(--gold); }
+#tx-autopilot-btn.tx-ap-on { background: var(--green); color: #fff; border-color: var(--green-light); }
+#tx-autopilot-status { font-size: 0.62rem; color: var(--gold-dim); margin-top: 2px; }
+
+/* App NPC */
+#tx-app-npc {
+  position: absolute;
+  bottom: 52px;
+  left: 8px;
+  z-index: 10;
+  pointer-events: none;
+}
+#tx-app-bubble {
+  background: var(--dark-mid);
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  color: var(--cream-dark);
+  max-width: 210px;
+  line-height: 1.35;
+}
+
+/* Controls hint */
+#tx-controls-hint {
+  position: absolute;
+  top: 36px;
+  left: 8px;
+  font-size: 0.62rem;
+  color: var(--gold-dim);
+  z-index: 10;
+  pointer-events: none;
+  background: rgba(0,0,0,0.5);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Fare notify */
+#tx-notify {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.8rem;
+  font-family: var(--font-display);
+  font-weight: bold;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+  z-index: 20;
+  text-shadow: 0 0 16px rgba(76,175,80,0.7);
+  color: var(--green-light);
+}
+#tx-notify.tx-show { opacity: 1; }
+
+/* NPC hint */
+#npc-hint {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 44px;
+  background: rgba(0,0,0,0.72);
+  border-top: 1px solid var(--gold-dim);
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--cream-dark);
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  z-index: 5;
+}
+
+/* Overlay */
+#tx-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8,8,18,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  border-radius: var(--radius);
+}
+#tx-overlay.tx-hidden { display: none; }
+#tx-overlay-box {
+  background: var(--dark-mid);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  text-align: center;
+  max-width: 360px;
+}
+#tx-overlay-box h2 { color: var(--gold); margin-bottom: 14px; }
+#tx-overlay-stats { margin-bottom: 18px; font-size: 0.9rem; color: var(--cream-dark); line-height: 1.7; }
+#tx-overlay-stats strong { color: var(--gold-light); }
+#tx-overlay-btns button { margin: 5px; }
+#tx-exit-btn { background: var(--dark-light); color: var(--cream); border: 1px solid var(--gold-dim); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  'use strict';
+
+  // ── Canvas ──────────────────────────────────────────────────────
+  const canvas = document.getElementById('tx-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 700, H = 420;       // logical coordinate space (unchanged)
+  const SCALE = 1.5;             // render resolution multiplier
+  canvas.width  = Math.round(W * SCALE);
+  canvas.height = Math.round(H * SCALE);
+
+  // ── Colors ──────────────────────────────────────────────────────
+  const C = {
+    bg:       '#0f0f1e',
+    road:     '#252535',
+    roadEdge: '#1a1a2a',
+    line:     '#5a4810',
+    building: '#1c1c38',
+    winTint:  'rgba(80,80,160,0.09)',
+    gold:     '#C9A84C',
+    goldDim:  '#7a6220',
+    green:    '#4CAF50',
+    greenDk:  '#2E7D32',
+    red:      '#c0392b',
+    cream:    '#F5F0E8',
+    creamDk:  '#d4c9b0',
+    darkMid:  '#2A2A4E',
+  };
+
+  // ── Road geometry (pixel coords on 700×420) ─────────────────────
+  // Two horizontal roads
+  const H1 = { y1: 65,  y2: 115 };   // top
+  const H2 = { y1: 285, y2: 335 };   // bottom
+  // Three vertical roads
+  const V1 = { x1: 60,  x2: 110 };   // left
+  const V2 = { x1: 315, x2: 365 };   // center
+  const V3 = { x1: 565, x2: 615 };   // right
+
+  function onRoad(x, y) {
+    const onH = (y >= H1.y1 && y <= H1.y2) || (y >= H2.y1 && y <= H2.y2);
+    const onV = (x >= V1.x1 && x <= V1.x2) || (x >= V2.x1 && x <= V2.x2) || (x >= V3.x1 && x <= V3.x2);
+    return onH || onV;
+  }
+
+  // ── Intersections (for BFS navigation) ─────────────────────────
+  const INTS = {
+    tl: { x:  85, y:  90 },
+    tc: { x: 340, y:  90 },
+    tr: { x: 590, y:  90 },
+    bl: { x:  85, y: 310 },
+    bc: { x: 340, y: 310 },
+    br: { x: 590, y: 310 },
+  };
+  const GRAPH = {
+    tl: ['tc','bl'],
+    tc: ['tl','tr','bc'],
+    tr: ['tc','br'],
+    bl: ['tl','bc'],
+    bc: ['bl','br','tc'],
+    br: ['bc','tr'],
+  };
+
+  // ── Locations ───────────────────────────────────────────────────
+  const LOCS = [
+    { id:'hospital', name:'Kórház',     icon:'🏥', int:'tl', x:  85, y:  90 },
+    { id:'school',   name:'Iskola',     icon:'🏫', int:'tc', x: 340, y:  90 },
+    { id:'bank',     name:'Bank',       icon:'🏦', int:'tr', x: 590, y:  90 },
+    { id:'market',   name:'Piac',       icon:'🛒', int:'bl', x:  85, y: 310 },
+    { id:'church',   name:'Templomtér', icon:'⛪', int:'bc', x: 340, y: 310 },
+    { id:'hotel',    name:'Szálloda',   icon:'🏨', int:'br', x: 590, y: 310 },
+  ];
+  const GAS = { x: 460, y: 90 };
+  const LOC = {};
+  LOCS.forEach(l => LOC[l.id] = l);
+
+  // ── App NPC quotes ──────────────────────────────────────────────
+  const QUOTES = [
+    'A vállalkozói szabadság: te fizeted a benzint.',
+    'Az app elveszi a 75%-ot. Ez a platform gazdaság.',
+    'Értékelés: 4.2 csillag. Az 5. nem adható.',
+    'Surge pricing aktív. Ez az Ön szerencséje.',
+    'Bármikor letilthatjuk. Alapos ok nélkül is.',
+    'Az útdíj az Ön felelőssége.',
+    'A benzin ára az olajpiactól függ. Amitől te is.',
+    'Tankol? Az is az Ön felelőssége.',
+  ];
+
+  // ── State ───────────────────────────────────────────────────────
+  let S = null;           // server state
+  let gameActive = false;
+  let earnings = 0, rides = 0, shiftTimer = 90;
+  let timerInt = null, rafId = null;
+
+  // Taxi
+  let tx = { x: 85, y: 90, angle: 0 };
+  const SPEED = 1.2;
+
+  // Mission
+  let pickupId  = null;
+  let dropoffId = null;
+  let hasPassenger = false;
+
+  // Autopilot
+  let apOn = false;
+  let apPath = [];  // {x,y} waypoints
+  let apUnlocked = false;
+
+  // Fuel
+  let fuel = 100;
+  let oilPrice = 1000;
+  let lastRefuelTime = 0;
+
+  // Keys
+  const K = {};
+  window.addEventListener('keydown', e => {
+    const k = e.key.toLowerCase();
+    K[k] = true;
+    const nav = ['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
+    if (nav.includes(k)) {
+      e.preventDefault();
+      if (apOn) stopAutopilot();   // manual override cancels self-drive
+    }
+  });
+  window.addEventListener('keyup', e => { K[e.key.toLowerCase()] = false; });
+
+  // ── BFS ─────────────────────────────────────────────────────────
+  function bfs(from, to) {
+    if (from === to) return [from];
+    const q = [[from]], vis = new Set([from]);
+    while (q.length) {
+      const path = q.shift();
+      for (const nb of GRAPH[path[path.length-1]]) {
+        if (vis.has(nb)) continue;
+        const np = [...path, nb];
+        if (nb === to) return np;
+        vis.add(nb); q.push(np);
+      }
+    }
+    return [from, to];
+  }
+
+  function nearestInt(x, y) {
+    let best = 'tl', bd = Infinity;
+    for (const [id, pt] of Object.entries(INTS)) {
+      const d = Math.hypot(x-pt.x, y-pt.y);
+      if (d < bd) { bd = d; best = id; }
+    }
+    return best;
+  }
+
+  function buildPath(destId) {
+    const destLoc = LOC[destId];
+    const fromInt = nearestInt(tx.x, tx.y);
+    const intPath = bfs(fromInt, destLoc.int);
+    return intPath.map(id => ({ x: INTS[id].x, y: INTS[id].y }));
+  }
+
+  function stopAutopilot() {
+    apOn = false; apPath = [];
+    const btn = document.getElementById('tx-autopilot-btn');
+    btn.classList.remove('tx-ap-on');
+    document.getElementById('tx-autopilot-status').textContent = '';
+  }
+
+  // ── Mission ─────────────────────────────────────────────────────
+  function newMission() {
+    const pid = LOCS[Math.floor(Math.random() * LOCS.length)].id;
+    pickupId = pid;
+    const others = LOCS.filter(l => l.id !== pid);
+    dropoffId = others[Math.floor(Math.random() * others.length)].id;
+    hasPassenger = false;
+    updateMissionUI();
+  }
+
+  function updateMissionUI() {
+    const el = document.getElementById('tx-mission');
+    if (!hasPassenger) {
+      const p = LOC[pickupId];
+      el.textContent = `🧍 Felvétel: ${p.icon} ${p.name}`;
+      el.className = 'tx-pickup';
+    } else {
+      const d = LOC[dropoffId];
+      el.textContent = `→ Cél: ${d.icon} ${d.name}`;
+      el.className = 'tx-dropoff';
+    }
+  }
+
+  // ── Arrivals ────────────────────────────────────────────────────
+  function checkArrivals() {
+    for (const loc of LOCS) {
+      if (Math.hypot(tx.x - loc.x, tx.y - loc.y) > 22) continue;
+      if (!hasPassenger && loc.id === pickupId) {
+        hasPassenger = true;
+        updateMissionUI();
+        showNotify('🧍 Utas felvéve!', C.gold);
+        if (apOn) apPath = buildPath(dropoffId);
+      } else if (hasPassenger && loc.id === dropoffId) {
+        const grossFare = 280;
+        const fare = Math.round(grossFare * 0.25);
+        earnings += fare;
+        rides++;
+        document.getElementById('tx-earnings').textContent = earnings;
+        document.getElementById('tx-rides').textContent = rides;
+        GameAPI.patch({ balance: S.balance + fare }).then(ns => { S = ns; }).catch(() => {});
+        showNotify(`+${fare} Ft`, C.green);
+        document.getElementById('tx-app-bubble').textContent =
+          rides === 3 ? 'Az app elveszi a 75%-ot mostantól. Surge pricing.' :
+          QUOTES[Math.floor(Math.random() * QUOTES.length)];
+        newMission();
+        if (apOn) apPath = buildPath(pickupId);
+      }
+    }
+
+    // Gas station refuel
+    const gDist = Math.hypot(tx.x - GAS.x, tx.y - GAS.y);
+    if (gDist < 22 && fuel < 99 && Date.now() - lastRefuelTime > 3000) {
+      lastRefuelTime = Date.now();
+      const needed = 100 - fuel;
+      const fuelPricePerTank = Math.round(120 * oilPrice / 1000);
+      const cost = Math.round(fuelPricePerTank * needed / 100);
+      if (S.balance >= cost) {
+        S.balance -= cost;
+        fuel = 100;
+        updateFuelUI();
+        GameAPI.patch({ balance: S.balance }).catch(() => {});
+        showNotify(`⛽ -${cost} Ft`, '#ffaa00');
+      } else {
+        showNotify('Nincs pénz a benzinre!', C.red);
+      }
+    }
+  }
+
+  // ── Update ──────────────────────────────────────────────────────
+  function update() {
+    let dx = 0, dy = 0;
+
+    if (!(fuel <= 0 && !apOn)) {
+      if (apOn && apPath.length > 0) {
+        const wp = apPath[0];
+        const dist = Math.hypot(wp.x - tx.x, wp.y - tx.y);
+        if (dist < 3) {
+          apPath.shift();
+          if (apPath.length === 0) stopAutopilot();
+        } else {
+          dx = (wp.x - tx.x) / dist;
+          dy = (wp.y - tx.y) / dist;
+        }
+      } else {
+        if (K['w'] || K['arrowup'])    dy = -1;
+        if (K['s'] || K['arrowdown'])  dy =  1;
+        if (K['a'] || K['arrowleft'])  dx = -1;
+        if (K['d'] || K['arrowright']) dx =  1;
+        if (dx && dy) { dx *= 0.707; dy *= 0.707; }
+      }
+    }
+
+    if (dx || dy) {
+      const prevX = tx.x, prevY = tx.y;
+      const nx = tx.x + dx * SPEED;
+      const ny = tx.y + dy * SPEED;
+      const ax = onRoad(nx, tx.y) ? nx : tx.x;
+      const ay = onRoad(tx.x, ny) ? ny : tx.y;
+      if (ax !== tx.x || ay !== tx.y) tx.angle = Math.atan2(dy, dx);
+      tx.x = Math.max(10, Math.min(W-10, ax));
+      tx.y = Math.max(10, Math.min(H-10, ay));
+      const moved = Math.hypot(tx.x - prevX, tx.y - prevY);
+      fuel = Math.max(0, fuel - moved * 0.007);
+      updateFuelUI();
+    }
+
+    checkArrivals();
+  }
+
+  // ── Render ──────────────────────────────────────────────────────
+  function render() {
+    ctx.clearRect(0, 0, W * SCALE, H * SCALE);
+    ctx.save();
+    ctx.scale(SCALE, SCALE);
+    drawBg();
+    drawRoads();
+    drawBuildings();
+    drawMarkings();
+    drawLocations();
+    drawTaxi();
+    ctx.restore();
+  }
+
+  function drawBg() {
+    ctx.fillStyle = C.bg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawRoads() {
+    ctx.fillStyle = C.road;
+    ctx.fillRect(0, H1.y1, W, H1.y2-H1.y1);
+    ctx.fillRect(0, H2.y1, W, H2.y2-H2.y1);
+    ctx.fillRect(V1.x1, 0, V1.x2-V1.x1, H);
+    ctx.fillRect(V2.x1, 0, V2.x2-V2.x1, H);
+    ctx.fillRect(V3.x1, 0, V3.x2-V3.x1, H);
+    // Road edges
+    ctx.fillStyle = C.roadEdge;
+    const edgeW = 2;
+    [[0,H1.y1,W,edgeW],[0,H1.y2-edgeW,W,edgeW],
+     [0,H2.y1,W,edgeW],[0,H2.y2-edgeW,W,edgeW],
+     [V1.x1,0,edgeW,H],[V1.x2-edgeW,0,edgeW,H],
+     [V2.x1,0,edgeW,H],[V2.x2-edgeW,0,edgeW,H],
+     [V3.x1,0,edgeW,H],[V3.x2-edgeW,0,edgeW,H]
+    ].forEach(([x,y,w,h]) => ctx.fillRect(x,y,w,h));
+  }
+
+  function drawBuildings() {
+    const blocks = [
+      [V1.x2+1, 0,         V2.x1-V1.x2-2, H1.y1-1],
+      [V2.x2+1, 0,         V3.x1-V2.x2-2, H1.y1-1],
+      [V3.x2+1, 0,         W-V3.x2-1,     H1.y1-1],
+      [0,       0,         V1.x1-1,        H1.y1-1],
+      [0,       H1.y2+1,   V1.x1-1,        H2.y1-H1.y2-2],
+      [V1.x2+1, H1.y2+1,   V2.x1-V1.x2-2, H2.y1-H1.y2-2],
+      [V2.x2+1, H1.y2+1,   V3.x1-V2.x2-2, H2.y1-H1.y2-2],
+      [V3.x2+1, H1.y2+1,   W-V3.x2-1,     H2.y1-H1.y2-2],
+      [0,       H2.y2+1,   V1.x1-1,        H-H2.y2-1],
+      [V1.x2+1, H2.y2+1,   V2.x1-V1.x2-2, H-H2.y2-1],
+      [V2.x2+1, H2.y2+1,   V3.x1-V2.x2-2, H-H2.y2-1],
+      [V3.x2+1, H2.y2+1,   W-V3.x2-1,     H-H2.y2-1],
+    ];
+    for (const [x,y,w,h] of blocks) {
+      if (w <= 0 || h <= 0) continue;
+      ctx.fillStyle = C.building;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = 'rgba(60,60,100,0.6)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x+0.5, y+0.5, w-1, h-1);
+      // Window grid
+      ctx.fillStyle = C.winTint;
+      for (let wy = y+6; wy < y+h-4; wy += 13) {
+        for (let wx = x+5; wx < x+w-4; wx += 16) {
+          ctx.fillRect(wx, wy, 7, 7);
+        }
+      }
+    }
+  }
+
+  function drawMarkings() {
+    ctx.setLineDash([14, 12]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = C.line;
+    const lines = [
+      // horizontal center lines
+      [0, (H1.y1+H1.y2)/2, W, (H1.y1+H1.y2)/2],
+      [0, (H2.y1+H2.y2)/2, W, (H2.y1+H2.y2)/2],
+      // vertical center lines
+      [(V1.x1+V1.x2)/2, 0, (V1.x1+V1.x2)/2, H],
+      [(V2.x1+V2.x2)/2, 0, (V2.x1+V2.x2)/2, H],
+      [(V3.x1+V3.x2)/2, 0, (V3.x1+V3.x2)/2, H],
+    ];
+    lines.forEach(([x1,y1,x2,y2]) => {
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+  }
+
+  function drawLocations() {
+    const t = Date.now();
+    for (const loc of LOCS) {
+      const isPickup  = !hasPassenger && loc.id === pickupId;
+      const isDrop    = hasPassenger  && loc.id === dropoffId;
+      const pulse = isPickup || isDrop;
+      const a = pulse ? 0.45 + 0.45 * Math.sin(t / 280) : 0.55;
+
+      ctx.beginPath();
+      ctx.arc(loc.x, loc.y, 19, 0, Math.PI*2);
+      ctx.fillStyle = isPickup ? `rgba(201,168,76,${a})` :
+                      isDrop   ? `rgba(76,175,80,${a})`  :
+                                  `rgba(40,40,70,0.82)`;
+      ctx.fill();
+      ctx.strokeStyle = isPickup ? C.gold : isDrop ? C.green : C.goldDim;
+      ctx.lineWidth = pulse ? 2.5 : 1.5;
+      ctx.stroke();
+
+      ctx.font = '13px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = C.cream;
+      ctx.fillText(loc.icon, loc.x, loc.y);
+
+      ctx.font = '9px sans-serif';
+      ctx.fillStyle = isPickup ? C.gold : isDrop ? C.green : C.creamDk;
+      ctx.fillText(loc.name, loc.x, loc.y + 27);
+    }
+
+    // Gas station
+    const glow = 0.5 + 0.3 * Math.sin(Date.now() / 500);
+    ctx.beginPath();
+    ctx.arc(GAS.x, GAS.y, 17, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(255,180,0,${glow * 0.5})`;
+    ctx.fill();
+    ctx.strokeStyle = '#ffaa00';
+    ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.font = '13px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff'; ctx.fillText('⛽', GAS.x, GAS.y);
+    ctx.font = '8px sans-serif'; ctx.fillStyle = '#ffcc44';
+    ctx.fillText('Benzinkút', GAS.x, GAS.y + 26);
+  }
+
+  function drawTaxi() {
+    ctx.save();
+    ctx.translate(tx.x, tx.y);
+    ctx.rotate(tx.angle + Math.PI);
+    ctx.font = '22px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🚕', 0, 0);
+    ctx.restore();
+
+    if (hasPassenger) {
+      ctx.font = '11px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🧍', tx.x + 14, tx.y - 14);
+    }
+
+    // Autopilot path debug dots
+    if (apOn && apPath.length > 1) {
+      ctx.fillStyle = 'rgba(76,175,80,0.3)';
+      apPath.forEach(pt => {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2);
+        ctx.fill();
+      });
+    }
+  }
+
+  // ── Game loop ────────────────────────────────────────────────────
+  function loop() {
+    if (!gameActive) return;
+    update();
+    render();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  // ── Timer ────────────────────────────────────────────────────────
+  function startTimer() {
+    timerInt = setInterval(() => {
+      shiftTimer--;
+      document.getElementById('tx-timer').textContent = shiftTimer;
+      if (shiftTimer <= 10) document.getElementById('tx-timer').classList.add('tx-warn');
+      if (shiftTimer <= 0) endShift();
+    }, 1000);
+  }
+
+  function stopAll() {
+    gameActive = false;
+    clearInterval(timerInt);
+    cancelAnimationFrame(rafId);
+    stopAutopilot();
+    timerInt = rafId = null;
+  }
+
+  // ── Notify flash ─────────────────────────────────────────────────
+  function showNotify(msg, color) {
+    const el = document.getElementById('tx-notify');
+    el.textContent = msg;
+    el.style.color = color;
+    el.classList.add('tx-show');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('tx-show'), 1300);
+  }
+
+  // ── Fuel UI ─────────────────────────────────────────────────────
+  function updateFuelUI() {
+    const fill = document.getElementById('tx-fuel-fill');
+    const priceEl = document.getElementById('tx-fuel-price');
+    if (!fill) return;
+    fill.style.width = fuel + '%';
+    fill.style.background = fuel > 50 ? '#4CAF50' : fuel > 20 ? '#FFC107' : '#c0392b';
+    const fuelPricePerTank = Math.round(120 * oilPrice / 1000);
+    if (priceEl) priceEl.textContent = fuelPricePerTank + ' Ft/tank';
+  }
+
+  // ── End shift ────────────────────────────────────────────────────
+  async function endShift() {
+    stopAll();
+    try {
+      await GameAPI.patch({
+        balance: S.balance,
+        stats: { ...S.stats, times_employed: (S.stats.times_employed || 0) + 1 }
+      });
+    } catch(e) {}
+
+    document.getElementById('tx-overlay-stats').innerHTML = `
+      <p>Összkereset: <strong>${earnings} Ft</strong></p>
+      <p>Teljesített utak: <strong>${rides}</strong></p>
+      <p><em>Az app a viteldíj 75%-át levonja.</em></p>
+    `;
+    document.getElementById('tx-overlay').classList.remove('tx-hidden');
+  }
+
+  // ── Public API ────────────────────────────────────────────────────
+  window.TX = {
+    start() {
+      earnings = 0; rides = 0; shiftTimer = 90;
+      fuel = 100;
+      oilPrice = S.stats.oil_price || 1000;
+      updateFuelUI();
+      tx = { x: 85, y: 90, angle: 0 };
+      document.getElementById('tx-timer').textContent = '90';
+      document.getElementById('tx-timer').classList.remove('tx-warn');
+      document.getElementById('tx-earnings').textContent = '0';
+      document.getElementById('tx-rides').textContent = '0';
+      document.getElementById('tx-overlay').classList.add('tx-hidden');
+      document.getElementById('tx-app-bubble').textContent = 'Műszak megkezdve. Sok sikert!';
+      stopAutopilot();
+      gameActive = true;
+      newMission();
+      render();       // first frame before loop starts
+      startTimer();
+      loop();
+    },
+
+    toggleAutopilot() {
+      if (!gameActive) return;
+      if (apOn) { stopAutopilot(); return; }
+      if (!apUnlocked) {
+        if (!S || S.balance < 8000) { showNotify('Nincs elég pénz!', C.red); return; }
+        S.balance -= 8000;
+        GameAPI.patch({ balance: S.balance, stats: { ...S.stats, autopilot_unlocked: true } }).then(ns => { S = ns; }).catch(() => {});
+        apUnlocked = true;
+        document.getElementById('tx-autopilot-btn').textContent = '🤖 Önvezető (megvásárolva)';
+        document.getElementById('tx-app-bubble').textContent =
+          'Önvezetési mód aktiválva. 8 000 Ft. Természetesen.';
+      } else {
+        document.getElementById('tx-app-bubble').textContent = 'Önvezetési mód aktiválva. Ingyen.';
+      }
+      apOn = true;
+      document.getElementById('tx-autopilot-btn').classList.add('tx-ap-on');
+      document.getElementById('tx-autopilot-status').textContent = 'aktív';
+      apPath = buildPath(hasPassenger ? dropoffId : pickupId);
+    },
+
+    async exit() {
+      stopAll();
+      await GameAPI.exit(S ? S.balance : 0);
+    }
+  };
+
+  // ── Boot ──────────────────────────────────────────────────────────
+  async function init() {
+    S = await GameAPI.getState();
+    oilPrice = S.stats.oil_price || 1000;
+    if (S.stats.autopilot_unlocked) {
+      apUnlocked = true;
+      document.getElementById('tx-autopilot-btn').textContent = '🤖 Önvezető (megvásárolva)';
+    }
+    try {
+      const hint = await GameAPI.getHint();
+      document.getElementById('npc-hint').textContent = `${hint.term}: ${hint.explanation}`;
+    } catch(e) {}
+    // Draw static map before game starts
+    render();
+    // Show start overlay? No — game starts immediately on load for UX
+    TX.start();
+  }
+
+  init();
+})();
+</script>
 {% endblock %}

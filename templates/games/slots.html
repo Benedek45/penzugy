@@ -1093,52 +1093,52 @@
     easy: {
       bet: 100,
       segments: [
-        { label: '+100', value: 100, color: '#4CAF50' },
-        { label: '+200', value: 200, color: '#66BB6A' },
-        { label: '+300', value: 300, color: '#81C784' },
-        { label: '+500', value: 500, color: '#A5D6A7' },
-        { label: '-50', value: -50, color: '#EF5350' },
-        { label: '-100', value: -100, color: '#E57373' },
+        { label: '+100', value: 100, color: '#4CAF50', weight: 4 },
+        { label: '+200', value: 200, color: '#66BB6A', weight: 3 },
+        { label: '+300', value: 300, color: '#81C784', weight: 2 },
+        { label: '+500', value: 500, color: '#A5D6A7', weight: 1 },
+        { label: '-50', value: -50, color: '#EF5350', weight: 3 },
+        { label: '-100', value: -100, color: '#E57373', weight: 4 },
       ]
     },
     medium: {
       bet: 300,
       segments: [
-        { label: '+200', value: 200, color: '#4CAF50' },
-        { label: '+400', value: 400, color: '#66BB6A' },
-        { label: '+600', value: 600, color: '#81C784' },
-        { label: '+800', value: 800, color: '#A5D6A7' },
-        { label: '+1000', value: 1000, color: '#C8E6C9' },
-        { label: '+1200', value: 1200, color: '#E8F5E9' },
-        { label: '+1500', value: 1500, color: '#F1F8E9' },
-        { label: '+300', value: 300, color: '#DCEDC8' },
-        { label: '-100', value: -100, color: '#EF5350' },
-        { label: '-200', value: -200, color: '#E57373' },
-        { label: '-300', value: -300, color: '#EF9A9A' },
-        { label: '-400', value: -400, color: '#FFCDD2' },
+        { label: '+200', value: 200, color: '#4CAF50', weight: 5 },
+        { label: '+400', value: 400, color: '#66BB6A', weight: 4 },
+        { label: '+600', value: 600, color: '#81C784', weight: 3 },
+        { label: '+800', value: 800, color: '#A5D6A7', weight: 3 },
+        { label: '+1000', value: 1000, color: '#C8E6C9', weight: 2 },
+        { label: '+1200', value: 1200, color: '#E8F5E9', weight: 1 },
+        { label: '+1500', value: 1500, color: '#F1F8E9', weight: 1 },
+        { label: '+300', value: 300, color: '#DCEDC8', weight: 4 },
+        { label: '-100', value: -100, color: '#EF5350', weight: 3 },
+        { label: '-200', value: -200, color: '#E57373', weight: 3 },
+        { label: '-300', value: -300, color: '#EF9A9A', weight: 3 },
+        { label: '-400', value: -400, color: '#FFCDD2', weight: 3 },
       ]
     },
     hard: {
       bet: 500,
       segments: [
-        { label: '+500', value: 500, color: '#4CAF50' },
-        { label: '+800', value: 800, color: '#66BB6A' },
-        { label: '+1000', value: 1000, color: '#81C784' },
-        { label: '+1500', value: 1500, color: '#A5D6A7' },
-        { label: '+2000', value: 2000, color: '#C8E6C9' },
-        { label: '+2500', value: 2500, color: '#E8F5E9' },
-        { label: '+3000', value: 3000, color: '#F1F8E9' },
-        { label: '+3500', value: 3500, color: '#DCEDC8' },
-        { label: '+4000', value: 4000, color: '#D7CCC8' },
-        { label: '+4500', value: 4500, color: '#BCAAA4' },
-        { label: '+5000', value: 5000, color: '#FFD700' },
-        { label: '+200', value: 200, color: '#A1887F' },
-        { label: '-200', value: -200, color: '#EF5350' },
-        { label: '-400', value: -400, color: '#E57373' },
-        { label: '-600', value: -600, color: '#EF9A9A' },
-        { label: '-800', value: -800, color: '#FFCDD2' },
-        { label: '-1000', value: -1000, color: '#FF8A80' },
-        { label: '-1500', value: -1500, color: '#FF5252' },
+        { label: '+500', value: 500, color: '#4CAF50', weight: 6 },
+        { label: '+800', value: 800, color: '#66BB6A', weight: 5 },
+        { label: '+1000', value: 1000, color: '#81C784', weight: 4 },
+        { label: '+1500', value: 1500, color: '#A5D6A7', weight: 3 },
+        { label: '+2000', value: 2000, color: '#C8E6C9', weight: 2 },
+        { label: '+2500', value: 2500, color: '#E8F5E9', weight: 2 },
+        { label: '+3000', value: 3000, color: '#F1F8E9', weight: 1 },
+        { label: '+3500', value: 3500, color: '#DCEDC8', weight: 1 },
+        { label: '+4000', value: 4000, color: '#D7CCC8', weight: 1 },
+        { label: '+4500', value: 4500, color: '#BCAAA4', weight: 1 },
+        { label: '+5000', value: 5000, color: '#FFD700', weight: 1 },
+        { label: '+200', value: 200, color: '#A1887F', weight: 5 },
+        { label: '-200', value: -200, color: '#EF5350', weight: 2 },
+        { label: '-400', value: -400, color: '#E57373', weight: 2 },
+        { label: '-600', value: -600, color: '#EF9A9A', weight: 3 },
+        { label: '-800', value: -800, color: '#FFCDD2', weight: 4 },
+        { label: '-1000', value: -1000, color: '#FF8A80', weight: 5 },
+        { label: '-1500', value: -1500, color: '#FF5252', weight: 6 },
       ]
     }
   };
@@ -1198,6 +1198,19 @@
         `Tét: <strong style="color:var(--gold);">${config.bet} Ft</strong> · ${segCount} mező · Max nyeremény: ${maxWin} Ft`;
     }
 
+    function pickSegmentIndexWeighted(list) {
+      if (!list.length) return 0;
+      const getWeight = (seg) => Math.max(1, Number(seg.weight) || 1);
+      const totalWeight = list.reduce((sum, seg) => sum + getWeight(seg), 0);
+
+      let roll = Math.random() * totalWeight;
+      for (let i = 0; i < list.length; i++) {
+        roll -= getWeight(list[i]);
+        if (roll <= 0) return i;
+      }
+      return list.length - 1;
+    }
+
     async function spin() {
       if (spinning) return;
       const config = WHEEL_CONFIGS[diff];
@@ -1215,7 +1228,7 @@
       const wheel = document.getElementById('wh-wheel');
       const segCount = segments.length;
       const segAngle = 360 / segCount;
-      const winIndex = Math.floor(Math.random() * segCount);
+      const winIndex = pickSegmentIndexWeighted(segments);
       const winSeg = segments[winIndex];
 
       const targetAngle = 360 - (winIndex + 0.5) * segAngle;

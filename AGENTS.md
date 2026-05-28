@@ -221,7 +221,7 @@ if session.get('debt', 0) > 0:
 
 ## Coding Rules
 
-- **No external JS libraries** — vanilla JS only, no jQuery, no React
+- **External JS libraries are allowed when justified** — prefer small, focused libraries and document why they are used
 - **No inline styles** — use CSS classes from style.css or add new ones
 - **CSS variables only** — never hardcode colors, use `var(--gold)`, `var(--dark)` etc.
 - **Flask session only** for state — never write to saves/ during a game

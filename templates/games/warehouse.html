@@ -1,15 +1,801 @@
 {% extends "base.html" %}
-{% block title %}warehouse — Hamarosan{% endblock %}
+{% block title %}Raktár — Kötelező Rosszak Hipermarket{% endblock %}
+
 {% block content %}
-<div style="max-width:600px;margin:4rem auto;text-align:center;padding:0 1rem;">
-  <div style="font-size:4rem;margin-bottom:1rem;">🚧</div>
-  <h1 style="margin-bottom:0.5rem;">warehouse</h1>
-  <p style="color:var(--cream-dark);font-style:italic;margin-bottom:2rem;">
-    Ez a mini-játék még fejlesztés alatt áll. Hamarosan!
-  </p>
-  <div class="npc-hint" id="npc-hint">Betöltés...</div>
-  <div style="margin-top:2rem;">
-    <a href="/" class="btn btn-gold">← Vissza a Plazára</a>
+<div id="wh-root">
+  <div id="wh-scene">
+
+    <!-- Background -->
+    <div id="wh-bg">
+      <div class="wh-lamp wh-lamp-1"></div>
+      <div class="wh-lamp wh-lamp-2"></div>
+      <div class="wh-lamp wh-lamp-3"></div>
+      <div id="wh-warehouse-sign">SORTÍROZÓ RAKTÁR</div>
+      <div class="wh-rack-line wh-rack-line-1"></div>
+      <div class="wh-rack-line wh-rack-line-2"></div>
+      <div class="wh-rack-line wh-rack-line-3"></div>
+      <div class="wh-rack-line wh-rack-line-4"></div>
+    </div>
+
+    <!-- HUD -->
+    <div id="wh-hud">
+      <div id="wh-hud-timer">⏱ <span id="wh-timer">90</span>s</div>
+      <div id="wh-hud-earn">Kereset: <span id="wh-earned">0</span> Ft</div>
+    </div>
+
+    <!-- Boss NPC -->
+    <div id="wh-boss">
+      <div id="wh-boss-bubble" class="wh-bubble">Üdvözlöm, új kolléga.</div>
+      <div id="wh-boss-char">👷</div>
+    </div>
+
+    <!-- Incoming area -->
+    <div id="wh-incoming">
+      <div id="wh-conveyor-strip"></div>
+      <div id="wh-box-stage">
+        <div id="wh-box" class="wh-box">
+          <div id="wh-box-emoji">📦</div>
+          <div id="wh-box-name">Várakozás...</div>
+          <div id="wh-box-cat"></div>
+        </div>
+        <div id="wh-timer-track">
+          <div id="wh-timer-fill"></div>
+        </div>
+      </div>
+      <div id="wh-incoming-label">BEÉRKEZŐ ÁRUK</div>
+    </div>
+
+    <!-- Shelves -->
+    <div id="wh-shelves">
+      <div class="wh-shelf" data-cat="food" onclick="WH.sort('food')">
+        <div class="wh-shelf-top"></div>
+        <div class="wh-shelf-inner">
+          <span class="wh-shelf-icon">📦</span>
+          <span class="wh-shelf-label">Élelmiszer</span>
+        </div>
+      </div>
+      <div class="wh-shelf" data-cat="electronics" onclick="WH.sort('electronics')">
+        <div class="wh-shelf-top"></div>
+        <div class="wh-shelf-inner">
+          <span class="wh-shelf-icon">⚡</span>
+          <span class="wh-shelf-label">Elektronika</span>
+        </div>
+      </div>
+      <div class="wh-shelf" data-cat="tools" onclick="WH.sort('tools')">
+        <div class="wh-shelf-top"></div>
+        <div class="wh-shelf-inner">
+          <span class="wh-shelf-icon">🛠️</span>
+          <span class="wh-shelf-label">Szerszám</span>
+        </div>
+      </div>
+      <div class="wh-shelf" data-cat="chemicals" onclick="WH.sort('chemicals')">
+        <div class="wh-shelf-top"></div>
+        <div class="wh-shelf-inner">
+          <span class="wh-shelf-icon">🧴</span>
+          <span class="wh-shelf-label">Vegyszer</span>
+        </div>
+      </div>
+      <div id="wh-shelves-label">POLCOK</div>
+    </div>
+
+    <!-- NPC Hint -->
+    <div id="npc-hint">Betöltés...</div>
+
   </div>
+
+  <!-- Overlay -->
+  <div id="wh-overlay">
+    <div id="wh-ov-box">
+      <h2 id="wh-ov-title">📦 Raktári szelektálás</h2>
+      <p id="wh-ov-desc">
+        A szalagon érkező árukat rakd a megfelelő polcra.<br>
+        Gyorsan és pontosan. A fizetésed érte minimálbér.
+      </p>
+      <div id="wh-ov-result"></div>
+      <div id="wh-ov-stats"></div>
+      <div id="wh-ov-msg"></div>
+      <button class="btn btn-gold" onclick="WH.start()">Műszak kezdése</button>
+      <button class="btn btn-dark" onclick="WH.exit()">← Vissza a városba</button>
+    </div>
+  </div>
+
 </div>
+
+<style>
+
+/* ── Root ─────────────────────────────────────────────── */
+#wh-root {
+  max-width: 700px;
+  margin: 1.5rem auto;
+  font-family: var(--font-body);
+  color: var(--cream);
+  user-select: none;
+  position: relative;
+}
+
+/* ── Scene ────────────────────────────────────────────── */
+#wh-scene {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  border: 3px solid var(--gold-dim);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px var(--shadow);
+}
+
+/* ── Background ───────────────────────────────────────── */
+#wh-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, #0d0d1e 0%, var(--dark) 55%, #1a100a 100%);
+}
+
+.wh-lamp {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+.wh-lamp::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 28px;
+  background: #555;
+  margin: 0 auto;
+}
+.wh-lamp::after {
+  content: '';
+  display: block;
+  width: 56px;
+  height: 10px;
+  background: #dde8aa;
+  border-radius: 2px;
+  margin-left: -26px;
+  box-shadow: 0 0 22px 10px rgba(220, 230, 150, 0.28);
+}
+.wh-lamp-1 { left: 15%; }
+.wh-lamp-2 { left: 50%; }
+.wh-lamp-3 { left: 85%; }
+
+#wh-warehouse-sign {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  color: var(--gold-dim);
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+.wh-rack-line {
+  position: absolute;
+  right: 4%;
+  height: 2px;
+  width: 38%;
+  background: var(--gold-dim);
+  opacity: 0.1;
+}
+.wh-rack-line-1 { top: 14%; }
+.wh-rack-line-2 { top: 31%; }
+.wh-rack-line-3 { top: 48%; }
+.wh-rack-line-4 { top: 65%; }
+
+/* ── HUD ──────────────────────────────────────────────── */
+#wh-hud {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  z-index: 15;
+}
+#wh-hud-timer, #wh-hud-earn {
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid var(--gold-dim);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+}
+#wh-timer { font-weight: bold; color: var(--gold); }
+#wh-timer.wh-warn { color: var(--red-light); animation: wh-blink 0.5s step-end infinite; }
+#wh-earned { color: var(--green-light); font-weight: bold; }
+
+@keyframes wh-blink { 50% { opacity: 0; } }
+
+/* ── Boss NPC ─────────────────────────────────────────── */
+#wh-boss {
+  position: absolute;
+  top: 38px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 15;
+}
+#wh-boss-char {
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px var(--shadow-gold));
+}
+
+/* ── Speech bubbles ───────────────────────────────────── */
+.wh-bubble {
+  background: var(--cream);
+  color: var(--dark);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  font-family: var(--font-body);
+  max-width: 140px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+  position: relative;
+  text-align: center;
+  line-height: 1.3;
+}
+.wh-bubble.vis { opacity: 1; }
+.wh-bubble::after {
+  content: '';
+  position: absolute;
+  width: 0; height: 0;
+  border: 5px solid transparent;
+}
+#wh-boss-bubble { order: -1; }
+#wh-boss-bubble::after {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top-color: var(--cream);
+}
+
+/* ── Incoming area ────────────────────────────────────── */
+#wh-incoming {
+  position: absolute;
+  left: 4%;
+  top: 20%;
+  width: 50%;
+  height: 65%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+#wh-conveyor-strip {
+  position: absolute;
+  bottom: 25%;
+  left: -6%;
+  right: -6%;
+  height: 38%;
+  background: repeating-linear-gradient(
+    90deg,
+    #2e2e2e 0px, #2e2e2e 18px,
+    #404040 18px, #404040 20px,
+    #252525 20px, #252525 38px,
+    #404040 38px, #404040 40px
+  );
+  background-size: 40px 100%;
+  animation: wh-belt-roll 0.45s linear infinite;
+  border-top: 2px solid #555;
+  border-bottom: 2px solid #555;
+  opacity: 0.5;
+}
+@keyframes wh-belt-roll {
+  from { background-position: 0 0; }
+  to   { background-position: -40px 0; }
+}
+
+#wh-box-stage {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+#wh-box {
+  width: 110px;
+  height: 110px;
+  background: var(--dark-mid);
+  border: 2px solid var(--gold-dim);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s, opacity 0.3s;
+}
+
+#wh-box-emoji {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+#wh-box-name {
+  font-size: 0.78rem;
+  color: var(--cream);
+  text-align: center;
+  font-family: var(--font-body);
+}
+#wh-box-cat {
+  font-size: 0.55rem;
+  color: var(--gold-dim);
+  text-align: center;
+}
+
+.wh-box-in {
+  animation: wh-box-appear 0.25s ease-out;
+}
+@keyframes wh-box-appear {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.wh-box-correct {
+  background: var(--green) !important;
+  border-color: var(--green-light) !important;
+  transform: scale(1.1) !important;
+  opacity: 0 !important;
+  transition: all 0.3s ease !important;
+}
+
+.wh-box-wrong {
+  background: var(--red) !important;
+  border-color: var(--red-light) !important;
+  transform: translateX(20px) rotate(8deg) !important;
+  opacity: 0 !important;
+  transition: all 0.3s ease !important;
+}
+
+.wh-box-crash {
+  transform: translateY(60px) !important;
+  opacity: 0 !important;
+  transition: all 0.4s ease !important;
+  border-color: var(--red-light) !important;
+}
+
+/* Timer bar */
+#wh-timer-track {
+  width: 120px;
+  height: 8px;
+  background: var(--dark);
+  border: 1px solid var(--dark-light);
+  border-radius: 4px;
+  overflow: hidden;
+}
+#wh-timer-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--green), var(--green-light));
+  border-radius: 3px;
+  transition: width linear;
+}
+
+#wh-incoming-label {
+  position: absolute;
+  bottom: 10%;
+  font-size: 0.5rem;
+  letter-spacing: 2px;
+  color: var(--gold-dim);
+  opacity: 0.6;
+  z-index: 2;
+}
+
+/* ── Shelves ──────────────────────────────────────────── */
+#wh-shelves {
+  position: absolute;
+  right: 4%;
+  top: 12%;
+  width: 38%;
+  height: 76%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+
+.wh-shelf {
+  flex: 1;
+  background: var(--dark-mid);
+  border: 2px solid var(--dark-light);
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.wh-shelf-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(to bottom, #4a3218, var(--gold-dim));
+  opacity: 0.4;
+}
+.wh-shelf:hover {
+  border-color: var(--gold);
+  background: var(--dark-light);
+  box-shadow: 0 0 16px var(--shadow-gold);
+}
+.wh-shelf:active {
+  transform: scale(0.97);
+}
+
+.wh-shelf-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.wh-shelf-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.wh-shelf-label {
+  font-size: 0.62rem;
+  color: var(--cream-dark);
+  font-family: var(--font-body);
+}
+
+#wh-shelves-label {
+  position: absolute;
+  top: -18px;
+  right: 0;
+  font-size: 0.5rem;
+  letter-spacing: 2px;
+  color: var(--gold-dim);
+  opacity: 0.6;
+}
+
+/* ── NPC Hint ─────────────────────────────────────────── */
+#npc-hint {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 44px;
+  background: rgba(0, 0, 0, 0.72);
+  border-top: 1px solid var(--gold-dim);
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--cream-dark);
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  z-index: 5;
+}
+
+/* ── Overlay ──────────────────────────────────────────── */
+#wh-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 8, 18, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  border-radius: 6px;
+}
+#wh-overlay.wh-hidden { display: none; }
+
+#wh-ov-box {
+  background: var(--dark-mid);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  text-align: center;
+  max-width: 380px;
+}
+#wh-ov-title {
+  font-family: var(--font-display);
+  color: var(--gold);
+  margin-bottom: 12px;
+  font-size: 1.35rem;
+}
+#wh-ov-desc {
+  color: var(--cream-dark);
+  font-size: 0.9rem;
+  margin-bottom: 14px;
+  line-height: 1.55;
+}
+#wh-ov-result { margin-bottom: 8px; }
+#wh-ov-stats { margin-bottom: 8px; }
+#wh-ov-msg { margin-bottom: 16px; }
+
+.wh-result-wage {
+  font-size: 2.2rem;
+  font-family: var(--font-display);
+  color: var(--gold);
+  font-weight: bold;
+}
+.wh-result-note {
+  font-size: 0.78rem;
+  color: var(--cream-dark);
+  font-style: italic;
+  margin-top: 4px;
+}
+.wh-result-stats {
+  font-size: 0.8rem;
+  color: var(--cream-dark);
+  margin-top: 8px;
+}
+
+#wh-ov-box .btn { margin: 4px; }
+
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  'use strict';
+
+  var state;
+  var gameActive = false;
+  var shiftTimer = 90;
+  var earned = 0;
+  var correctCount = 0;
+  var wrongCount = 0;
+  var missedCount = 0;
+  var currentBoxTimeoutId = null;
+  var shiftInterval = null;
+  var bossQuoteInterval = null;
+  var bossHideTimeout = null;
+
+  var BOXES = [
+    { emoji:'\uD83C\uDF5E', name:'Keny\u00E9r',      cat:'food',        wage:20 },
+    { emoji:'\uD83E\uDD5B', name:'Tejpor',      cat:'food',        wage:20 },
+    { emoji:'\uD83C\uDF6B', name:'Csoki',       cat:'food',        wage:20 },
+    { emoji:'\uD83E\uDD6B', name:'Konzerv',     cat:'food',        wage:20 },
+    { emoji:'\uD83D\uDCFA', name:'T\u00E9v\u00E9',        cat:'electronics', wage:30 },
+    { emoji:'\uD83D\uDCBB', name:'Laptop',      cat:'electronics', wage:30 },
+    { emoji:'\uD83D\uDCF1', name:'Telefon',     cat:'electronics', wage:30 },
+    { emoji:'\uD83D\uDD0C', name:'Adapter',     cat:'electronics', wage:30 },
+    { emoji:'\uD83D\uDD28', name:'Kalap\u00E1cs',    cat:'tools',       wage:25 },
+    { emoji:'\uD83E\uDE9B', name:'Csavarh\u00FAz\u00F3', cat:'tools',       wage:25 },
+    { emoji:'\uD83D\uDD27', name:'Cs\u0151kulcs',   cat:'tools',       wage:25 },
+    { emoji:'\uD83E\uDDF4', name:'Sampon',      cat:'chemicals',   wage:20 },
+    { emoji:'\uD83E\uDDF9', name:'S\u00F6pr\u0171',       cat:'chemicals',   wage:20 },
+    { emoji:'\uD83E\uDDEA', name:'Oldat',       cat:'chemicals',   wage:20 },
+  ];
+
+  var CAT_LABELS = {
+    food:        '\uD83D\uDCE6 \u00C9lelmiszer',
+    electronics: '\u26A1 Elektronika',
+    tools:       '\uD83D\uDEE0\uFE0F Szersz\u00E1m',
+    chemicals:   '\uD83E\uDDF4 Vegyszer',
+  };
+
+  var BOSS_QUOTES = [
+    'A kv\u00F3ta nem aj\u00E1nl\u00E1s, hanem k\u00F6vetelm\u00E9ny.',
+    'S\u00E9r\u00FCl\u00E9s eset\u00E9n t\u00F6ltse ki a balesetilapot.',
+    'A vill\u00E1stargonca jogs\u00EDtv\u00E1ny nem k\u00F6telez\u0151. M\u00E9g.',
+    'Sz\u00FCnet a 6. \u00F3ra ut\u00E1n. \u00D6n az 1. \u00F3r\u00E1n\u00E1l j\u00E1r.',
+    'A polcrendszer logik\u00E1ja titkos. Tanuljon meg alkalmazkodni.',
+    'Minden hib\u00E1san elhelyezett doboz\u00E9rt a b\u00E9r cs\u00F6kken.',
+  ];
+
+  function $(id) { return document.getElementById(id); }
+
+  async function init() {
+    state = await GameAPI.getState();
+    try {
+      var hint = await GameAPI.getHint();
+      $('npc-hint').textContent = hint.term + ': ' + hint.explanation;
+    } catch(e) {
+      $('npc-hint').textContent = 'Rakt\u00E1ri munkaer\u0151: a legalacsonyabb b\u00E9rszint a v\u00E1llalati hierarchi\u00E1ban. \u00D6n itt kezdi.';
+    }
+  }
+
+  function getTimeout() {
+    var elapsed = 90 - shiftTimer;
+    return Math.max(3, 6 - elapsed * (3 / 90));
+  }
+
+  function clearCurrentBoxTimeout() {
+    if (currentBoxTimeoutId !== null) {
+      clearTimeout(currentBoxTimeoutId);
+      currentBoxTimeoutId = null;
+    }
+  }
+
+  function spawnBox() {
+    if (!gameActive) return;
+    clearCurrentBoxTimeout();
+
+    var def = BOXES[Math.floor(Math.random() * BOXES.length)];
+    $('wh-box-emoji').textContent = def.emoji;
+    $('wh-box-name').textContent = def.name;
+    $('wh-box-cat').textContent = CAT_LABELS[def.cat];
+    var box = $('wh-box');
+    box.className = 'wh-box wh-box-in';
+
+    var timeout = getTimeout();
+    var track = $('wh-timer-fill');
+    track.style.transition = 'none';
+    track.style.width = '100%';
+    void track.offsetHeight;
+    track.style.transition = 'width ' + timeout + 's linear';
+    track.style.width = '0%';
+
+    currentBoxTimeoutId = setTimeout(function() {
+      if (!gameActive) return;
+      currentBoxTimeoutId = null;
+      box.className = 'wh-box wh-box-crash';
+      missedCount++;
+      track.style.transition = 'none';
+      track.style.width = '0%';
+      setTimeout(function() {
+        if (gameActive) spawnBox();
+      }, 400);
+    }, timeout * 1000);
+
+    // store def on the box for sorting
+    box._def = def;
+  }
+
+  function sort(cat) {
+    if (!gameActive) return;
+    var box = $('wh-box');
+    var def = box._def;
+    if (!def) return;
+    clearCurrentBoxTimeout();
+
+    var track = $('wh-timer-fill');
+    track.style.transition = 'none';
+    track.style.width = '0%';
+
+    if (cat === def.cat) {
+      box.className = 'wh-box wh-box-correct';
+      earned += def.wage;
+      correctCount++;
+    } else {
+      box.className = 'wh-box wh-box-wrong';
+      wrongCount++;
+    }
+    $('wh-earned').textContent = earned;
+    box._def = null;
+
+    setTimeout(function() {
+      if (gameActive) spawnBox();
+    }, 350);
+  }
+
+  function showBossQuote() {
+    if (!gameActive) return;
+    var q = BOSS_QUOTES[Math.floor(Math.random() * BOSS_QUOTES.length)];
+    var b = $('wh-boss-bubble');
+    b.textContent = q;
+    b.classList.add('vis');
+    if (bossHideTimeout) clearTimeout(bossHideTimeout);
+    bossHideTimeout = setTimeout(function() {
+      b.classList.remove('vis');
+      bossHideTimeout = null;
+    }, 3500);
+  }
+
+  function stopAll() {
+    gameActive = false;
+    clearCurrentBoxTimeout();
+    if (shiftInterval) { clearInterval(shiftInterval); shiftInterval = null; }
+    if (bossQuoteInterval) { clearInterval(bossQuoteInterval); bossQuoteInterval = null; }
+    if (bossHideTimeout) { clearTimeout(bossHideTimeout); bossHideTimeout = null; }
+    var track = $('wh-timer-fill');
+    track.style.transition = 'none';
+    track.style.width = '0%';
+    $('wh-box')._def = null;
+  }
+
+  async function endShift() {
+    stopAll();
+    var newBal = state.balance + earned;
+    state.balance = newBal;
+    try {
+      await GameAPI.patch({
+        balance: newBal,
+        stats: { ...state.stats, times_employed: (state.stats.times_employed || 0) + 1 }
+      });
+    } catch(e) {
+      console.warn('patch failed', e);
+    }
+
+    var total = correctCount + wrongCount + missedCount;
+    var pct = total > 0 ? Math.round(correctCount / total * 100) : 0;
+
+    $('wh-ov-title').textContent = '\uD83D\uDCE6 M\u0171szak v\u00E9ge';
+    $('wh-ov-desc').style.display = 'none';
+    $('wh-ov-result').innerHTML = '<div class="wh-result-wage">' + earned + ' Ft</div>';
+    $('wh-ov-stats').innerHTML =
+      '<div class="wh-result-stats">\u2705 Helyes: ' + correctCount +
+      ' | \u274C Hib\u00E1s: ' + wrongCount +
+      ' | \uD83D\uDC80 Kiesett: ' + missedCount + '</div>' +
+      '<div class="wh-result-stats">\uD83C\uDFAF Pontoss\u00E1g: ' + pct + '%</div>';
+    $('wh-ov-msg').innerHTML = '<div class="wh-result-note">' +
+      (earned > 0
+        ? 'A kapitalizmus gy\u0151z\u00F6tt. Gyere vissza holnap is!'
+        : 'M\u00E9g a minim\u00E1lb\u00E9rt sem \u00E9rdemelted meg. Pr\u00F3b\u00E1ld \u00FAjra.') +
+      '</div>';
+    $('wh-overlay').classList.remove('wh-hidden');
+  }
+
+  // ── Public API ────────────────────────────────────────────
+  window.WH = {
+    start: function() {
+      stopAll();
+      gameActive = true;
+      earned = 0; correctCount = 0; wrongCount = 0; missedCount = 0;
+      shiftTimer = 90;
+      currentBoxTimeoutId = null;
+
+      $('wh-ov-desc').style.display = '';
+      $('wh-ov-result').innerHTML = '';
+      $('wh-ov-stats').innerHTML = '';
+      $('wh-ov-msg').innerHTML = '';
+      $('wh-ov-title').textContent = '\uD83D\uDCE6 Rakt\u00E1ri szelekt\u00E1l\u00E1s';
+      $('wh-overlay').classList.add('wh-hidden');
+
+      $('wh-timer').textContent = '90';
+      $('wh-timer').classList.remove('wh-warn');
+      $('wh-earned').textContent = '0';
+      $('wh-box').className = 'wh-box';
+      $('wh-box-emoji').textContent = '\uD83D\uDCE6';
+      $('wh-box-name').textContent = 'V\u00E1rakoz\u00E1s...';
+      $('wh-box-cat').textContent = '';
+      $('wh-box')._def = null;
+      var track = $('wh-timer-fill');
+      track.style.transition = 'none';
+      track.style.width = '0%';
+
+      $('wh-boss-bubble').classList.remove('vis');
+
+      spawnBox();
+
+      shiftInterval = setInterval(function() {
+        shiftTimer--;
+        $('wh-timer').textContent = shiftTimer;
+        if (shiftTimer <= 10) $('wh-timer').classList.add('wh-warn');
+        if (shiftTimer <= 0) endShift();
+      }, 1000);
+
+      bossQuoteInterval = setInterval(showBossQuote, 20000);
+    },
+
+    sort: function(cat) {
+      sort(cat);
+    },
+
+    exit: async function() {
+      stopAll();
+      await GameAPI.exit(state.balance);
+    }
+  };
+
+  // ── Number key controls (1–4) ────────────────────────────
+  var KEY_MAP = ['food', 'electronics', 'tools', 'chemicals'];
+  document.addEventListener('keydown', function(e) {
+    if (!gameActive) return;
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4) {
+      e.preventDefault();
+      sort(KEY_MAP[n - 1]);
+    }
+  });
+
+  init();
+})();
+</script>
 {% endblock %}

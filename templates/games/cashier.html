@@ -1,15 +1,754 @@
 {% extends "base.html" %}
-{% block title %}cashier — Hamarosan{% endblock %}
+{% block title %}Pénztáros — Kötelező Rosszak Hipermarket{% endblock %}
+
 {% block content %}
-<div style="max-width:600px;margin:4rem auto;text-align:center;padding:0 1rem;">
-  <div style="font-size:4rem;margin-bottom:1rem;">🚧</div>
-  <h1 style="margin-bottom:0.5rem;">cashier</h1>
-  <p style="color:var(--cream-dark);font-style:italic;margin-bottom:2rem;">
-    Ez a mini-játék még fejlesztés alatt áll. Hamarosan!
-  </p>
-  <div class="npc-hint" id="npc-hint">Betöltés...</div>
-  <div style="margin-top:2rem;">
-    <a href="/" class="btn btn-gold">← Vissza a Plazára</a>
+<div id="cg-root">
+
+  <div id="cg-scene">
+
+    <!-- ── Store background ─────────────────────────────────── -->
+    <div id="cg-bg">
+      <div class="cg-shelf cg-shelf-a"></div>
+      <div class="cg-shelf cg-shelf-b"></div>
+      <div class="cg-shelf cg-shelf-c"></div>
+      <div class="cg-shelf cg-shelf-d"></div>
+      <div class="cg-lamp cg-lamp-1"></div>
+      <div class="cg-lamp cg-lamp-2"></div>
+      <div class="cg-lamp cg-lamp-3"></div>
+      <div id="cg-store-sign">KÖTELEZŐ ROSSZAK HIPERMARKET</div>
+    </div>
+
+    <!-- ── HUD ──────────────────────────────────────────────── -->
+    <div id="cg-hud">
+      <div id="cg-hud-timer">⏱ <span id="cg-timer">90</span>s</div>
+      <div id="cg-hud-earn">Kereset: <span id="cg-earned">0</span> Ft</div>
+    </div>
+
+    <!-- ── Manager NPC ──────────────────────────────────────── -->
+    <div id="cg-mgr">
+      <div id="cg-mgr-bubble" class="cg-bubble">Üdvözlöm, új kolléga.</div>
+      <div id="cg-mgr-char">👔</div>
+    </div>
+
+    <!-- ── Counter area ──────────────────────────────────────── -->
+    <div id="cg-counter">
+
+      <!-- Customer -->
+      <div id="cg-cust-wrap">
+        <div id="cg-cust-bubble" class="cg-bubble"></div>
+        <div id="cg-cust">🧍</div>
+      </div>
+
+      <!-- Conveyor belt -->
+      <div id="cg-conveyor">
+        <div id="cg-belt"></div>
+        <div id="cg-items-layer"></div>
+        <div id="cg-belt-edge-l"></div>
+        <div id="cg-belt-edge-r"></div>
+      </div>
+
+      <!-- Cash register -->
+      <div id="cg-register">
+        <div id="cg-screen">
+          <div id="cg-price">---</div>
+          <div id="cg-scan-txt">Várakozás...</div>
+        </div>
+        <div id="cg-scanner">
+          <div id="cg-scanner-lines">
+            <div class="cg-sline"></div>
+            <div class="cg-sline"></div>
+            <div class="cg-sline"></div>
+          </div>
+          <div id="cg-scanner-beam"></div>
+        </div>
+        <div id="cg-reg-label">SCAN</div>
+      </div>
+
+    </div><!-- /counter -->
+
+    <!-- ── NPC Hint ─────────────────────────────────────────── -->
+    <div id="npc-hint">Betöltés...</div>
+
+  </div><!-- /scene -->
+
+  <!-- ── Overlay ──────────────────────────────────────────────── -->
+  <div id="cg-overlay">
+    <div id="cg-ov-box">
+      <h2 id="cg-ov-title">🛒 Kötelező Rosszak Hipermarket</h2>
+      <p id="cg-ov-body">
+        Kattints az árukon a beolvasáshoz, mielőtt elhagyják a szalagot.<br>
+        Minimálbér garantált. Megköszönve nem lesz.
+      </p>
+      <div id="cg-ov-stats"></div>
+      <button id="cg-btn-start" onclick="CG.start()">Műszak kezdése</button>
+      <button id="cg-btn-exit" onclick="CG.exit()">← Vissza a városba</button>
+    </div>
   </div>
-</div>
+
+</div><!-- /root -->
+
+<style>
+/* ── Root ─────────────────────────────────────────────── */
+#cg-root {
+  max-width: 700px;
+  margin: 1.5rem auto;
+  font-family: var(--font-body);
+  color: var(--cream);
+  user-select: none;
+  position: relative;
+}
+
+/* ── Scene ────────────────────────────────────────────── */
+#cg-scene {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  border: 3px solid var(--gold-dim);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px var(--shadow);
+}
+
+/* ── Background ───────────────────────────────────────── */
+#cg-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, #0d0d1e 0%, var(--dark) 55%, #1a100a 100%);
+}
+
+.cg-shelf {
+  position: absolute;
+  height: 18px;
+  background: linear-gradient(to bottom, #4a3218 0%, #2e1e0a 70%);
+  border-bottom: 3px solid var(--gold-dim);
+  border-radius: 2px;
+}
+.cg-shelf::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg, transparent 0, transparent 26px,
+    rgba(0,0,0,0.3) 26px, rgba(0,0,0,0.3) 28px
+  );
+}
+.cg-shelf-a { top: 12%; left: 4%;  width: 37%; }
+.cg-shelf-b { top: 26%; left: 4%;  width: 37%; }
+.cg-shelf-c { top: 12%; left: 53%; width: 30%; }
+.cg-shelf-d { top: 26%; left: 53%; width: 30%; }
+
+.cg-lamp {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+.cg-lamp::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 28px;
+  background: #555;
+  margin: 0 auto;
+}
+.cg-lamp::after {
+  content: '';
+  display: block;
+  width: 56px;
+  height: 10px;
+  background: #dde8aa;
+  border-radius: 2px;
+  margin-left: -26px;
+  box-shadow: 0 0 22px 10px rgba(220,230,150,0.28);
+}
+.cg-lamp-1 { left: 18%; }
+.cg-lamp-2 { left: 50%; }
+.cg-lamp-3 { left: 82%; }
+
+#cg-store-sign {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  color: var(--gold-dim);
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+/* ── HUD ──────────────────────────────────────────────── */
+#cg-hud {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  z-index: 15;
+}
+#cg-hud-timer, #cg-hud-earn {
+  background: rgba(0,0,0,0.65);
+  border: 1px solid var(--gold-dim);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+}
+#cg-timer { font-weight: bold; color: var(--gold); }
+#cg-timer.cg-warn { color: var(--red-light); animation: cg-blink 0.5s step-end infinite; }
+#cg-earned { color: var(--green-light); font-weight: bold; }
+
+@keyframes cg-blink { 50% { opacity: 0; } }
+
+/* ── Manager NPC ──────────────────────────────────────── */
+#cg-mgr {
+  position: absolute;
+  top: 38px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 15;
+}
+#cg-mgr-char {
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(201,168,76,0.3));
+}
+
+/* ── Speech bubbles ───────────────────────────────────── */
+.cg-bubble {
+  background: var(--cream);
+  color: var(--dark);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  font-family: var(--font-body);
+  max-width: 140px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+  position: relative;
+  text-align: center;
+  line-height: 1.3;
+}
+.cg-bubble.vis { opacity: 1; }
+.cg-bubble::after {
+  content: '';
+  position: absolute;
+  width: 0; height: 0;
+  border: 5px solid transparent;
+}
+#cg-mgr-bubble { order: -1; }
+#cg-mgr-bubble::after {
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border-top-color: var(--cream);
+}
+
+#cg-cust-bubble {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+#cg-cust-bubble::after {
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border-top-color: var(--cream);
+}
+
+/* ── Counter ──────────────────────────────────────────── */
+#cg-counter {
+  position: absolute;
+  bottom: 44px;
+  left: 0; right: 0;
+  height: 130px;
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(to bottom, #2a1508 0%, #170c04 100%);
+  border-top: 3px solid var(--gold-dim);
+  z-index: 10;
+}
+
+/* Customer side */
+#cg-cust-wrap {
+  position: relative;
+  width: 78px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 6px;
+  border-right: 2px solid var(--gold-dim);
+}
+#cg-cust { font-size: 3rem; line-height: 1; }
+
+/* Conveyor */
+#cg-conveyor {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+#cg-belt {
+  position: absolute;
+  bottom: 22px;
+  left: 0; right: 0;
+  height: 32px;
+  background: repeating-linear-gradient(
+    90deg,
+    #2e2e2e 0px, #2e2e2e 18px,
+    #404040 18px, #404040 20px,
+    #252525 20px, #252525 38px,
+    #404040 38px, #404040 40px
+  );
+  background-size: 40px 100%;
+  animation: belt-roll 0.45s linear infinite;
+  border-top: 2px solid #555;
+  border-bottom: 2px solid #555;
+}
+@keyframes belt-roll {
+  from { background-position: 0 0; }
+  to   { background-position: -40px 0; }
+}
+
+#cg-belt-edge-l, #cg-belt-edge-r {
+  position: absolute;
+  bottom: 18px;
+  width: 10px;
+  height: 40px;
+  background: var(--gold-dim);
+  border-radius: 20px;
+  z-index: 5;
+}
+#cg-belt-edge-l { left: 0; }
+#cg-belt-edge-r { right: 0; }
+
+#cg-items-layer {
+  position: absolute;
+  bottom: 22px;
+  left: 0; right: 0;
+  height: 86px;
+  z-index: 6;
+}
+
+/* Items */
+.cg-item {
+  position: absolute;
+  bottom: 0;
+  width: 64px;
+  height: 76px;
+  background: var(--dark-mid);
+  border: 2px solid var(--gold-dim);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  gap: 2px;
+  transition: border-color 0.12s, transform 0.12s;
+  z-index: 7;
+}
+.cg-item:hover {
+  border-color: var(--gold);
+  transform: translateY(-4px) scale(1.06);
+  box-shadow: 0 4px 12px var(--shadow-gold);
+}
+.cg-ie    { font-size: 1.7rem; line-height: 1; }
+.cg-iname { font-size: 0.54rem; color: var(--cream); text-align: center; line-height: 1.2; }
+.cg-itax  { font-size: 0.44rem; color: var(--gold-dim); text-align: center; }
+
+.cg-item-scan {
+  background: var(--green) !important;
+  border-color: var(--green-light) !important;
+  transform: scale(1.15) translateY(-6px) !important;
+  opacity: 0 !important;
+  transition: all 0.24s ease !important;
+}
+.cg-item-miss {
+  opacity: 0 !important;
+  transform: translateY(32px) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Register */
+#cg-register {
+  width: 148px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: linear-gradient(to bottom, #1a1a30, #0e0e22);
+  border-left: 2px solid var(--gold-dim);
+}
+#cg-screen {
+  width: 100%;
+  background: #001200;
+  border: 1px solid #1a4a1a;
+  border-radius: 3px;
+  padding: 5px 7px;
+  text-align: right;
+}
+#cg-price {
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  color: #00ff66;
+  letter-spacing: 1px;
+}
+#cg-scan-txt {
+  font-size: 0.54rem;
+  color: #00bb44;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#cg-scanner {
+  width: 82%;
+  height: 26px;
+  background: #050510;
+  border: 1px solid var(--gold-dim);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+#cg-scanner-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 60%;
+}
+.cg-sline {
+  height: 1px;
+  background: #1a3a1a;
+  width: 100%;
+}
+#cg-scanner-beam {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transition: background 0.15s;
+}
+#cg-scanner-beam.on {
+  background: rgba(255, 20, 20, 0.7);
+  box-shadow: inset 0 0 8px rgba(255,0,0,0.9);
+}
+#cg-reg-label {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  color: var(--gold-dim);
+  letter-spacing: 3px;
+}
+
+/* ── NPC Hint ─────────────────────────────────────────── */
+#npc-hint {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 44px;
+  background: rgba(0,0,0,0.72);
+  border-top: 1px solid var(--gold-dim);
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--cream-dark);
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  z-index: 5;
+}
+
+/* ── Overlay ──────────────────────────────────────────── */
+#cg-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8,8,18,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  border-radius: 6px;
+}
+#cg-overlay.cg-hidden { display: none; }
+#cg-ov-box {
+  background: var(--dark-mid);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  text-align: center;
+  max-width: 380px;
+}
+#cg-ov-title {
+  font-family: var(--font-display);
+  color: var(--gold);
+  margin-bottom: 12px;
+  font-size: 1.35rem;
+}
+#cg-ov-body {
+  color: var(--cream-dark);
+  font-size: 0.9rem;
+  margin-bottom: 18px;
+  line-height: 1.55;
+}
+#cg-ov-stats { margin-bottom: 16px; }
+.cg-result-wage {
+  font-size: 2.2rem;
+  font-family: var(--font-display);
+  color: var(--gold);
+  font-weight: bold;
+}
+.cg-result-note {
+  font-size: 0.78rem;
+  color: var(--cream-dark);
+  font-style: italic;
+  margin-top: 4px;
+}
+.cg-result-stats {
+  font-size: 0.8rem;
+  color: var(--cream-dark);
+  margin-top: 8px;
+}
+#cg-ov-box button { margin: 4px; }
+#cg-btn-exit {
+  background: var(--dark-light);
+  color: var(--cream);
+  border: 1px solid var(--gold-dim);
+}
+#cg-btn-exit:hover { background: var(--dark); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  'use strict';
+
+  // ── State ─────────────────────────────────────────────────────────
+  let state;
+  let gameActive = false;
+  let shiftTimer = 90;
+  let earned = 0, scanned = 0, missed = 0;
+  let itemSpeed = 0.8;
+  let activeItems = [];
+  let itemIdCtr = 0;
+  let timerInt = null, moveInt = null, spawnTout = null;
+
+  const ITEMS = [
+    { emoji:'🍞', name:'Kenyér',     price:350,   tax:'ÁFA 18%',      wage:15 },
+    { emoji:'🥛', name:'Tej',        price:280,   tax:'ÁFA 5%',       wage:15 },
+    { emoji:'🧃', name:'Gyümölcslé', price:450,   tax:'ÁFA 18%',      wage:15 },
+    { emoji:'🍫', name:'Csoki',      price:320,   tax:'ÁFA 27%',      wage:15 },
+    { emoji:'🧀', name:'Sajt',       price:680,   tax:'ÁFA 5%',       wage:15 },
+    { emoji:'🥩', name:'Hús',        price:1800,  tax:'ÁFA 5%',       wage:20 },
+    { emoji:'🍺', name:'Sör',        price:620,   tax:'Jövedéki adó', wage:20 },
+    { emoji:'🍷', name:'Bor',        price:1400,  tax:'Jövedéki adó', wage:20 },
+    { emoji:'🚬', name:'Cigaretta',  price:1850,  tax:'Jövedéki adó', wage:25 },
+    { emoji:'💊', name:'Gyógyszer',  price:1200,  tax:'ÁFA mentes',   wage:20 },
+    { emoji:'🧴', name:'Sampon',     price:890,   tax:'ÁFA 27%',      wage:15 },
+    { emoji:'📺', name:'TV',         price:89900, tax:'ÁFA 27%',      wage:50 },
+    { emoji:'🥖', name:'Bagett',     price:290,   tax:'ÁFA 18%',      wage:15 },
+    { emoji:'🧈', name:'Vaj',        price:780,   tax:'ÁFA 5%',       wage:15 },
+    { emoji:'🍯', name:'Méz',        price:1100,  tax:'ÁFA 27%',      wage:15 },
+  ];
+
+  const MANAGER_QUOTES = [
+    'Gyorsabban! Az ügyfél nem vár!',
+    'A mosolyért nem jár extra fizetés.',
+    'Ez a minimumelvárás. Szó szerint.',
+    'A kassza egyensúlyban kell legyen a műszak végén.',
+    'Kérdezze meg, vesznek-e hűségkártyát!',
+    'Teljesítmény = munkahely. Gondolja meg.',
+    'Mosogatószer felajánlása kötelező.',
+    'Szünet csak 6 óra után jár. Tartson ki.',
+  ];
+  const CUST_QUOTES = [
+    'Ez sok...', 'Megint drágult?', 'Tessék.',
+    'Sietni kéne.', 'Jó napot!', 'Mikor lesz akció?',
+    'Plastikzacskó kell?', 'Pontgyűjtő kártya?',
+  ];
+
+  const $ = id => document.getElementById(id);
+
+  // ── Init ──────────────────────────────────────────────────────────
+  async function init() {
+    state = await GameAPI.getState();
+    try {
+      const hint = await GameAPI.getHint();
+      $('npc-hint').textContent = `${hint.term}: ${hint.explanation}`;
+    } catch(e) {
+      $('npc-hint').textContent = 'Minimálbér: a törvényes legkisebb fizetés. Pontosan ennyit keresel most.';
+    }
+  }
+
+  // ── Spawning ──────────────────────────────────────────────────────
+  function scheduleSpawn() {
+    if (!gameActive) return;
+    spawnItem();
+    const elapsed = 90 - shiftTimer;
+    const delay = Math.max(680, 2100 - elapsed * 14);
+    spawnTout = setTimeout(scheduleSpawn, delay);
+  }
+
+  function spawnItem() {
+    if (!gameActive) return;
+    const def = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+    const id = 'ci' + (++itemIdCtr);
+    const layer = $('cg-items-layer');
+    const beltW = $('cg-conveyor').offsetWidth;
+
+    const el = document.createElement('div');
+    el.id = id;
+    el.className = 'cg-item';
+    el.innerHTML = [
+      `<span class="cg-ie">${def.emoji}</span>`,
+      `<span class="cg-iname">${def.name}</span>`,
+      `<span class="cg-itax">${def.tax}</span>`,
+    ].join('');
+    el.style.left = beltW + 'px';
+    el.addEventListener('click', () => doScan(id, def));
+    layer.appendChild(el);
+    activeItems.push({ id, el, x: beltW, def });
+  }
+
+  // ── Scanning ──────────────────────────────────────────────────────
+  function doScan(id, def) {
+    if (!gameActive) return;
+    const idx = activeItems.findIndex(i => i.id === id);
+    if (idx === -1) return;
+    const { el } = activeItems.splice(idx, 1)[0];
+
+    el.classList.add('cg-item-scan');
+    setTimeout(() => { try { el.remove(); } catch(e){} }, 260);
+
+    earned += def.wage;
+    scanned++;
+    $('cg-earned').textContent = earned;
+    $('cg-price').textContent = def.price.toLocaleString('hu-HU') + ' Ft';
+    $('cg-scan-txt').textContent = '✓ ' + def.name;
+
+    const beam = $('cg-scanner-beam');
+    beam.classList.add('on');
+    setTimeout(() => beam.classList.remove('on'), 180);
+
+    if (Math.random() < 0.22) {
+      const b = $('cg-cust-bubble');
+      b.textContent = CUST_QUOTES[Math.floor(Math.random() * CUST_QUOTES.length)];
+      b.classList.add('vis');
+      setTimeout(() => b.classList.remove('vis'), 1700);
+    }
+  }
+
+  // ── Move loop ─────────────────────────────────────────────────────
+  function moveTick() {
+    if (!gameActive) return;
+    const gone = [];
+    for (const item of activeItems) {
+      item.x -= itemSpeed;
+      item.el.style.left = item.x + 'px';
+      if (item.x < -70) {
+        item.el.classList.add('cg-item-miss');
+        const el = item.el;
+        setTimeout(() => { try { el.remove(); } catch(e){} }, 220);
+        gone.push(item.id);
+        missed++;
+      }
+    }
+    if (gone.length) activeItems = activeItems.filter(i => !gone.includes(i.id));
+  }
+
+  // ── Timer ─────────────────────────────────────────────────────────
+  function startTimerLoop() {
+    timerInt = setInterval(() => {
+      shiftTimer--;
+      $('cg-timer').textContent = shiftTimer;
+      itemSpeed = 0.8 + (90 - shiftTimer) * 0.022;
+
+      if (shiftTimer > 0 && shiftTimer % 20 === 0) {
+        const q = MANAGER_QUOTES[Math.floor(Math.random() * MANAGER_QUOTES.length)];
+        const s = $('cg-mgr-bubble');
+        s.textContent = q;
+        s.classList.add('vis');
+        setTimeout(() => s.classList.remove('vis'), 3000);
+      }
+      if (shiftTimer <= 10) $('cg-timer').classList.add('cg-warn');
+      if (shiftTimer <= 0) endShift();
+    }, 1000);
+  }
+
+  // ── Stop everything ───────────────────────────────────────────────
+  function stopAll() {
+    gameActive = false;
+    clearInterval(timerInt);
+    clearInterval(moveInt);
+    clearTimeout(spawnTout);
+    timerInt = moveInt = spawnTout = null;
+    activeItems.forEach(i => { try { i.el.remove(); } catch(e){} });
+    activeItems = [];
+  }
+
+  // ── End of shift ──────────────────────────────────────────────────
+  async function endShift() {
+    stopAll();
+    const newBal = state.balance + earned;
+    state.balance = newBal;
+    try {
+      await GameAPI.patch({
+        balance: newBal,
+        stats: { ...state.stats, times_employed: (state.stats.times_employed || 0) + 1 }
+      });
+    } catch(e) { console.warn('patch failed', e); }
+
+    $('cg-ov-title').textContent = 'Műszak véget ért';
+    $('cg-ov-body').textContent = `Beolvastál ${scanned} árut. ${missed} kiesett a szalagról.`;
+    $('cg-ov-stats').innerHTML = [
+      `<div class="cg-result-wage">${earned} Ft</div>`,
+      `<div class="cg-result-note">Ennyi a minimálbér. Gratulálok a teljesítményedhez.</div>`,
+      `<div class="cg-result-stats">Hatékonyság: ${scanned + missed > 0 ? Math.round(scanned / (scanned + missed) * 100) : 0}%</div>`,
+    ].join('');
+    $('cg-btn-start').textContent = 'Újabb műszak';
+    $('cg-overlay').classList.remove('cg-hidden');
+  }
+
+  // ── Public API ────────────────────────────────────────────────────
+  window.CG = {
+    start() {
+      gameActive = true;
+      earned = 0; scanned = 0; missed = 0;
+      shiftTimer = 90; itemSpeed = 0.8;
+      activeItems = []; itemIdCtr = 0;
+
+      $('cg-timer').classList.remove('cg-warn');
+      $('cg-ov-stats').innerHTML = '';
+      $('cg-overlay').classList.add('cg-hidden');
+      $('cg-price').textContent = '---';
+      $('cg-scan-txt').textContent = 'Beolvas...';
+      $('cg-earned').textContent = '0';
+      $('cg-timer').textContent = '90';
+
+      startTimerLoop();
+      moveInt = setInterval(moveTick, 16);
+      scheduleSpawn();
+    },
+
+    async exit() {
+      stopAll();
+      await GameAPI.exit(state.balance);
+    }
+  };
+
+  init();
+})();
+</script>
 {% endblock %}

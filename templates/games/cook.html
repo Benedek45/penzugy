@@ -1,15 +1,739 @@
 {% extends "base.html" %}
-{% block title %}cook — Hamarosan{% endblock %}
+{% block title %}Szakács — Karcsú Ebédlő{% endblock %}
+
 {% block content %}
-<div style="max-width:600px;margin:4rem auto;text-align:center;padding:0 1rem;">
-  <div style="font-size:4rem;margin-bottom:1rem;">🚧</div>
-  <h1 style="margin-bottom:0.5rem;">cook</h1>
-  <p style="color:var(--cream-dark);font-style:italic;margin-bottom:2rem;">
-    Ez a mini-játék még fejlesztés alatt áll. Hamarosan!
-  </p>
-  <div class="npc-hint" id="npc-hint">Betöltés...</div>
-  <div style="margin-top:2rem;">
-    <a href="/" class="btn btn-gold">← Vissza a Plazára</a>
+<div id="ck-root">
+
+  <div id="ck-scene">
+
+    <!-- ── Kitchen background ───────────────────────────── -->
+    <div id="ck-bg">
+      <div class="ck-wall-tile"></div>
+      <div id="ck-sign">KARCSÚ EBÉDLŐ</div>
+      <div id="ck-pots"><span>🍳</span><span>🥘</span><span>🍲</span></div>
+      <div id="ck-stove">
+        <div class="ck-burner ck-burner-1"><div class="ck-flame"></div></div>
+        <div class="ck-burner ck-burner-2"><div class="ck-flame"></div></div>
+        <div class="ck-burner ck-burner-3"><div class="ck-flame"></div></div>
+      </div>
+      <div id="ck-counter"></div>
+    </div>
+
+    <!-- ── HUD ──────────────────────────────────────────── -->
+    <div id="ck-hud">
+      <div id="ck-hud-timer">⏱ <span id="ck-timer">90</span>s</div>
+      <div id="ck-hud-earn">Kereset: <span id="ck-earned">0</span> Ft</div>
+      <div id="ck-hud-dishes">Étel: <span id="ck-dishes">0</span></div>
+    </div>
+
+    <!-- ── Chef NPC ─────────────────────────────────────── -->
+    <div id="ck-chef">
+      <div id="ck-chef-bubble" class="ck-bubble">...</div>
+      <div id="ck-chef-char">👨‍🍳</div>
+    </div>
+
+    <!-- ── Recipe panel ─────────────────────────────────── -->
+    <div id="ck-recipe-panel">
+      <div id="ck-recipe-name"></div>
+      <div id="ck-recipe-steps"></div>
+    </div>
+
+    <!-- ── Ingredient buttons ───────────────────────────── -->
+    <div id="ck-ingredients">
+      <button class="ck-ing" data-ing="onion"  onclick="CK.pressIngredient('onion')"><span class="ck-key">1</span>🧅<br><span>Hagyma</span></button>
+      <button class="ck-ing" data-ing="meat"   onclick="CK.pressIngredient('meat')"><span class="ck-key">2</span>🥩<br><span>Hús</span></button>
+      <button class="ck-ing" data-ing="tomato" onclick="CK.pressIngredient('tomato')"><span class="ck-key">3</span>🍅<br><span>Paradicsom</span></button>
+      <button class="ck-ing" data-ing="herb"   onclick="CK.pressIngredient('herb')"><span class="ck-key">4</span>🌿<br><span>Fűszer</span></button>
+      <button class="ck-ing" data-ing="salt"   onclick="CK.pressIngredient('salt')"><span class="ck-key">5</span>🧂<br><span>Só</span></button>
+      <button class="ck-ing" data-ing="garlic" onclick="CK.pressIngredient('garlic')"><span class="ck-key">6</span>🧄<br><span>Fokhagyma</span></button>
+      <button class="ck-ing" data-ing="oil"    onclick="CK.pressIngredient('oil')"><span class="ck-key">7</span>🫒<br><span>Olaj</span></button>
+      <button class="ck-ing" data-ing="egg"    onclick="CK.pressIngredient('egg')"><span class="ck-key">8</span>🥚<br><span>Tojás</span></button>
+    </div>
+
+    <!-- ── NPC hint ─────────────────────────────────────── -->
+    <div id="npc-hint">Betöltés...</div>
+
   </div>
+
+  <!-- ── Overlay ────────────────────────────────────────── -->
+  <div id="ck-overlay">
+    <div id="ck-ov-box">
+      <div id="ck-ov-icon">🍳</div>
+      <h2 id="ck-ov-title">Karcsú Ebédlő — Konyha</h2>
+      <p id="ck-ov-body">
+        A séf diktál, te főzöl. Kattints a hozzávalókra a recept szerinti sorrendben.<br>
+        Hibázol? Elölről. Mint az életben. Csak itt nincs HR.
+      </p>
+      <div id="ck-ov-stats"></div>
+      <div id="ck-ov-actions">
+        <button id="ck-btn-start" class="btn btn-gold" onclick="CK.start()">Műszak kezdése</button>
+        <button id="ck-btn-exit" class="btn btn-dark" onclick="CK.exit()">← Vissza a városba</button>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   COOK — Karcsú Ebédlő (Job)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Root ─────────────────────────────────────────────── */
+#ck-root {
+  max-width: 700px;
+  margin: 1.5rem auto;
+  font-family: var(--font-body);
+  color: var(--cream);
+  user-select: none;
+  position: relative;
+}
+
+/* ── Scene ────────────────────────────────────────────── */
+#ck-scene {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  border: 3px solid var(--gold-dim);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px var(--shadow);
+}
+
+/* ── Background kitchen ───────────────────────────────── */
+#ck-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, #0d0d20 0%, var(--dark) 45%, #1a1008 100%);
+}
+
+.ck-wall-tile {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.4;
+}
+
+/* Sign */
+#ck-sign {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 3px;
+  color: var(--gold);
+  white-space: nowrap;
+  opacity: 0.55;
+  text-shadow: 0 0 8px rgba(201,168,76,0.15);
+}
+
+/* Hanging pots */
+#ck-pots {
+  position: absolute;
+  top: 16px;
+  right: 14%;
+  display: flex;
+  gap: 6px;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.35;
+  letter-spacing: 2px;
+}
+#ck-pots span {
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));
+}
+
+/* Stove */
+#ck-stove {
+  position: absolute;
+  bottom: 170px;
+  left: 6%;
+  width: 52%;
+  height: 78px;
+  background: linear-gradient(to bottom, #3a3a3a 0%, #222 60%, #1a1a1a 100%);
+  border-radius: 5px 5px 0 0;
+  border: 2px solid #444;
+  border-bottom: none;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.4), inset 0 2px 6px rgba(255,255,255,0.05);
+}
+
+.ck-burner {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #222 30%, #111 70%);
+  border: 2px solid #3a3a3a;
+  bottom: 60%;
+  transform: translateY(50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ck-burner-1 { left: 14%; }
+.ck-burner-2 { left: 46%; }
+.ck-burner-3 { left: 78%; }
+
+.ck-flame {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 120, 20, 0.08);
+  box-shadow:
+    0 0 6px 2px rgba(255, 140, 30, 0.12),
+    0 0 14px 6px rgba(255, 100, 10, 0.06);
+  transition: box-shadow 0.3s;
+}
+
+/* Counter surface */
+#ck-counter {
+  position: absolute;
+  bottom: 150px;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, #3a2010 0%, #2a1508 40%, #1a0e08 100%);
+  border-top: 3px solid var(--gold-dim);
+  border-bottom: 2px solid #0a0500;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* ── HUD ──────────────────────────────────────────────── */
+#ck-hud {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  z-index: 15;
+}
+#ck-hud-timer, #ck-hud-earn, #ck-hud-dishes {
+  background: rgba(0,0,0,0.65);
+  border: 1px solid var(--gold-dim);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+}
+#ck-timer { font-weight: bold; color: var(--gold); }
+#ck-timer.ck-warn { color: var(--red-light); animation: ck-blink 0.5s step-end infinite; }
+#ck-earned { color: var(--green-light); font-weight: bold; }
+#ck-dishes { color: var(--gold-light); font-weight: bold; }
+
+@keyframes ck-blink { 50% { opacity: 0; } }
+
+/* ── Chef NPC ─────────────────────────────────────────── */
+#ck-chef {
+  position: absolute;
+  top: 38px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 15;
+}
+#ck-chef-char {
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px var(--shadow-gold));
+}
+
+/* ── Speech bubbles ───────────────────────────────────── */
+.ck-bubble {
+  background: var(--cream);
+  color: var(--dark);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  font-family: var(--font-body);
+  max-width: 150px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+  position: relative;
+  text-align: center;
+  line-height: 1.3;
+  order: -1;
+}
+.ck-bubble.vis { opacity: 1; }
+.ck-bubble::after {
+  content: '';
+  position: absolute;
+  width: 0; height: 0;
+  border: 5px solid transparent;
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border-top-color: var(--cream);
+}
+
+/* ── Recipe panel ─────────────────────────────────────── */
+#ck-recipe-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -65%);
+  background: rgba(26,26,46,0.88);
+  border: 2px solid var(--gold-dim);
+  border-radius: var(--radius);
+  padding: 10px 18px 12px;
+  text-align: center;
+  z-index: 10;
+  max-width: 85%;
+  min-width: 180px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+#ck-recipe-panel.ck-recipe-glow {
+  border-color: var(--green-light);
+  box-shadow: 0 0 24px rgba(76,175,80,0.35);
+}
+
+#ck-recipe-name {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--gold-light);
+  margin-bottom: 7px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#ck-recipe-steps {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ck-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background: var(--dark);
+  border: 2px solid var(--gold-dim);
+  border-radius: 6px;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+}
+.ck-step-done {
+  border-color: var(--green-light);
+  background: var(--green);
+  color: #fff;
+}
+
+#ck-recipe-steps.ck-steps-wrong .ck-step {
+  animation: ck-flash-red 0.4s ease;
+}
+
+@keyframes ck-flash-red {
+  0%, 100% { border-color: var(--gold-dim); background: var(--dark); }
+  50% { border-color: var(--red-light); background: rgba(139,26,26,0.35); }
+}
+
+/* ── Ingredient buttons ───────────────────────────────── */
+#ck-ingredients {
+  position: absolute;
+  bottom: 44px;
+  left: 0;
+  right: 0;
+  height: 126px;
+  background: rgba(0,0,0,0.55);
+  border-top: 2px solid rgba(201,168,76,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  z-index: 10;
+}
+
+.ck-ing {
+  position: relative;
+  width: 76px;
+  height: 88px;
+  background: var(--dark-mid);
+  border: 2px solid var(--gold-dim);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.6rem;
+  line-height: 1.2;
+  color: var(--cream);
+  font-family: var(--font-body);
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 2px;
+}
+.ck-key {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font-size: 0.6rem;
+  font-family: var(--font-mono);
+  color: var(--gold-dim);
+  line-height: 1;
+  pointer-events: none;
+}
+.ck-ing:hover {
+  border-color: var(--gold);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px var(--shadow-gold);
+}
+.ck-ing:active {
+  transform: translateY(-1px);
+}
+.ck-ing span {
+  font-size: 0.52rem;
+  color: var(--cream-dark);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.ck-ing-active {
+  border-color: var(--green-light) !important;
+  background: rgba(46,125,50,0.35) !important;
+  transform: translateY(-3px) scale(1.05) !important;
+  box-shadow: 0 0 16px rgba(76,175,80,0.3) !important;
+}
+.ck-ing-wrong {
+  animation: ck-shake 0.35s ease;
+  border-color: var(--red-light) !important;
+  background: rgba(139,26,26,0.3) !important;
+}
+
+@keyframes ck-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* ── NPC Hint ─────────────────────────────────────────── */
+#npc-hint {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 44px;
+  background: rgba(0,0,0,0.72);
+  border-top: 1px solid var(--gold-dim);
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--cream-dark);
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  z-index: 5;
+}
+
+/* ── Overlay ──────────────────────────────────────────── */
+#ck-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8,8,18,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  border-radius: 6px;
+}
+#ck-overlay.ck-hidden { display: none; }
+
+#ck-ov-box {
+  background: var(--dark-mid);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  text-align: center;
+  max-width: 380px;
+}
+#ck-ov-icon {
+  font-size: 2.8rem;
+  margin-bottom: 6px;
+}
+#ck-ov-title {
+  font-family: var(--font-display);
+  color: var(--gold);
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+}
+#ck-ov-body {
+  color: var(--cream-dark);
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  line-height: 1.55;
+}
+#ck-ov-stats { margin-bottom: 14px; }
+#ck-ov-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+.ck-result-wage {
+  font-size: 2rem;
+  font-family: var(--font-display);
+  color: var(--gold);
+  font-weight: bold;
+}
+.ck-result-note {
+  font-size: 0.75rem;
+  color: var(--cream-dark);
+  font-style: italic;
+  margin-top: 3px;
+}
+.ck-result-stats {
+  font-size: 0.78rem;
+  color: var(--cream-dark);
+  margin-top: 6px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  'use strict';
+
+  /* ── Data ──────────────────────────────────────────────── */
+  const RECIPES = [
+    { name:'🍝 Spagetti',        steps:['onion','meat','tomato','herb','salt'],             wage:60 },
+    { name:'🍳 Rántotta',        steps:['egg','oil','salt'],                                wage:30 },
+    { name:'🥘 Pörkölt',         steps:['onion','meat','tomato','salt'],                    wage:70 },
+    { name:'🍲 Gulyás',          steps:['onion','meat','tomato','herb','garlic','salt'],    wage:80 },
+    { name:'🥗 Saláta',          steps:['tomato','herb','oil','salt'],                      wage:35 },
+    { name:'🍜 Leves',           steps:['onion','meat','herb','salt','garlic'],             wage:55 },
+    { name:'🧄 Aioli',           steps:['garlic','oil','egg','salt'],                       wage:45 },
+    { name:'🍖 Sült hús',        steps:['meat','garlic','herb','oil'],                      wage:50 },
+  ];
+
+  const INGREDIENTS = [
+    { id:'onion',  emoji:'🧅', name:'Hagyma' },
+    { id:'meat',   emoji:'🥩', name:'Hús' },
+    { id:'tomato', emoji:'🍅', name:'Paradicsom' },
+    { id:'herb',   emoji:'🌿', name:'Fűszer' },
+    { id:'salt',   emoji:'🧂', name:'Só' },
+    { id:'garlic', emoji:'🧄', name:'Fokhagyma' },
+    { id:'oil',    emoji:'🫒', name:'Olaj' },
+    { id:'egg',    emoji:'🥚', name:'Tojás' },
+  ];
+
+  const CHEF_QUOTES = [
+    'A receptet kívülről kell tudni. Nem olvasni!',
+    'Ez nem egy csillagos étterem. De úgy kell főzni.',
+    'Túlóra? Ez benne van a szerződésben.',
+    'A vásárló mindig köpköd a levesre. Tanuljon meg elmenekülni.',
+    'Ha kiég a serpenyő, az a Te felelősséged.',
+    'Mosogató is te vagy ma. Szerencséd van.',
+    'A séf szava szent. A te véleményed: irreleváns.',
+    'Több só, kevesebb egó. Ez nem a Te konyhád.',
+  ];
+
+  /* ── State ─────────────────────────────────────────────── */
+  let state;
+  let gameActive = false;
+  let shiftTimer = 90;
+  let earned = 0;
+  let dishes = 0;
+  let currentRecipe = null;
+  let currentStepIndex = 0;
+  let timerInt = null;
+
+  const $ = id => document.getElementById(id);
+
+  /* ── Init ──────────────────────────────────────────────── */
+  async function init() {
+    try {
+      state = await GameAPI.getState();
+    } catch(e) {
+      state = { balance: 0, stats: {} };
+    }
+    try {
+      const hint = await GameAPI.getHint();
+      $('npc-hint').textContent = hint.term + ': ' + hint.explanation;
+    } catch(e) {
+      $('npc-hint').textContent = 'Minimálbér: annyi, amennyit adnak. Ne kérdezz többet.';
+    }
+    showChefQuote();
+  }
+
+  /* ── Chef quotes ───────────────────────────────────────── */
+  function showChefQuote() {
+    const q = CHEF_QUOTES[Math.floor(Math.random() * CHEF_QUOTES.length)];
+    const b = $('ck-chef-bubble');
+    if (!b) return;
+    b.textContent = q;
+    b.classList.add('vis');
+    setTimeout(function() { b.classList.remove('vis'); }, 3200);
+  }
+
+  /* ── Recipe management ─────────────────────────────────── */
+  function pickNewRecipe() {
+    if (!gameActive) return;
+    const available = RECIPES.filter(r => r !== currentRecipe);
+    currentRecipe = available.length ? available[Math.floor(Math.random() * available.length)] : RECIPES[Math.floor(Math.random() * RECIPES.length)];
+    currentStepIndex = 0;
+
+    $('ck-recipe-name').textContent = currentRecipe.name;
+    const el = $('ck-recipe-steps');
+    el.innerHTML = currentRecipe.steps.map(function(id) {
+      const ing = INGREDIENTS.find(function(i) { return i.id === id; });
+      return '<span class="ck-step">' + (ing ? ing.emoji : '?') + '</span>';
+    }).join('');
+    el.classList.remove('ck-steps-wrong');
+    $('ck-recipe-panel').classList.remove('ck-recipe-glow');
+  }
+
+  function advanceStep() {
+    var steps = $('ck-recipe-steps').children;
+    if (currentStepIndex < steps.length) {
+      steps[currentStepIndex].classList.add('ck-step-done');
+      steps[currentStepIndex].textContent = '\u2713';
+    }
+    currentStepIndex++;
+
+    if (currentStepIndex >= currentRecipe.steps.length) {
+      earned += currentRecipe.wage;
+      dishes++;
+      $('ck-earned').textContent = earned;
+      $('ck-dishes').textContent = dishes;
+      $('ck-recipe-panel').classList.add('ck-recipe-glow');
+      setTimeout(function() {
+        if (gameActive) pickNewRecipe();
+      }, 500);
+    }
+  }
+
+  function resetSteps() {
+    currentStepIndex = 0;
+    var el = $('ck-recipe-steps');
+    el.innerHTML = currentRecipe.steps.map(function(id) {
+      var ing = INGREDIENTS.find(function(i) { return i.id === id; });
+      return '<span class="ck-step">' + (ing ? ing.emoji : '?') + '</span>';
+    }).join('');
+    el.classList.remove('ck-steps-wrong');
+  }
+
+  /* ── Ingredient press ──────────────────────────────────── */
+  function pressIngredient(id) {
+    if (!gameActive || !currentRecipe) return;
+
+    var expectedId = currentRecipe.steps[currentStepIndex];
+    var btn = document.querySelector('.ck-ing[data-ing="' + id + '"]');
+    if (!btn) return;
+
+    if (id === expectedId) {
+      btn.classList.add('ck-ing-active');
+      setTimeout(function() { if (btn) btn.classList.remove('ck-ing-active'); }, 280);
+      advanceStep();
+    } else {
+      btn.classList.add('ck-ing-wrong');
+      setTimeout(function() { if (btn) btn.classList.remove('ck-ing-wrong'); }, 350);
+      var el = $('ck-recipe-steps');
+      el.classList.add('ck-steps-wrong');
+      setTimeout(function() {
+        el.classList.remove('ck-steps-wrong');
+        if (gameActive) resetSteps();
+      }, 400);
+    }
+  }
+
+  /* ── Timer ─────────────────────────────────────────────── */
+  function startTimer() {
+    timerInt = setInterval(function() {
+      shiftTimer--;
+      $('ck-timer').textContent = shiftTimer;
+
+      if (shiftTimer > 0 && shiftTimer % 20 === 0) {
+        showChefQuote();
+      }
+
+      if (shiftTimer <= 10) $('ck-timer').classList.add('ck-warn');
+      if (shiftTimer <= 0) endShift();
+    }, 1000);
+  }
+
+  function stopAll() {
+    gameActive = false;
+    clearInterval(timerInt);
+    timerInt = null;
+  }
+
+  /* ── End of shift ──────────────────────────────────────── */
+  async function endShift() {
+    stopAll();
+
+    var newBal = (state.balance || 0) + earned;
+    state.balance = newBal;
+    try {
+      await GameAPI.patch({
+        balance: newBal,
+        stats: Object.assign({}, state.stats, { biggest_win: Math.max(state.stats.biggest_win || 0, earned) }),
+      });
+    } catch(e) { /* silent */ }
+
+    $('ck-ov-stats').innerHTML =
+      '<div class="ck-result-wage">' + earned + ' Ft</div>' +
+      '<div class="ck-result-note">' + (dishes >= 5 ? 'A séf büszke rád. (Nem mondja ki.)' : 'A séf csalódott. Megszokta.') + '</div>' +
+      '<div class="ck-result-stats">Elkészített ételek: ' + dishes + '</div>';
+    $('ck-ov-body').textContent = 'Ennyit keresel ma. A konyha nem vár.';
+    $('ck-overlay').classList.remove('ck-hidden');
+  }
+
+  /* ── Public API ────────────────────────────────────────── */
+  window.CK = {
+    start: function() {
+      gameActive = true;
+      earned = 0;
+      dishes = 0;
+      shiftTimer = 90;
+      currentRecipe = null;
+      currentStepIndex = 0;
+
+      $('ck-timer').textContent = '90';
+      $('ck-timer').classList.remove('ck-warn');
+      $('ck-earned').textContent = '0';
+      $('ck-dishes').textContent = '0';
+      $('ck-recipe-name').textContent = '';
+      $('ck-recipe-steps').innerHTML = '';
+      $('ck-ov-stats').innerHTML = '';
+      $('ck-recipe-panel').classList.remove('ck-recipe-glow');
+      $('ck-overlay').classList.add('ck-hidden');
+
+      showChefQuote();
+      pickNewRecipe();
+      startTimer();
+    },
+
+    exit: async function() {
+      stopAll();
+      await GameAPI.exit(state.balance);
+    },
+
+    pressIngredient: pressIngredient,
+  };
+
+  // ── Number key controls (1–8) ────────────────────────────
+  const KEY_MAP = ['onion','meat','tomato','herb','salt','garlic','oil','egg'];
+  document.addEventListener('keydown', function(e) {
+    if (!gameActive) return;
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 8) {
+      e.preventDefault();
+      pressIngredient(KEY_MAP[n - 1]);
+    }
+  });
+
+  init();
+})();
+</script>
 {% endblock %}

@@ -83,11 +83,23 @@
     { "term": "Várható érték", "explanation": "Átlagos nyeremény hosszú távon. A szerencsekeréken negatív." },
     { "term": "Valószínűség", "explanation": "Annak az esélye, hogy valami bekövetkezik. 0 és 1 közötti szám." }
   ],
+  "pachinko": [
+    { "term": "Valószínűség", "explanation": "A golyó minden sorban balra vagy jobbra megy — 50-50%. A középső zseb a legkisebb esélyű, de ott a nyerőgép." },
+    { "term": "Várható érték", "explanation": "Minden golyó 10 Ft-ba kerül. A legtöbb zseb kevesebbet fizet. A matek nem hazudik." },
+    { "term": "Láz", "explanation": "Amikor a rendszer átveszi az irányítást, és te csak nézed, ahogy a pénzed vagy nő, vagy nem. Addiktív." }
+  ],
   "scratch": [
     { "term": "Sorsjegy", "explanation": "Szerencsejáték, ahol kaparással derül ki az eredmény. Azonnali visszajelzés." },
     { "term": "Nyerési esély", "explanation": "Annak valószínűsége, hogy nyersz. A kaparós sorsjegyeknél általában alacsony." },
     { "term": "Szimbólum", "explanation": "Jelkép, ami meghatározza az eredményt. 3 egyforma = nyeremény." },
     { "term": "Kockázat", "explanation": "A befektetett pénz elvesztésének lehetősége. Itt 500 Ft-onként." },
     { "term": "Megtérülés", "explanation": "A befektetett pénzhez képest mennyit kapsz vissza. Általában kevesebbet." }
+  ],
+  "taxi": [
+    { "term": "Platformgazdaság", "explanation": "A munkaadód egy alkalmazás. Nincs főnök, csak algoritmus. És az algoritmus nem ad borravalót." },
+    { "term": "Surge pricing", "explanation": "Amikor a kereslet magas, az ár is magas. A sofőr kap belőle 25%-ot. A többit az alkalmazás." },
+    { "term": "Fuvardíj", "explanation": "Az utas által fizetett összeg. Ebből Te 80 Ft-ot látsz. Rejtett költségek léteznek." },
+    { "term": "Megélhetési bér", "explanation": "Annyi pénz, amiből meg lehet élni. Hallottál már róla. Soha nem találkoztál vele." },
+    { "term": "Önfoglalkoztatás", "explanation": "A saját főnököd vagy. A saját költségeid is. A saját felelősséged is. Gratulálunk." }
   ]
 }
